@@ -1,8 +1,5 @@
-import dynamic from 'next/dynamic';
-
-// Disable SSR for this homepage
-const HomeContent = dynamic(() => import('../components/HomeContent'), { ssr: false });
+import Dashboard from '../pages/Dashboard';
 
 export default function Home() {
-  return <HomeContent />;
+  return <Dashboard />;
 }
