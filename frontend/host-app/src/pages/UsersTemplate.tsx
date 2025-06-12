@@ -7,6 +7,7 @@ interface User {
   user_id?: string;
   name: string;
   email: string;
+  password?: string;
   user_type: 'worker';
   role_id: string | null;
   phone_number?: string;
@@ -436,13 +437,21 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
         throw new Error(errorMessage || 'Failed to assign role');
       }
 
-      if (data.success && data.type === 1 && data.data && 'data' in data.data && data.data.data?.user) {
-        const updatedUser = data.data.data.user;
-        const updatedUsers = users.map((user) =>
-          user._id === assignRole.user_id
-            ? { ...user, role_id: updatedUser.role_id?._id || assignRole.role_id }
-            : user
-        );
+      if (
+        data.success &&
+        data.type === 1 &&
+        data.data &&
+        typeof data.data === 'object' &&
+        'data' in data.data &&
+        (data.data as { data: { user?: User } }).data?.user
+      ) {
+       const updatedUser = (data.data as { data: { user: User } }).data.user;
+       const updatedUsers = users.map((user) =>
+         user._id === assignRole.user_id
+           ? { ...user, role_id: updatedUser.role_id || assignRole.role_id }
+           : user
+       );
+
         setUsers(updatedUsers);
         setFilteredUsers(updatedUsers);
         setAssignRole({ user_id: '', role_id: '' });
@@ -450,6 +459,7 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
       } else {
         throw new Error('Invalid response format');
       }
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error assigning role';
       showMessage(errorMessage, false);

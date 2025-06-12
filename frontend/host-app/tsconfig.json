@@ -1,4 +1,3 @@
-// host-app/tsconfig.json
 {
   "compilerOptions": {
     "target": "es5",
@@ -17,9 +16,9 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "remoteApp/*": ["*"] // Optional: Map remoteApp imports if needed
+      "remoteApp/*": ["./fallbacks/RemoteStub"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "src/module-federation.d.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "src/module-federation.d.ts", "src/remote.d.ts", "src/fallbacks/RemoteStub.js"],
   "exclude": ["node_modules"]
 }

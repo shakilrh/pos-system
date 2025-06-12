@@ -6,7 +6,10 @@
     "dev": "cross-env NEXT_PRIVATE_LOCAL_WEBPACK=true next dev -p 3001",
     "build": "cross-env NEXT_PRIVATE_LOCAL_WEBPACK=true next build",
     "start": "next start -p 3001",
-    "export": "next export"
+    "export": "next export",
+    "predeploy": "npm run build && npm run export",
+    "deploy": "gh-pages -d out -b gh-pages -r git@github.com:shakilrh/pos-system.git"
+
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

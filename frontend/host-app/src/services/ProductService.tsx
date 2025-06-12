@@ -8,56 +8,48 @@ interface Category {
 interface Product {
   _id: string;
   name: string;
-  price?: number;
+  price: number;
   category_id: string;
-  categoryName?: string;
+  categoryName: string;
   description: string;
   pictureUrl?: string | null;
   created_by?: string;
   createdAt?: string;
   updatedAt?: string;
-  displayPrice?: string;
+  displayPrice: string;
 }
 
-interface ApiResponse {
+interface ApiResponse<T> {
   statusCode: number;
   message: string;
   success: boolean;
   type: number;
-  data?: { data?: Category[] | Product[] | Product } | Product;
+  data: { data: T };
   error?: string;
   details?: any;
 }
 
-const handleApiError = (response: ApiResponse, logout: () => void): string | null => {
+const handleApiError = (response: ApiResponse<any>, logout: () => void): string => {
   if (!response.success) {
-    console.error('API Error:', response);
     switch (response.error) {
-      case 'DATA_NOT_FOUND':
-        return 'Not Found';
-      case 'BAD_REQUEST':
-        return response.message || 'Invalid input provided';
-      case 'ALREADY_EXISTS':
-        return response.message || 'Product name already exists';
-      case 'CONFLICT':
-        return response.message || 'Please try again';
-      case 'FORBIDDEN':
-        return 'Access Denied';
+      case 'DATA_NOT_FOUND': return 'Not Found';
+      case 'BAD_REQUEST': return response.message || 'Invalid input provided';
+      case 'ALREADY_EXISTS': return response.message || 'Product name already exists';
+      case 'CONFLICT': return response.message || 'Please try again';
+      case 'FORBIDDEN': return 'Access Denied';
       case 'UNAUTHORIZED':
         logout();
+        window.location.href = '/pos-system/login';
         return 'Please log in to continue';
-      case 'MONGO_EXCEPTION':
-        console.error('MongoDB Error Details:', response.details);
-        return 'An error occurred';
-      case 'DB_ERROR':
-        return response.message || 'Database error occurred';
-      case 'INTERNAL_SERVER_ERROR':
-      default:
-        return 'An unexpected error occurred';
+      case 'MONGO_EXCEPTION': return 'Database error occurred';
+      case 'DB_ERROR': return response.message || 'Database error occurred';
+      default: return 'An unexpected error occurred';
     }
   }
-  return null;
+  return '';
 };
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000';
 
 export const fetchProducts = async (
   token: string,
@@ -66,52 +58,51 @@ export const fetchProducts = async (
   categoryId?: string
 ): Promise<Product[]> => {
   try {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000';
-    const url = categoryId
-      ? `${apiUrl}/products/api/v1/by-category`
-      : `${apiUrl}/products/api/v1/list`;
-    const body = categoryId ? JSON.stringify({ category_id: categoryId }) : null;
+    const url = new URL(`${API_BASE_URL}/products/api/v1/list`);
+    if (categoryId) url.searchParams.append('category_id', categoryId);
 
-    console.log('API URL:', apiUrl);
-    console.log('Fetching products from:', url);
-    console.log('Using token:', token);
-
-    const response = await fetch(url, {
-      method: categoryId ? 'POST' : 'GET',
-      headers: {
-        'Content-Type': body ? 'application/json' : undefined,
-        Authorization: `Bearer ${token}`,
-      },
-      body,
+    const response = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
     });
-
-    console.log('Response status:', response.status);
-    console.log('Response headers:', response.headers.get('content-type'));
 
     if (response.status === 401) {
       logout();
+      window.location.href = '/pos-system/login';
       throw new Error('Unauthorized');
     }
 
-    const data: ApiResponse = await response.json();
+    const data: ApiResponse<Product[]> = await response.json();
 
-    const errorMessage = handleApiError(data, logout);
     if (!response.ok || !data.success) {
-      throw new Error(errorMessage || 'Failed to fetch products');
+      throw new Error(handleApiError(data, logout));
     }
 
-    if (data.success && data.type === 1 && data.data && 'data' in data.data) {
-      return ((data.data as { data: Product[] }).data || []).map((product: Product) => ({
-        ...product,
-        price: product.price ?? 0,
-        displayPrice: product.price != null ? `$${product.price.toFixed(2)}` : '$0.00',
-        categoryName: categories.find((cat) => cat._id === product.category_id)?.name || 'Unknown',
-        pictureUrl: product.pictureUrl || null,
-      }));
+    if (data.type !== 1 || !data.data?.data) {
+      throw new Error('Invalid response format');
     }
-    throw new Error('Invalid response format');
-  } catch (err) {
-    throw new Error(err instanceof Error ? err.message : 'Failed to fetch products');
+
+    return data.data.data.map((product: any) => {
+      if (typeof product.price !== 'number') {
+        throw new Error(`Invalid price for product ${product.name}`);
+      }
+      return {
+        _id: product._id,
+        name: product.name,
+        price: product.price,
+        category_id: product.category_id,
+        categoryName: categories.find((cat) => cat._id === product.category_id)?.name || 'Unknown',
+        description: product.description || '',
+        pictureUrl: product.pictureUrl || null,
+        created_by: product.created_by,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
+        displayPrice: `$${product.price.toFixed(2)}`,
+      };
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to fetch products';
+    toast.error(message);
+    throw error;
   }
 };
 
@@ -119,52 +110,53 @@ export const addProduct = async (
   token: string,
   logout: () => void,
   categories: Category[],
-  name: string,
-  price: string,
-  category_id: string,
-  description: string,
-  picture: File
+  formData: FormData
 ): Promise<Product> => {
   try {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000';
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('price', price);
-    formData.append('category_id', category_id);
-    formData.append('description', description);
-    formData.append('picture', picture);
-
-    const response = await fetch(`${apiUrl}/products/api/v1/create`, {
+    const response = await fetch(`${API_BASE_URL}/products/api/v1/create`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
 
-    const data: ApiResponse = await response.json();
-
     if (response.status === 401) {
       logout();
+      window.location.href = '/pos-system/login';
       throw new Error('Unauthorized');
     }
 
-    const errorMessage = handleApiError(data, logout);
+    const data: ApiResponse<Product> = await response.json();
+
     if (!response.ok || !data.success) {
-      throw new Error(errorMessage || 'Failed to add product');
+      throw new Error(handleApiError(data, logout));
     }
 
-    if (data.success && data.type === 1 && data.data) {
-      const newProduct = 'data' in data.data ? (data.data as { data: Product }).data : data.data as Product;
-      return {
-        ...newProduct,
-        price: newProduct.price ?? 0,
-        displayPrice: newProduct.price != null ? `$${newProduct.price.toFixed(2)}` : '$0.00',
-        categoryName: categories.find((cat) => cat._id === category_id)?.name || 'Unknown',
-        pictureUrl: newProduct.pictureUrl || null,
-      };
+    if (data.type !== 1 || !data.data?.data) {
+      throw new Error('Invalid response format');
     }
-    throw new Error('Invalid response format');
-  } catch (err) {
-    throw new Error(err instanceof Error ? err.message : 'Failed to add product');
+
+    const product = data.data.data;
+    if (typeof product.price !== 'number') {
+      throw new Error(`Invalid price for product ${product.name}`);
+    }
+    const category_id = formData.get('category_id') as string;
+    return {
+      _id: product._id,
+      name: product.name,
+      price: product.price,
+      category_id: product.category_id,
+      categoryName: categories.find((cat) => cat._id === category_id)?.name || 'Unknown',
+      description: product.description || '',
+      pictureUrl: product.pictureUrl || null,
+      created_by: product.created_by,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+      displayPrice: `$${product.price.toFixed(2)}`,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to add product';
+    toast.error(message);
+    throw error;
   }
 };
 
@@ -172,63 +164,59 @@ export const updateProduct = async (
   token: string,
   logout: () => void,
   categories: Category[],
-  id: string,
-  name: string,
-  price: string,
-  category_id: string,
-  description: string,
-  picture?: File
+  formData: FormData
 ): Promise<Product> => {
   try {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000';
-    const formData = new FormData();
-    formData.append('id', id);
-    formData.append('name', name);
-    formData.append('price', price);
-    formData.append('category_id', category_id);
-    formData.append('description', description);
-    if (picture) {
-      formData.append('picture', picture);
-    }
-
-    const response = await fetch(`${apiUrl}/products/api/v1/update`, {
+    const response = await fetch(`${API_BASE_URL}/products/api/v1/update`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
 
-    const data: ApiResponse = await response.json();
-
     if (response.status === 401) {
       logout();
+      window.location.href = '/pos-system/login';
       throw new Error('Unauthorized');
     }
 
-    const errorMessage = handleApiError(data, logout);
+    const data: ApiResponse<Product> = await response.json();
+
     if (!response.ok || !data.success) {
-      throw new Error(errorMessage || 'Failed to update product');
+      throw new Error(handleApiError(data, logout));
     }
 
-    if (data.success && data.type === 1 && data.data) {
-      const updatedProductData = 'data' in data.data ? (data.data as { data: Product }).data : data.data as Product;
-      return {
-        ...updatedProductData,
-        price: updatedProductData.price ?? 0,
-        displayPrice: updatedProductData.price != null ? `$${updatedProductData.price.toFixed(2)}` : '$0.00',
-        categoryName: categories.find((cat) => cat._id === category_id)?.name || 'Unknown',
-        pictureUrl: updatedProductData.pictureUrl || null,
-      };
+    if (data.type !== 1 || !data.data?.data) {
+      throw new Error('Invalid response format');
     }
-    throw new Error('Invalid response format');
-  } catch (err) {
-    throw new Error(err instanceof Error ? err.message : 'Failed to update product');
+
+    const product = data.data.data;
+    if (typeof product.price !== 'number') {
+      throw new Error(`Invalid price for product ${product.name}`);
+    }
+    const category_id = formData.get('category_id') as string;
+    return {
+      _id: product._id,
+      name: product.name,
+      price: product.price,
+      category_id: product.category_id,
+      categoryName: categories.find((cat) => cat._id === category_id)?.name || 'Unknown',
+      description: product.description || '',
+      pictureUrl: product.pictureUrl || null,
+      created_by: product.created_by,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+      displayPrice: `$${product.price.toFixed(2)}`,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to update product';
+    toast.error(message);
+    throw error;
   }
 };
 
 export const deleteProduct = async (token: string, logout: () => void, id: string): Promise<void> => {
   try {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000';
-    const response = await fetch(`${apiUrl}/products/api/v1/delete`, {
+    const response = await fetch(`${API_BASE_URL}/products/api/v1/delete`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -237,22 +225,24 @@ export const deleteProduct = async (token: string, logout: () => void, id: strin
       body: JSON.stringify({ id }),
     });
 
-    const data: ApiResponse = await response.json();
-
     if (response.status === 401) {
       logout();
+      window.location.href = '/pos-system/login';
       throw new Error('Unauthorized');
     }
 
-    const errorMessage = handleApiError(data, logout);
+    const data: ApiResponse<void> = await response.json();
+
     if (!response.ok || !data.success) {
-      throw new Error(errorMessage || 'Failed to delete product');
+      throw new Error(handleApiError(data, logout));
     }
 
-    if (!data.success || data.type !== 1) {
+    if (data.type !== 1) {
       throw new Error('Invalid response format');
     }
-  } catch (err) {
-    throw new Error(err instanceof Error ? err.message : 'Failed to delete product');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to delete product';
+    toast.error(message);
+    throw error;
   }
 };

@@ -1,6 +1,5 @@
 import {
   HomeIcon,
-  ClipboardListIcon,
   UsersIcon,
   ChartBarIcon,
   ShoppingBagIcon,
@@ -8,7 +7,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 // Fallback component for icons
 const FallbackIcon = () => (
@@ -21,7 +20,7 @@ const FallbackIcon = () => (
 const navItems = [
   { name: 'Dashboard', icon: HomeIcon || FallbackIcon, href: '/Dashboard' },
   { name: 'Menu Management', icon: ShoppingBagIcon || FallbackIcon, href: '/MenuManagement' },
-  { name: 'Orders', icon: ClipboardListIcon || FallbackIcon, href: '/Orders' },
+  { name: 'Orders', icon: ChartBarIcon || FallbackIcon, href: '/Orders' },
   { name: 'Roles Management', icon: ChartBarIcon || FallbackIcon, href: '/RoleAndUserManagement' },
 ];
 
