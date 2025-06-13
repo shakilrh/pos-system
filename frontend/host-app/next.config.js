@@ -7,8 +7,9 @@ module.exports = {
     if (!isServer) {
       const isProd = process.env.NODE_ENV === 'production';
       const remoteUrl = isProd
-        ? '/pos-system/remote-app/_next/static/chunks/remoteEntry.js'
-        : 'http://localhost:3001/_next/static/chunks/remoteEntry.js';
+          ? '/remote-app/_next/static/chunks/remoteEntry.js'
+          : 'http://localhost:3001/_next/static/chunks/remoteEntry.js';
+
 
       config.plugins.push(
         new NextFederationPlugin({
@@ -28,7 +29,6 @@ module.exports = {
         })
       );
 
-      // Replace remote modules with stub during build
       config.plugins.push(
         new webpack.NormalModuleReplacementPlugin(
           /^remoteApp\/(Header|Sidebar|Footer)$/,

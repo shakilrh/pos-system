@@ -1,42 +1,34 @@
-const { execSync } = require('child_process');
 const fs = require('fs-extra');
 const path = require('path');
+const { execSync } = require('child_process');
 
-const deployDir = path.join(__dirname, 'deploy');
-const remoteStaticDir = path.join(deployDir, 'remote-app', '_next', 'static');
+function run(cmd, cwd) {
+  execSync(cmd, { cwd, shell: true, stdio: 'inherit' });
+}
 
-// Clean the deploy directory
-fs.removeSync(deployDir);
-fs.mkdirSync(deployDir, { recursive: true });
+(async () => {
+  // Build remote
+  run('npm run build && npm run export', path.resolve(__dirname, 'remote-app'));
+  // Build host
+  run('npm run build && npm run export', path.resolve(__dirname, 'host-app'));
 
-// Build and export the remote app
-console.log('Building and exporting remote app...');
-execSync('npm run build && npm run export', {
-  cwd: path.join(__dirname, 'remote-app'),
-  stdio: 'inherit',
-});
+  // Clean & recreate deploy folder
+  fs.removeSync('deploy');
+  fs.ensureDirSync('deploy');
 
-// Copy remote app's static files
-console.log('Copying remote app static files...');
-fs.copySync(
-  path.join(__dirname, 'remote-app', 'out', '_next', 'static'),
-  remoteStaticDir
-);
+  // Copy host-app to root of deploy
+  fs.copySync('host-app/out', 'deploy');
 
-// Build and export the host app
-console.log('Building and exporting host app...');
-execSync('npm run build && npm run export', {
-  cwd: path.join(__dirname, 'host-app'),
-  stdio: 'inherit',
-});
+  // Copy remote-app into subfolder
+  fs.copySync('remote-app/out', 'deploy/remote-app');
 
-// Copy host app output
-console.log('Copying host app files...');
-fs.copySync(path.join(__dirname, 'host-app', 'out'), deployDir);
+  // Add redirect from / to home
+  fs.writeFileSync('deploy/404.html', `
+    <meta http-equiv="refresh" content="0; url=./index.html">
+  `);
 
-// Deploy to GitHub Pages
-console.log('Deploying to GitHub Pages...');
-execSync(
-  'npx gh-pages -d deploy -r https://github.com/shakilrh/pos-system.git',
-  { stdio: 'inherit' }
-);
+  // Publish
+  run('npx gh-pages -d deploy -r git@github.com:shakilrh/pos-system.git', process.cwd());
+
+  console.log('✅ Deployed successfully!');
+})();
