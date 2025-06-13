@@ -22,6 +22,9 @@ function run(cmd, cwd) {
   // Copy remote-app into subfolder
   fs.copySync('remote-app/out', 'deploy/remote-app');
 
+  // Copy shared-tailwind folder
+  fs.copySync(path.resolve(__dirname, '../shared-tailwind'), 'deploy/shared-tailwind');
+
   // Add redirect from / to home
   fs.writeFileSync('deploy/404.html', `
     <meta http-equiv="refresh" content="0; url=./index.html">
