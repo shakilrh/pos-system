@@ -48,7 +48,9 @@ export default function MenuManagement() {
   useEffect(() => {
     if (clientLoaded) {
       document.documentElement.classList.toggle('dark', darkMode);
-      localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+      }
     }
   }, [darkMode, clientLoaded]);
 

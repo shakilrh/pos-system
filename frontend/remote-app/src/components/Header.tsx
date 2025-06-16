@@ -1,4 +1,4 @@
-// src/components/Header.tsx
+// src/components/Header.tsx (remote)
 import { useState } from 'react';
 import { Bars3Icon, UserCircleIcon, BellIcon } from '@heroicons/react/24/outline';
 

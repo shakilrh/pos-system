@@ -14,11 +14,8 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "baseUrl": ".",
-    "paths": {
-      "remoteApp/*": ["./fallbacks/RemoteStub"]
-    }
+    "baseUrl": "."
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "src/module-federation.d.ts", "src/remote.d.ts", "src/fallbacks/RemoteStub.js"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "src/module-federation.d.ts"],
   "exclude": ["node_modules"]
 }

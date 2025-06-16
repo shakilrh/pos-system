@@ -18,21 +18,21 @@ const FallbackIcon = () => (
 
 // Define navigation items statically within Sidebar
 const navItems = [
-  { name: 'Dashboard', icon: HomeIcon || FallbackIcon, href: '/Dashboard' },
+  { name: 'Dashboard', icon: HomeIcon || FallbackIcon, href: '/dashboard' },
   { name: 'Menu Management', icon: ShoppingBagIcon || FallbackIcon, href: '/MenuManagement' },
   { name: 'Orders', icon: ChartBarIcon || FallbackIcon, href: '/Orders' },
-  { name: 'Roles Management', icon: ChartBarIcon || FallbackIcon, href: '/RoleAndUserManagement' },
+  { name: 'Roles Management', icon: UsersIcon || FallbackIcon, href: '/RoleAndUserManagement' },
 ];
 
-export default function Sidebar() {
-  const pathname = usePathname(); // Get current route
-  const router = useRouter(); // For redirecting after logout
-  const { logout } = useAuth(); // Access logout function from AuthContext
+export default function Sidebar({ className }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 768) setSidebarOpen(false); // Reset on desktop
+      if (window.innerWidth >= 768) setSidebarOpen(false);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -40,19 +40,19 @@ export default function Sidebar() {
 
   const handleLogout = async () => {
     try {
-      logout(); // Clear auth state, user, and token
-      setSidebarOpen(false); // Close sidebar on mobile
-      await router.push('/login'); // Redirect to login page
+      logout();
+      setSidebarOpen(false);
+      await router.push('/login');
     } catch (error) {
       console.error('Error during logout redirect:', error);
-      window.location.href = '/login'; // Fallback to hard redirect
+      window.location.href = '/login';
     }
   };
 
   return (
     <>
       <aside
-        className={`fixed md:static z-40 w-56 md:w-64 bg-gradient-to-b from-gray-800 to-gray-900 text-white flex flex-col shadow-2xl transform transition-all duration-300 ease-in-out ${
+        className={`fixed md:static z-40 w-56 md:w-64 bg-gradient-to-b from-gray-800 to-gray-900 text-white flex flex-col shadow-2xl transform transition-all duration-300 ease-in-out ${className} ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } h-screen`}
       >
@@ -70,14 +70,13 @@ export default function Sidebar() {
                   ? 'bg-gray-700 text-white shadow-md'
                   : 'text-gray-200 hover:bg-gray-700 hover:text-white'
               }`}
-              onClick={() => setSidebarOpen(false)} // Close sidebar on link click (mobile)
+              onClick={() => setSidebarOpen(false)}
             >
               <Icon className="w-5 h-5 mr-3" />
               <span className="text-sm font-medium">{name}</span>
             </a>
           ))}
         </nav>
-        {/* Logout Button */}
         <div className="p-4 border-t border-gray-700">
           <button
             onClick={handleLogout}
@@ -88,7 +87,6 @@ export default function Sidebar() {
           </button>
         </div>
       </aside>
-      {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-30 md:hidden"

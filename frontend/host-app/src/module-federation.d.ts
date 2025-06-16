@@ -1,13 +1,13 @@
 // host-app/src/module-federation.d.ts
 declare module 'remoteApp/Header' {
   import { ComponentType } from 'react';
-  const Header: ComponentType;
+  const Header: ComponentType<{ onSidebarToggle: () => void }>;
   export default Header;
 }
 
 declare module 'remoteApp/Sidebar' {
   import { ComponentType } from 'react';
-  const Sidebar: ComponentType;
+  const Sidebar: ComponentType<{ className?: string }>;
   export default Sidebar;
 }
 
