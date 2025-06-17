@@ -70,7 +70,7 @@ function AppContent({ Component, pageProps }: AppProps) {
       <Header onSidebarToggle={toggleSidebar} onDarkModeToggle={toggleDarkMode} darkMode={darkMode} />
       <div className="flex flex-1">
         <Sidebar className={`fixed top-16 bottom-0 w-64 z-40 ${sidebarOpen ? 'block' : 'hidden md:block'}`} />
-        <main className="flex-1 ml-0 md:ml-64 pt-16">
+        <main className="">
           <Component {...pageProps} />
         </main>
       </div>
