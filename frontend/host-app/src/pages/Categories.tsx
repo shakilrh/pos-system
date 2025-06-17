@@ -254,7 +254,10 @@ export default function Categories({ token, isAuthenticated, logout, categories,
             <span className="text-sm text-gray-500 dark:text-gray-400">{categories.length} total</span>
           </h2>
           <button
-            onClick={() => setFormMode('add')}
+            onClick={() => {
+              setFormMode('add');
+              onFormActive(true);
+            }}
             className="flex items-center px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
           >
             <PlusCircleIcon className="w-4 h-4 mr-1" />
