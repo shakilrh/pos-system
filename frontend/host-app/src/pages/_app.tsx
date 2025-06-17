@@ -38,7 +38,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     if (!isAuthenticated && !publicRoutes.includes(pathname)) {
       router.push('/login');
     } else if (isAuthenticated && pathname === '/login') {
-      router.push('/Dashboard');
+      router.push('/dashboard');
     }
   }, [isAuthenticated, isLoading, pathname, router]);
 
