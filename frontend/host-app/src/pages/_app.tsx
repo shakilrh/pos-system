@@ -23,7 +23,7 @@ const Footer = dynamic(
   { ssr: false }
 );
 
-const publicRoutes = ['/login', '/forgot-password'];
+const publicRoutes = ['/login', '/forgot-password', '/RegisterAdmin'];
 
 function AppContent({ Component, pageProps }: AppProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -84,5 +84,3 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     </AuthProvider>
   );
 }
-
-//test

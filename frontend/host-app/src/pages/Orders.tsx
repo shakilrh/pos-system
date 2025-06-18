@@ -279,16 +279,7 @@ export default function Orders() {
                 Create New Order
               </button>
             </Link>
-            <BellIcon className="w-6 h-6 text-gray-500 dark:text-gray-300" />
-            <button onClick={() => setDarkMode(!darkMode)}>
-              {darkMode ? <SunIcon className="w-6 h-6 text-yellow-500" /> : <MoonIcon className="w-6 h-6 text-gray-500 dark:text-gray-300" />}
-            </button>
-            <button
-              onClick={logout}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
-            >
-              Logout
-            </button>
+
           </div>
         </div>
 

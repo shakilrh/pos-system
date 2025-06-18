@@ -41,6 +41,10 @@ export default function Login() {
     }
   };
 
+  const handleRegisterRedirect = () => {
+    router.push('/RegisterAdmin');
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
       <div className="flex w-full h-screen animate-fade-in">
@@ -100,6 +104,13 @@ export default function Login() {
                 'Login'
               )}
             </button>
+            <button
+              type="button"
+              onClick={handleRegisterRedirect}
+              className="w-full bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white p-4 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-all duration-300 text-lg font-medium mt-4"
+            >
+              Register
+            </button>
           </form>
           <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
             <a href="#" className="font-medium text-orange-500 hover:text-orange-600">
@@ -111,5 +122,3 @@ export default function Login() {
     </div>
   );
 }
-
-//test

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircleIcon, ExclamationCircleIcon, TrashIcon } from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
+import { CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
+import { fetchRoles } from '../services/RoleService';
+import { fetchPermissions, createPermission, deletePermission, updateRolePermissions } from '../services/PermissionService';
 
 interface Role {
   _id: string;
@@ -14,22 +15,10 @@ interface Permission {
   description?: string;
 }
 
-interface ApiResponse<T = Role[] | Permission[]> {
-  statusCode: number;
-  message: string;
-  success: boolean;
-  type: number;
-  data?: T;
-  error?: 'DATA_NOT_FOUND' | 'BAD_REQUEST' | 'ALREADY_EXISTS' | 'CONFLICT' | 'FORBIDDEN' | 'UNAUTHORIZED' | 'MONGO_EXCEPTION' | 'DB_CHECK_FAIL' | 'INTERNAL_SERVER_ERROR';
-  details?: any;
-}
-
 interface PermissionsTemplateProps {
   token: string | null;
   logout: () => void;
 }
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://192.168.18.107:3000';
 
 const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout }) => {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -38,129 +27,51 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
   const [rolePermissions, setRolePermissions] = useState<string[]>([]);
   const [permissionName, setPermissionName] = useState('');
   const [permissionDescription, setPermissionDescription] = useState('');
+  const [message, setMessage] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState({ fetch: false, create: false, delete: false, update: false });
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [permissionToDelete, setPermissionToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (token) {
-      fetchRoles();
-      fetchPermissions();
+      setIsLoading((prev) => ({ ...prev, fetch: true }));
+      Promise.all([
+        fetchRoles(token, logout).then(setRoles),
+        fetchPermissions(token, logout).then(setPermissionsList),
+      ]).finally(() => setIsLoading((prev) => ({ ...prev, fetch: false })));
     }
   }, [token]);
 
-  const handleApiError = (response: ApiResponse<any>): string => {
-    if (!response.success) {
-      switch (response.error) {
-        case 'DATA_NOT_FOUND': return 'Not Found';
-        case 'BAD_REQUEST': return response.message || 'Invalid input provided';
-        case 'ALREADY_EXISTS': return response.message || 'Permission already exists';
-        case 'CONFLICT': return response.message || 'Please try again';
-        case 'FORBIDDEN': return 'Access Denied';
-        case 'UNAUTHORIZED':
-          logout();
-          window.location.href = '/pos-system/login';
-          return 'Please log in to continue';
-        case 'MONGO_EXCEPTION': return 'Database error occurred';
-        case 'DB_CHECK_FAIL': return response.message || 'Database error occurred';
-        default: return 'An unexpected error occurred';
-      }
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 5000);
+      return () => clearTimeout(timer);
     }
-    return '';
+  }, [message]);
+
+  const showMessage = (msg: string, success: boolean) => {
+    setMessage(msg);
+    setIsSuccess(success);
   };
 
-  const fetchRoles = async () => {
-    setIsLoading((prev) => ({ ...prev, fetch: true }));
-    try {
-      const response = await fetch(`${API_BASE_URL}/rolepermission/api/v1/roles/list`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data: ApiResponse<Role[]> = await response.json();
-
-      if (response.status === 401) {
-        logout();
-        window.location.href = '/pos-system/login';
-        return;
-      }
-
-      if (!response.ok || !data.success) {
-        throw new Error(handleApiError(data));
-      }
-
-      setRoles(data.data || []);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to fetch roles');
-    } finally {
-      setIsLoading((prev) => ({ ...prev, fetch: false }));
-    }
-  };
-
-  const fetchPermissions = async () => {
-    setIsLoading((prev) => ({ ...prev, fetch: true }));
-    try {
-      const response = await fetch(`${API_BASE_URL}/rolepermission/api/v1/permissions/list`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data: ApiResponse<Permission[]> = await response.json();
-
-      if (response.status === 401) {
-        logout();
-        window.location.href = '/pos-system/login';
-        return;
-      }
-
-      if (!response.ok || !data.success) {
-        throw new Error(handleApiError(data));
-      }
-
-      setPermissionsList(data.data || []);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to fetch permissions');
-    } finally {
-      setIsLoading((prev) => ({ ...prev, fetch: false }));
-    }
-  };
-
-  const handleCreatePermission = async () => {
+  const handleCreatePermission = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!permissionName.trim()) {
-      toast.error('Permission key cannot be empty!');
+      showMessage('Permission key cannot be empty!', false);
       return;
     }
     if (permissionsList.some((p) => p.key === permissionName.trim())) {
-      toast.error('Permission key already exists!');
+      showMessage('Permission key already exists!', false);
       return;
     }
     setIsLoading((prev) => ({ ...prev, create: true }));
     try {
-      const response = await fetch(`${API_BASE_URL}/rolepermission/api/v1/permissions/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          key: permissionName.trim(),
-          description: permissionDescription.trim() || undefined,
-        }),
-      });
-      const data: ApiResponse<Permission> = await response.json();
-
-      if (response.status === 401) {
-        logout();
-        window.location.href = '/pos-system/login';
-        return;
-      }
-
-      if (!response.ok || !data.success) {
-        throw new Error(handleApiError(data));
-      }
-
-      setPermissionsList([...permissionsList, data.data as Permission]);
+      const newPermission = await createPermission(token!, logout, permissionName, permissionDescription);
+      setPermissionsList([...permissionsList, newPermission]);
       setPermissionName('');
       setPermissionDescription('');
-      toast.success('Permission created successfully!');
+      showMessage('Permission created successfully!', true);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to create permission');
+      showMessage(error instanceof Error ? error.message : 'Failed to create permission', false);
     } finally {
       setIsLoading((prev) => ({ ...prev, create: false }));
     }
@@ -169,33 +80,13 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
   const handleDeletePermission = async (permissionId: string) => {
     setIsLoading((prev) => ({ ...prev, delete: true }));
     try {
-      const response = await fetch(`${API_BASE_URL}/rolepermission/api/v1/permissions/delete`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ permission_id: permissionId }),
-      });
-      const data: ApiResponse = await response.json();
-
-      if (response.status === 401) {
-        logout();
-        window.location.href = '/pos-system/login';
-        return;
-      }
-
-      if (!response.ok || !data.success) {
-        throw new Error(handleApiError(data));
-      }
-
+      await deletePermission(token!, logout, permissionId);
       setPermissionsList(permissionsList.filter((p) => p._id !== permissionId));
-      toast.success('Permission removed successfully!');
+      showMessage('Permission removed successfully!', true);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete permission');
+      showMessage(error instanceof Error ? error.message : 'Failed to delete permission', false);
     } finally {
       setIsLoading((prev) => ({ ...prev, delete: false }));
-      setShowDeleteModal(false);
     }
   };
 
@@ -203,45 +94,25 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
     setRolePermissions((prev) => (checked ? [...prev, permissionId] : prev.filter((id) => id !== permissionId)));
   };
 
-  const handleUpdatePermissions = async (roleId: string) => {
-    if (!roleId) {
-      toast.error('Please select a role first!');
+  const handleUpdatePermissions = async () => {
+    if (!selectedRoleForPermission) {
+      showMessage('Please select a role first!', false);
       return;
     }
     setIsLoading((prev) => ({ ...prev, update: true }));
     try {
-      const role = roles.find((r) => r._id === roleId);
+      const role = roles.find((r) => r._id === selectedRoleForPermission);
       if (!role) throw new Error('Role not found');
       const currentPermissions = role.permissions.map((p) => p._id);
-      const add_permission_ids: string[] = rolePermissions.filter((id) => !currentPermissions.includes(id));
-      const remove_permission_ids: string[] = currentPermissions.filter((id) => !rolePermissions.includes(id));
-
-      const response = await fetch(`${API_BASE_URL}/rolepermission/api/v1/roles/update-permissions`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ role_id: roleId, add_permission_ids, remove_permission_ids }),
-      });
-      const data: ApiResponse = await response.json();
-
-      if (response.status === 401) {
-        logout();
-        window.location.href = '/pos-system/login';
-        return;
-      }
-
-      if (!response.ok || !data.success) {
-        throw new Error(handleApiError(data));
-      }
-
-      toast.success('Permissions updated successfully!');
+      const add_permission_ids = rolePermissions.filter((id) => !currentPermissions.includes(id));
+      const remove_permission_ids = currentPermissions.filter((id) => !rolePermissions.includes(id));
+      await updateRolePermissions(token!, logout, selectedRoleForPermission, add_permission_ids, remove_permission_ids);
       setSelectedRoleForPermission(null);
       setRolePermissions([]);
-      await fetchRoles();
+      setRoles(await fetchRoles(token!, logout));
+      showMessage('Permissions updated successfully!', true);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to update permissions');
+      showMessage(error instanceof Error ? error.message : 'Failed to update permissions', false);
     } finally {
       setIsLoading((prev) => ({ ...prev, update: false }));
     }
@@ -253,124 +124,106 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
     setSelectedRoleForPermission(roleId);
   };
 
-  const openDeleteModal = (permissionId: string) => {
-    setPermissionToDelete(permissionId);
-    setShowDeleteModal(true);
-  };
-
-  const closeDeleteModal = () => {
-    setPermissionToDelete(null);
-    setShowDeleteModal(false);
-  };
-
-  const confirmDelete = () => {
-    if (permissionToDelete) handleDeletePermission(permissionToDelete);
-  };
-
-  if (isLoading.fetch) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 border border-gray-200 dark:border-gray-700">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-          {Array(3).fill(0).map((_, idx) => (
-            <div key={idx} className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Manage Permissions</h2>
       <div className="space-y-6">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Create Permission</h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-            Use format: resource_action (e.g., orders_can_view, orders_can_edit, orders_can_delete)
-          </p>
-          <div className="flex flex-col sm:flex-row sm:space-x-3">
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Permission Key</label>
-              <input
-                type="text"
-                value={permissionName}
-                onChange={(e) => setPermissionName(e.target.value)}
-                className="w-full p-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="e.g., orders_can_view"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-              <input
-                type="text"
-                value={permissionDescription}
-                onChange={(e) => setPermissionDescription(e.target.value)}
-                className="w-full p-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Enter permission description"
-              />
-            </div>
-            <div className="mt-4 sm:mt-6 sm:self-end">
-              <button
-                onClick={handleCreatePermission}
-                className="px-4 py-2 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300"
-                disabled={isLoading.create}
-              >
-                {isLoading.create ? 'Creating...' : 'Create Permission'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Existing Permissions</h3>
-          {permissionsList.length === 0 ? (
-            <p className="text-xs text-gray-500 dark:text-gray-400">No permissions found</p>
-          ) : (
-            <ul className="space-y-2">
-              {permissionsList.map((permission) => (
-                <li
-                  key={permission._id}
-                  className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-800 dark:text-gray-200 text-xs"
+        {/* Create Permission Form */}
+        <details className="mb-6">
+          <summary className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 cursor-pointer">Create Permission</summary>
+          <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+              Use format: resource_action (e.g., orders_can_view, orders_can_edit)
+            </p>
+            <form onSubmit={handleCreatePermission} className="flex flex-col sm:flex-row sm:space-x-3">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Permission Key</label>
+                <input
+                  type="text"
+                  value={permissionName}
+                  onChange={(e) => setPermissionName(e.target.value)}
+                  className="w-full p-3 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600"
+                  placeholder="e.g., orders_can_view"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                <input
+                  type="text"
+                  value={permissionDescription}
+                  onChange={(e) => setPermissionDescription(e.target.value)}
+                  className="w-full p-3 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600"
+                  placeholder="Enter permission description"
+                />
+              </div>
+              <div className="mt-4 sm:mt-0 sm:self-end">
+                <button
+                  type="submit"
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:bg-indigo-300"
+                  disabled={isLoading.create}
                 >
-                  <div>
-                    <span className="font-semibold">{permission.key}</span>
-                    {permission.description && (
-                      <p className="text-gray-600 dark:text-gray-400 text-xs">{permission.description}</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => openDeleteModal(permission._id)}
-                    className="text-red-600 hover:text-red-800 p-1 mt-2 sm:mt-0 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50"
-                    disabled={isLoading.delete}
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+                  {isLoading.create ? 'Creating...' : 'Create Permission'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </details>
 
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Assign Permissions to Roles</h3>
-          <div className="space-y-4">
+        {/* Permissions List */}
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Existing Permissions</h3>
+        {isLoading.fetch ? (
+          <div className="animate-pulse space-y-2">
+            {Array(3).fill(0).map((_, idx) => (
+              <div key={idx} className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+            ))}
+          </div>
+        ) : permissionsList.length === 0 ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400">No permissions found</p>
+        ) : (
+          <ul className="space-y-2">
+            {permissionsList.map((permission) => (
+              <li
+                key={permission._id}
+                className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm"
+              >
+                <div>
+                  <span className="font-semibold">{permission.key}</span>
+                  {permission.description && (
+                    <p className="text-gray-600 dark:text-gray-400 text-xs">{permission.description}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleDeletePermission(permission._id)}
+                  className="text-red-600 hover:text-red-800 mt-2 sm:mt-0"
+                  disabled={isLoading.delete}
+                >
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Assign Permissions to Roles */}
+        <details className="mb-6">
+          <summary className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 cursor-pointer">Assign Permissions to Roles</summary>
+          <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Select Role</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Role</label>
               <select
                 value={selectedRoleForPermission || ''}
                 onChange={(e) => loadRolePermissions(e.target.value)}
-                className="w-full p-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full p-3 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600"
               >
                 <option value="">Select a role</option>
-                {roles.map((role) => (
+                {Array.isArray(roles) && roles.map((role) => (
                   <option key={role._id} value={role._id}>{role.name}</option>
                 ))}
               </select>
             </div>
             {selectedRoleForPermission && (
               <div>
-                <h4 className="text-xs font-semibold text-gray-900 dark:text-white mb-2">Permissions for Role</h4>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Permissions for Role</h4>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {permissionsList.map((permission) => (
                     <div key={permission._id} className="flex items-center">
@@ -378,10 +231,10 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
                         type="checkbox"
                         checked={rolePermissions.includes(permission._id)}
                         onChange={(e) => handlePermissionToggle(permission._id, e.target.checked)}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
+                        className="h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded"
                         disabled={isLoading.update}
                       />
-                      <label className="ml-2 text-xs text-gray-700 dark:text-gray-300">
+                      <label className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                         {permission.key}
                         {permission.description && (
                           <span className="text-gray-500 dark:text-gray-400"> ({permission.description})</span>
@@ -391,8 +244,8 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
                   ))}
                 </div>
                 <button
-                  onClick={() => handleUpdatePermissions(selectedRoleForPermission)}
-                  className="mt-4 px-4 py-2 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300"
+                  onClick={handleUpdatePermissions}
+                  className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:bg-indigo-300"
                   disabled={isLoading.update}
                 >
                   {isLoading.update ? 'Updating...' : 'Update Permissions'}
@@ -400,32 +253,14 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
               </div>
             )}
           </div>
-        </div>
+        </details>
       </div>
 
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-sm">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Confirm Deletion</h3>
-            <p className="text-xs text-gray-600 dark:text-gray-300 mb-4">
-              Are you sure you want to delete this permission? This action cannot be undone.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={closeDeleteModal}
-                className="px-3 py-1 text-xs border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-3 py-1 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-300"
-                disabled={isLoading.delete}
-              >
-                {isLoading.delete ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
+      {message && (
+        <div className={`fixed bottom-6 right-6 p-4 rounded-lg shadow-xl text-sm flex items-center space-x-3 ${isSuccess ? 'bg-green-600 dark:bg-green-700 text-white' : 'bg-red-600 dark:bg-red-700 text-white'}`}>
+          {isSuccess ? <CheckCircleIcon className="w-6 h-6" /> : <ExclamationCircleIcon className="w-6 h-6" />}
+          <span>{message}</span>
+          <button onClick={() => setMessage(null)} className="hover:opacity-80">✕</button>
         </div>
       )}
     </div>

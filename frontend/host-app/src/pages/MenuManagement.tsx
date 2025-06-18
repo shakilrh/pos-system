@@ -91,14 +91,9 @@ export default function MenuManagement() {
   return (
     <div className="flex-1 container mx-auto p-4 sm:p-6 lg:p-8 bg-white dark:bg-gray-900">
       <div className="flex justify-end mb-4">
-        <button
-          onClick={() => setDarkMode(!darkMode)}
-          className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-        >
-          {darkMode ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
-        </button>
+
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <Categories
           token={token}
           isAuthenticated={isAuthenticated}
