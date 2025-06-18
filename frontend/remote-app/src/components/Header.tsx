@@ -6,7 +6,8 @@ export default function Header({ onSidebarToggle }: { onSidebarToggle: () => voi
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   return (
-    <header className="bg-gray-900 text-white p-4 fixed top-0 w-full shadow-lg z-20">
+/*    <header className="bg-gray-900 text-white p-4 fixed top-0 w-full shadow-lg z-50 ">*/
+      <header className="fixed top-0 left-0 w-full h-16 bg-gray-100 shadow-lg z-50 p-4">
       <div className="flex items-center justify-between">
         {/* Left Side: Branding and Mobile Sidebar Toggle */}
         <div className="flex items-center gap-3">

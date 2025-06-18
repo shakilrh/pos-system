@@ -52,7 +52,7 @@ export default function Sidebar({ className }) {
   return (
     <>
       <aside
-        className={`fixed md:static z-40 w-56 md:w-64 bg-gradient-to-b from-gray-800 to-gray-900 text-white flex flex-col shadow-2xl transform transition-all duration-300 ease-in-out ${className} ${
+        className={`fixed /*md:static*/ z-40 w-56 md:w-64 bg-gradient-to-b from-gray-800 to-gray-900 text-white flex flex-col shadow-2xl transform transition-all duration-300 ease-in-out ${className} ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } h-screen`}
       >
