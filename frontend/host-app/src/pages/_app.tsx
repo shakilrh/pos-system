@@ -13,7 +13,7 @@ const Header = dynamic(
   { ssr: false }
 );
 
-import Sidebar from '../components/Sidebar'; // Local Sidebar
+import Sidebar from '../components/Sidebar';
 
 const Footer = dynamic(
   () => import('remoteApp/Footer').catch((err) => {
@@ -27,7 +27,7 @@ const publicRoutes = ['/login', '/forgot-password'];
 
 function AppContent({ Component, pageProps }: AppProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false); // Add dark mode state
+  const [darkMode, setDarkMode] = useState(false);
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -68,9 +68,14 @@ function AppContent({ Component, pageProps }: AppProps) {
   return (
     <div className={`flex flex-col min-h-screen ${darkMode ? 'dark' : ''}`}>
       <Header onSidebarToggle={toggleSidebar} onDarkModeToggle={toggleDarkMode} darkMode={darkMode} />
-      <div className="flex flex-1">
-        <Sidebar className={`fixed top-16 bottom-0 w-64 z-40 ${sidebarOpen ? 'block' : 'hidden md:block'}`} />
-        <main className="">
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar
+          isOpen={sidebarOpen}
+          onToggle={toggleSidebar}
+        />
+        <main className={`flex-1 pt-16 transition-all duration-300 ease-in-out ${
+          sidebarOpen ? 'ml-0 md:ml-64' : 'ml-0 md:ml-64'
+        }`}>
           <Component {...pageProps} />
         </main>
       </div>
@@ -86,5 +91,3 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     </AuthProvider>
   );
 }
-
-//test
