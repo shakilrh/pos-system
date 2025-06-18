@@ -186,4 +186,4 @@ export const deleteCategory = async (token: string, logout: () => void, id: stri
   } catch (err) {
     throw new Error(err instanceof Error ? err.message : 'Failed to delete category');
   }
-};
+}
