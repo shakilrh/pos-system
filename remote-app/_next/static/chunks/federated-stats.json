@@ -1,1 +1,0 @@
-{"sharedModules":[],"federatedModules":[{"remote":"remoteApp","entry":"static/chunks/remoteEntry.js","sharedModules":[],"exposes":{"./noop":["static/chunks/680.305da61188861ba6.js"],"./Header":["static/chunks/842.d872ba6505057e4d.js"],"./Sidebar":["static/chunks/314.3b0871806e65df47.js"],"./Footer":["static/chunks/401.331ab0e9530c168f.js"]},"remoteModules":{}}]}

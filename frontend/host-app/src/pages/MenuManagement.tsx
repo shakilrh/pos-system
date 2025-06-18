@@ -31,10 +31,15 @@ export default function MenuManagement() {
   const [clientLoaded, setClientLoaded] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [categories, setCategories] = useState<Category[]>([]);
-  const [isFormActive, setIsFormActive] = useState<boolean>(false);
+  const [isCategoryFormActive, setIsCategoryFormActive] = useState<boolean>(false);
+  const [isProductFormActive, setIsProductFormActive] = useState<boolean>(false);
 
-  const handleSetFormMode = (mode: 'add' | 'edit' | null, product?: Product) => {
-    setIsFormActive(!!mode);
+  const handleSetFormMode = (mode: 'add' | 'edit' | null, component: 'category' | 'product', product?: Product) => {
+    if (component === 'category') {
+      setIsCategoryFormActive(!!mode);
+    } else {
+      setIsProductFormActive(!!mode);
+    }
   };
 
   useEffect(() => {
@@ -100,17 +105,19 @@ export default function MenuManagement() {
           logout={logout}
           categories={categories}
           setCategories={setCategories}
-          onFormActive={setIsFormActive}
+          onFormActive={setIsCategoryFormActive}
+          isProductFormActive={isProductFormActive}
         />
         <Products
           token={token}
           isAuthenticated={isAuthenticated}
           logout={logout}
           categories={categories}
-          setFormMode={handleSetFormMode}
+          setFormMode={(mode, product) => handleSetFormMode(mode, 'product', product)}
           filterCategory={filterCategory}
           setFilterCategory={setFilterCategory}
-          isFormActive={isFormActive}
+          isFormActive={isProductFormActive}
+          isCategoryFormActive={isCategoryFormActive}
         />
       </div>
     </div>

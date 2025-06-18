@@ -17,6 +17,7 @@ interface Product {
   createdAt?: string;
   updatedAt?: string;
   displayPrice: string;
+  isActive: boolean;
 }
 
 interface ApiResponse<T> {
@@ -32,18 +33,18 @@ interface ApiResponse<T> {
 const handleApiError = (response: ApiResponse<any>, logout: () => void): string => {
   if (!response.success) {
     switch (response.error) {
-      case 'DATA_NOT_FOUND': return 'Not Found';
+      case 'DATA_NOT_FOUND': return response.message || 'Not Found';
       case 'BAD_REQUEST': return response.message || 'Invalid input provided';
       case 'ALREADY_EXISTS': return response.message || 'Product name already exists';
       case 'CONFLICT': return response.message || 'Please try again';
-      case 'FORBIDDEN': return 'Access Denied';
+      case 'FORBIDDEN': return response.message || 'Access Denied';
       case 'UNAUTHORIZED':
         logout();
         window.location.href = '/pos-system/login';
         return 'Please log in to continue';
-      case 'MONGO_EXCEPTION': return 'Database error occurred';
+      case 'MONGO_EXCEPTION': return response.message || 'Invalid category ID';
       case 'DB_ERROR': return response.message || 'Database error occurred';
-      default: return 'An unexpected error occurred';
+      default: return response.message || 'An unexpected error occurred';
     }
   }
   return '';
@@ -55,15 +56,35 @@ export const fetchProducts = async (
   token: string,
   logout: () => void,
   categories: Category[],
-  categoryId?: string
+  categoryId?: string,
+  status?: string
 ): Promise<Product[]> => {
   try {
-    const url = new URL(`${API_BASE_URL}/products/api/v1/list`);
-    if (categoryId) url.searchParams.append('category_id', categoryId);
-
-    const response = await fetch(url.toString(), {
+    let url = `${API_BASE_URL}/products/api/v1/list`;
+    let options: RequestInit = {
       headers: { Authorization: `Bearer ${token}` },
-    });
+    };
+
+    if (categoryId && categoryId !== 'all') {
+      url = `${API_BASE_URL}/products/api/v1/by-category`;
+      options = {
+        ...options,
+        method: 'POST',
+        headers: {
+          ...options.headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ category_id: categoryId }),
+      };
+    } else if (status) {
+      url = `${API_BASE_URL}/products/api/v1/list?status=${status}`;
+      options = {
+        ...options,
+        method: 'GET',
+      };
+    }
+
+    const response = await fetch(url, options);
 
     if (response.status === 401) {
       logout();
@@ -71,9 +92,13 @@ export const fetchProducts = async (
       throw new Error('Unauthorized');
     }
 
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data: ApiResponse<Product[]> = await response.json();
 
-    if (!response.ok || !data.success) {
+    if (!data.success) {
       throw new Error(handleApiError(data, logout));
     }
 
@@ -85,18 +110,21 @@ export const fetchProducts = async (
       if (typeof product.price !== 'number') {
         throw new Error(`Invalid price for product ${product.name}`);
       }
+      const categoryId = product.category_id?._id || product.category_id;
+      const categoryName = product.category_id?.name || 'Unknown';
       return {
         _id: product._id,
         name: product.name,
         price: product.price,
-        category_id: product.category_id,
-        categoryName: categories.find((cat) => cat._id === product.category_id)?.name || 'Unknown',
+        category_id: categoryId,
+        categoryName: categoryName,
         description: product.description || '',
         pictureUrl: product.pictureUrl || null,
         created_by: product.created_by,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
         displayPrice: `$${product.price.toFixed(2)}`,
+        isActive: product.status === 'active',
       };
     });
   } catch (error) {
@@ -113,6 +141,11 @@ export const addProduct = async (
   formData: FormData
 ): Promise<Product> => {
   try {
+    const category_id = formData.get('category_id') as string;
+    if (!categories.find((cat) => cat._id === category_id)) {
+      throw new Error('Invalid category selected');
+    }
+
     const response = await fetch(`${API_BASE_URL}/products/api/v1/create`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
@@ -139,19 +172,21 @@ export const addProduct = async (
     if (typeof product.price !== 'number') {
       throw new Error(`Invalid price for product ${product.name}`);
     }
-    const category_id = formData.get('category_id') as string;
+    const categoryId = product.category_id?._id || product.category_id;
+    const categoryName = product.category_id?.name || categories.find((cat) => cat._id === categoryId)?.name || 'Unknown';
     return {
       _id: product._id,
       name: product.name,
       price: product.price,
-      category_id: product.category_id,
-      categoryName: categories.find((cat) => cat._id === category_id)?.name || 'Unknown',
+      category_id: categoryId,
+      categoryName: categoryName,
       description: product.description || '',
       pictureUrl: product.pictureUrl || null,
       created_by: product.created_by,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
       displayPrice: `$${product.price.toFixed(2)}`,
+      isActive: product.status === 'active',
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to add product';
@@ -167,6 +202,11 @@ export const updateProduct = async (
   formData: FormData
 ): Promise<Product> => {
   try {
+    const category_id = formData.get('category_id') as string;
+    if (!categories.find((cat) => cat._id === category_id)) {
+      throw new Error('Invalid category selected');
+    }
+
     const response = await fetch(`${API_BASE_URL}/products/api/v1/update`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${token}` },
@@ -193,19 +233,21 @@ export const updateProduct = async (
     if (typeof product.price !== 'number') {
       throw new Error(`Invalid price for product ${product.name}`);
     }
-    const category_id = formData.get('category_id') as string;
+    const categoryId = product.category_id?._id || product.category_id;
+    const categoryName = product.category_id?.name || categories.find((cat) => cat._id === categoryId)?.name || 'Unknown';
     return {
       _id: product._id,
       name: product.name,
       price: product.price,
-      category_id: product.category_id,
-      categoryName: categories.find((cat) => cat._id === category_id)?.name || 'Unknown',
+      category_id: categoryId,
+      categoryName: categoryName,
       description: product.description || '',
       pictureUrl: product.pictureUrl || null,
       created_by: product.created_by,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
       displayPrice: `$${product.price.toFixed(2)}`,
+      isActive: product.status === 'active',
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update product';
@@ -242,6 +284,48 @@ export const deleteProduct = async (token: string, logout: () => void, id: strin
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to delete product';
+    toast.error(message);
+    throw error;
+  }
+};
+
+export const updateProductStatus = async (
+  token: string,
+  logout: () => void,
+  id: string,
+  isActive: boolean
+): Promise<void> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/products/api/v1/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ id, status: isActive ? 'active' : 'deactive' }),
+    });
+
+    if (response.status === 401) {
+      logout();
+      window.location.href = '/pos-system/login';
+      throw new Error('Unauthorized');
+    }
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: ApiResponse<Product> = await response.json();
+
+    if (!data.success) {
+      throw new Error(handleApiError(data, logout));
+    }
+
+    if (data.type !== 1 || !data.data?.data) {
+      throw new Error('Invalid response format');
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to update product status';
     toast.error(message);
     throw error;
   }
