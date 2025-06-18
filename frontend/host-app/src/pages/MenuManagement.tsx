@@ -31,15 +31,10 @@ export default function MenuManagement() {
   const [clientLoaded, setClientLoaded] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [categories, setCategories] = useState<Category[]>([]);
-  const [isCategoryFormActive, setIsCategoryFormActive] = useState<boolean>(false);
-  const [isProductFormActive, setIsProductFormActive] = useState<boolean>(false);
+  const [isFormActive, setIsFormActive] = useState<boolean>(false);
 
-  const handleSetFormMode = (mode: 'add' | 'edit' | null, component: 'category' | 'product', product?: Product) => {
-    if (component === 'category') {
-      setIsCategoryFormActive(!!mode);
-    } else {
-      setIsProductFormActive(!!mode);
-    }
+  const handleSetFormMode = (mode: 'add' | 'edit' | null, product?: Product) => {
+    setIsFormActive(!!mode);
   };
 
   useEffect(() => {
@@ -90,14 +85,14 @@ export default function MenuManagement() {
 
   return (
     <div className="flex-1 container mx-auto p-4 sm:p-6 lg:p-8 bg-white dark:bg-gray-900">
-      <div className="flex justify-end mb-4">
+      {/*<div className="flex justify-end mb-4">
         <button
           onClick={() => setDarkMode(!darkMode)}
           className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
         >
           {darkMode ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
         </button>
-      </div>
+      </div>*/}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <Categories
           token={token}
@@ -105,19 +100,17 @@ export default function MenuManagement() {
           logout={logout}
           categories={categories}
           setCategories={setCategories}
-          onFormActive={setIsCategoryFormActive}
-          isProductFormActive={isProductFormActive}
+          onFormActive={setIsFormActive}
         />
         <Products
           token={token}
           isAuthenticated={isAuthenticated}
           logout={logout}
           categories={categories}
-          setFormMode={(mode, product) => handleSetFormMode(mode, 'product', product)}
+          setFormMode={handleSetFormMode}
           filterCategory={filterCategory}
           setFilterCategory={setFilterCategory}
-          isFormActive={isProductFormActive}
-          isCategoryFormActive={isCategoryFormActive}
+          isFormActive={isFormActive}
         />
       </div>
     </div>

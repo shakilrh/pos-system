@@ -4,19 +4,19 @@ import {
   ChartBarIcon,
   ShoppingBagIcon,
   ArrowRightOnRectangleIcon,
-  XMarkIcon,
-  Bars3Icon
 } from '@heroicons/react/24/outline';
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 
+// Fallback component for icons
 const FallbackIcon = () => (
   <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
   </svg>
 );
 
+// Define navigation items statically within Sidebar
 const navItems = [
   { name: 'Dashboard', icon: HomeIcon || FallbackIcon, href: '/dashboard' },
   { name: 'Menu Management', icon: ShoppingBagIcon || FallbackIcon, href: '/MenuManagement' },
@@ -24,15 +24,24 @@ const navItems = [
   { name: 'Roles Management', icon: UsersIcon || FallbackIcon, href: '/RoleAndUserManagement' },
 ];
 
-export default function Sidebar({ isOpen, onToggle }) {
+export default function Sidebar({ className }) {
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) setSidebarOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleLogout = async () => {
     try {
       logout();
-      onToggle(false);
+      setSidebarOpen(false);
       await router.push('/login');
     } catch (error) {
       console.error('Error during logout redirect:', error);
@@ -42,23 +51,10 @@ export default function Sidebar({ isOpen, onToggle }) {
 
   return (
     <>
-      {/* Mobile Toggle Button */}
-      <button
-        onClick={() => onToggle(!isOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-gray-800 text-white"
-      >
-        {isOpen ? (
-          <XMarkIcon className="w-6 h-6" />
-        ) : (
-          <Bars3Icon className="w-6 h-6" />
-        )}
-      </button>
-
-      {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-40 w-64 h-screen bg-gradient-to-b from-gray-800 to-gray-900 text-white flex flex-col shadow-2xl transform transition-all duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0`}
+        className={`fixed /*md:static*/ z-40 w-56 md:w-64 bg-gradient-to-b from-gray-800 to-gray-900 text-white flex flex-col shadow-2xl transform transition-all duration-300 ease-in-out ${className} ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        } h-screen`}
       >
         <div className="p-6 text-2xl font-bold border-b border-gray-700 flex items-center gap-3">
           <span className="text-yellow-400">🍽️</span>
@@ -74,7 +70,7 @@ export default function Sidebar({ isOpen, onToggle }) {
                   ? 'bg-gray-700 text-white shadow-md'
                   : 'text-gray-200 hover:bg-gray-700 hover:text-white'
               }`}
-              onClick={() => onToggle(false)}
+              onClick={() => setSidebarOpen(false)}
             >
               <Icon className="w-5 h-5 mr-3" />
               <span className="text-sm font-medium">{name}</span>
@@ -91,14 +87,14 @@ export default function Sidebar({ isOpen, onToggle }) {
           </button>
         </div>
       </aside>
-
-      {/* Overlay */}
-      {isOpen && (
+      {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-30 md:hidden"
-          onClick={() => onToggle(false)}
+          onClick={() => setSidebarOpen(false)}
         />
       )}
     </>
   );
 }
+
+//test
