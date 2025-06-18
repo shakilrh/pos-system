@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeftIcon, ArrowRightIcon, PencilIcon, TrashIcon, PlusCircleIcon, XMarkIcon } from '@heroicons/react/24/solid';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { fetchCategories, addCategory, updateCategory, deleteCategory } from '../services/CategoryService';
 
 interface Category {
@@ -20,10 +20,9 @@ interface CategoriesProps {
   categories: Category[];
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
   onFormActive: (active: boolean) => void;
-  isProductFormActive: boolean;
 }
 
-export default function Categories({ token, isAuthenticated, logout, categories, setCategories, onFormActive, isProductFormActive }: CategoriesProps) {
+export default function Categories({ token, isAuthenticated, logout, categories, setCategories, onFormActive }: CategoriesProps) {
   const [currentCategoryPage, setCurrentCategoryPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
@@ -178,6 +177,7 @@ export default function Categories({ token, isAuthenticated, logout, categories,
     ? Math.ceil(categories.length / itemsPerPage)
     : 1;
 
+
   if (loading) {
     return (
       <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700 h-full">
@@ -192,8 +192,7 @@ export default function Categories({ token, isAuthenticated, logout, categories,
   }
 
   return (
-    <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700 h-full relative" style={{ opacity: isProductFormActive ? 0.5 : 1 }}>
-      <Toaster position="top-right" />
+    <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700 h-full relative">
       <div className="absolute inset-0 z-10 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-y-auto" style={{ display: formMode ? 'block' : 'none' }}>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -260,7 +259,6 @@ export default function Categories({ token, isAuthenticated, logout, categories,
               onFormActive(true);
             }}
             className="flex items-center px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-            disabled={isProductFormActive}
           >
             <PlusCircleIcon className="w-4 h-4 mr-1" />
             <span className="text-sm">Add</span>
@@ -269,40 +267,38 @@ export default function Categories({ token, isAuthenticated, logout, categories,
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-            <tr className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 uppercase text-xs">
-              <th className="py-3 px-4">Name</th>
-              <th className="py-3 px-4">Actions</th>
-            </tr>
+              <tr className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 uppercase text-xs">
+                <th className="py-3 px-4">Name</th>
+                <th className="py-3 px-4">Actions</th>
+              </tr>
             </thead>
             <tbody>
-            {currentCategories.map((category, idx) => (
-              <tr
-                key={category._id}
-                className={`border-b border-gray-200 dark:border-gray-700 ${
-                  idx % 2 === 0 ? 'bg-gray-50 dark:bg-gray-700/50' : 'bg-white dark:bg-gray-800'
-                } hover:bg-gray-100 dark:hover:bg-gray-600`}
-              >
-                <td className="py-3 px-4 text-gray-800 dark:text-gray-200 font-semibold">{category.name}</td>
-                <td className="py-3 px-4 flex space-x-2">
-                  <button
-                    onClick={() => handleEditCategory(category)}
-                    className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50"
-                    title="Edit"
-                    disabled={isProductFormActive}
-                  >
-                    <PencilIcon className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteCategory(category._id, category.name)}
-                    className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50"
-                    title="Delete"
-                    disabled={isProductFormActive}
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
+              {currentCategories.map((category, idx) => (
+                <tr
+                  key={category._id}
+                  className={`border-b border-gray-200 dark:border-gray-700 ${
+                    idx % 2 === 0 ? 'bg-gray-50 dark:bg-gray-700/50' : 'bg-white dark:bg-gray-800'
+                  } hover:bg-gray-100 dark:hover:bg-gray-600`}
+                >
+                  <td className="py-3 px-4 text-gray-800 dark:text-gray-200 font-semibold">{category.name}</td>
+                  <td className="py-3 px-4 flex space-x-2">
+                    <button
+                      onClick={() => handleEditCategory(category)}
+                      className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                      title="Edit"
+                    >
+                      <PencilIcon className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCategory(category._id, category.name)}
+                      className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50"
+                      title="Delete"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -313,9 +309,9 @@ export default function Categories({ token, isAuthenticated, logout, categories,
           <div className="flex justify-between items-center mt-4 px-2">
             <button
               onClick={() => setCurrentCategoryPage(Math.max(currentCategoryPage - 1, 1))}
-              disabled={currentCategoryPage === 1 || isProductFormActive}
+              disabled={currentCategoryPage === 1}
               className={`flex items-center px-3 py-1 rounded-lg ${
-                currentCategoryPage === 1 || isProductFormActive ? 'text-gray-400 cursor-not-allowed' : 'text-indigo-600 hover:bg-indigo-50 dark:hover:bg-gray-700'
+                currentCategoryPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-indigo-600 hover:bg-indigo-50 dark:hover:bg-gray-700'
               }`}
             >
               <ArrowLeftIcon className="w-4 h-4 mr-1" />
@@ -326,9 +322,9 @@ export default function Categories({ token, isAuthenticated, logout, categories,
             </span>
             <button
               onClick={() => setCurrentCategoryPage(Math.min(currentCategoryPage + 1, totalCategoryPages))}
-              disabled={currentCategoryPage === totalCategoryPages || isProductFormActive}
+              disabled={currentCategoryPage === totalCategoryPages}
               className={`flex items-center px-3 py-1 rounded-lg ${
-                currentCategoryPage === totalCategoryPages || isProductFormActive ? 'text-gray-400 cursor-not-allowed' : 'text-indigo-600 hover:bg-indigo-50 dark:hover:bg-gray-700'
+                currentCategoryPage === totalCategoryPages ? 'text-gray-400 cursor-not-allowed' : 'text-indigo-600 hover:bg-indigo-50 dark:hover:bg-gray-700'
               }`}
             >
               Next
