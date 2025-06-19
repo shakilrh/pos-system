@@ -98,7 +98,7 @@ function AppContent({ Component, pageProps }: AppProps) {
           setSidebarOpen={setSidebarOpen}
           sidebarOpen={sidebarOpen}
         />
-        <main className={`flex-1 mt-16 overflow-auto ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
+        <main className={`flex-1 mt-16  bg-gray-100 overflow-auto ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
           <Component {...pageProps} />
         </main>
       </div>
