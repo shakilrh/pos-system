@@ -279,7 +279,6 @@ export default function Orders() {
                 Create New Order
               </button>
             </Link>
-
           </div>
         </div>
 
@@ -324,9 +323,6 @@ export default function Orders() {
           <table className="w-full text-left text-sm">
             <thead>
             <tr className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-              <th className="py-3 px-4 cursor-pointer" onClick={() => handleSort('id')}>
-                Order ID {sortConfig?.key === 'id' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-              </th>
               <th className="py-3 px-4 cursor-pointer" onClick={() => handleSort('order_number')}>
                 Order Number {sortConfig?.key === 'order_number' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
               </th>
@@ -336,7 +332,6 @@ export default function Orders() {
               <th className="py-3 px-4 cursor-pointer" onClick={() => handleSort('customer_name')}>
                 Customer Name {sortConfig?.key === 'customer_name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
               </th>
-              <th className="py-3 px-4">Location</th>
               <th className="py-3 px-4 cursor-pointer" onClick={() => handleSort('total_amount')}>
                 Amount {sortConfig?.key === 'total_amount' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
               </th>
@@ -351,13 +346,11 @@ export default function Orders() {
               <tr key={order._id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td className="py-3 px-4">
                   <button className="text-indigo-600 hover:underline" onClick={() => handleViewDetails(order)}>
-                    {order._id}
+                    {order.order_number}
                   </button>
                 </td>
-                <td className="py-3 px-4">{order.order_number}</td>
                 <td className="py-3 px-4">{new Date(order.createdAt).toLocaleString()}</td>
                 <td className="py-3 px-4">{order.customer_name}</td>
-                <td className="py-3 px-4">{order.location}</td>
                 <td className="py-3 px-4">${order.total_amount?.toFixed(2) || 'N/A'}</td>
                 <td className="py-3 px-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -406,7 +399,6 @@ export default function Orders() {
             <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Order #{selectedOrder.order_number} Details</h2>
             <p><strong>Customer:</strong> {selectedOrder.customer_name}</p>
             <p><strong>Date:</strong> {new Date(selectedOrder.createdAt).toLocaleString()}</p>
-            <p><strong>Location:</strong> {selectedOrder.location}</p>
             <p><strong>Amount:</strong> ${selectedOrder.total_amount?.toFixed(2) || 'N/A'}</p>
             <p><strong>Status:</strong> {selectedOrder.status}</p>
             <p><strong>Payment Status:</strong> {selectedOrder.payment_status}</p>
