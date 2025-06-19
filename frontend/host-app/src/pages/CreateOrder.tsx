@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { createOrder, getAllOrders, processPayment } from '../services/OrderService';
 import { fetchProducts } from '../services/ProductService';
 import { fetchCategories } from '../services/CategoryService';
-import { MagnifyingGlassIcon, XMarkIcon, PrinterIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, XMarkIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import QRCode from 'react-qr-code';
 
@@ -17,6 +17,7 @@ interface Product {
   description: string;
   pictureUrl?: string | null;
   displayPrice: string;
+  isActive: boolean;
 }
 
 interface Category {
@@ -84,7 +85,9 @@ export default function CreateOrder() {
         setCategories(fetchedCategories);
         setSelectedCategory(''); // Default to "All Products"
         const fetchedProducts = await fetchProducts(token, logout, fetchedCategories);
-        setProducts(fetchedProducts);
+        // Filter for active products only, matching products.tsx logic
+        const activeProducts = fetchedProducts.filter((product) => product.isActive);
+        setProducts(activeProducts);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error(error instanceof Error ? error.message : 'Failed to fetch data');
@@ -151,6 +154,13 @@ export default function CreateOrder() {
       setReceivedAmount(0);
     }
   };
+
+  useEffect(() => {
+    if (isPaid) {
+      const total = calculateTotalOrderAmount();
+      setReceivedAmount(total);
+    }
+  }, [orderItems, isPaid]);
 
   const handleCreateOrder = async () => {
     if (!token || !user?._id) {
@@ -319,7 +329,7 @@ export default function CreateOrder() {
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-6">
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
         {/* Order Details Section */}
-        <div className="lg:w-1/3 w-full bg-white rounded-lg shadow-md p-6 transform transition-all duration-300 hover:shadow-lg">
+        <div className="lg:w-1/3 w-full bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-bold text-gray-800 mb-4">Order Details</h2>
           <div className="space-y-4">
             <input
@@ -352,11 +362,9 @@ export default function CreateOrder() {
                 <input
                   type="number"
                   value={receivedAmount}
-                  onChange={(e) => setReceivedAmount(Number(e.target.value))}
-                  placeholder="Enter received amount"
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
-                  min="0"
-                  required
+                  readOnly
+                  placeholder="Received amount"
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 bg-gray-100"
                 />
                 <select
                   value={paymentMethod}
@@ -374,19 +382,35 @@ export default function CreateOrder() {
               {orderItems.length === 0 ? (
                 <p className="text-gray-500">No items added to the order</p>
               ) : (
-                <ul className="space-y-2 max-h-40 overflow-y-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                  <tr className="border-b">
+                    <th className="py-2 px-4">Item</th>
+                    <th className="py-2 px-4">Qty</th>
+                    <th className="py-2 px-4">Price</th>
+                    <th className="py-2 px-4">Total</th>
+                  </tr>
+                  </thead>
+                  <tbody>
                   {orderItems.map((item) => (
-                    <li key={item.product_id} className="flex justify-between text-sm">
-                      <span>{item.product?.name || `Product ${item.product_id}`}</span>
-                      <span>${(item.sub_total || 0).toFixed(2)}</span>
-                    </li>
+                    <tr key={item.product_id} className="border-b">
+                      <td className="py-2 px-4">{item.product?.name || `Product ${item.product_id}`}</td>
+                      <td className="py-2 px-4">{item.quantity}</td>
+                      <td className="py-2 px-4">${(item.product?.price || 0).toFixed(2)}</td>
+                      <td className="py-2 px-4">${(item.sub_total || 0).toFixed(2)}</td>
+                    </tr>
                   ))}
-                </ul>
+                  <tr className="font-bold">
+                    <td colSpan={3} className="py-2 px-4 text-right">Total</td>
+                    <td className="py-2 px-4">${calculateTotalOrderAmount().toFixed(2)}</td>
+                  </tr>
+                  </tbody>
+                </table>
               )}
             </div>
             <button
               onClick={handleCreateOrder}
-              className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transform transition-all duration-200 hover:scale-105"
+              className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition-all duration-200"
             >
               {localLoading ? 'Creating Order...' : 'Place Order'}
             </button>
@@ -434,44 +458,26 @@ export default function CreateOrder() {
               </button>
             ))}
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[calc(100vh-300px)] overflow-y-auto">
+          <div className="grid grid-cols-5 gap-4 max-h-[calc(100vh-300px)] overflow-y-auto">
             {filteredProducts.map((product: Product) => (
               <div
                 key={product._id}
-                className="bg-gray-50 rounded-lg p-3 flex flex-col items-center transform transition-all duration-200 hover:scale-105 hover:shadow-md"
+                onClick={() => addProductToOrder(product)}
+                className="bg-white rounded-lg p-2 flex flex-col items-center cursor-pointer border border-gray-200 hover:shadow-sm hover:scale-105 transition-all duration-200"
+                style={{ minHeight: '120px', minWidth: '120px' }}
               >
                 <img
-                  src={product.pictureUrl || 'https://via.placeholder.com/60'}
+                  src={product.pictureUrl || 'https://via.placeholder.com/96'}
                   alt={product.name}
-                  className="w-16 h-16 object-cover rounded-md mb-2"
+                  className="w-20 h-20 object-cover rounded-md mb-2"
                 />
                 <span className="text-sm font-semibold text-gray-800 text-center">{product.name}</span>
                 <span className="text-sm text-green-600">${product.price.toFixed(2)}</span>
-                <button
-                  onClick={() => addProductToOrder(product)}
-                  className="mt-2 bg-indigo-500 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-indigo-600 transition-all duration-200 animate-pulse-once"
-                >
-                  +
-                </button>
               </div>
             ))}
           </div>
         </div>
       </div>
-
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-gradient-to-r from-indigo-500 to-indigo-700 text-white p-4 shadow-md z-10">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-bold">Create New Order</h1>
-          <button
-            onClick={() => router.push('/Orders')}
-            className="bg-white text-indigo-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all duration-200 flex items-center space-x-2"
-          >
-            <ArrowLeftIcon className="w-5 h-5" />
-            <span>Back to Orders</span>
-          </button>
-        </div>
-      </header>
 
       {showReceipt && createdOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -529,13 +535,16 @@ export default function CreateOrder() {
       )}
 
       <style jsx>{`
-        @keyframes pulse-once {
+        @keyframes subtle-zoom {
           0% { transform: scale(1); }
-          50% { transform: scale(1.2); }
+          50% { transform: scale(1.05); }
           100% { transform: scale(1); }
         }
-        .animate-pulse-once {
-          animation: pulse-once 0.3s ease-in-out;
+        .hover\:shadow-sm:hover {
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .hover\:scale-105:hover {
+          animation: subtle-zoom 0.3s ease-in-out;
         }
       `}</style>
     </div>
