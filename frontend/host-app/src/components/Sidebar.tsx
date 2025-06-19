@@ -4,6 +4,8 @@ import {
   ChartBarIcon,
   ShoppingBagIcon,
   ArrowRightOnRectangleIcon,
+  Bars3Icon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -24,24 +26,23 @@ const navItems = [
   { name: 'Roles Management', icon: UsersIcon || FallbackIcon, href: '/RoleAndUserManagement' },
 ];
 
-export default function Sidebar({ className }) {
+export default function Sidebar({ className, toggleSidebar, sidebarOpen }) {
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 768) setSidebarOpen(false);
+      if (window.innerWidth >= 768) toggleSidebar(false);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [toggleSidebar]);
 
   const handleLogout = async () => {
     try {
       logout();
-      setSidebarOpen(false);
+      toggleSidebar(false);
       await router.push('/login');
     } catch (error) {
       console.error('Error during logout redirect:', error);
@@ -52,13 +53,22 @@ export default function Sidebar({ className }) {
   return (
     <>
       <aside
-        className={`fixed /*md:static*/ z-40 w-56 md:w-64 bg-gradient-to-b from-gray-800 to-gray-900 text-white flex flex-col shadow-2xl transform transition-all duration-300 ease-in-out ${className} ${
+        className={`fixed z-40 w-56 md:w-64 bg-gradient-to-b from-gray-800 to-gray-900 text-white flex flex-col shadow-2xl transform transition-all duration-300 ease-in-out ${className} ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } h-screen`}
       >
-        <div className="p-6 text-2xl font-bold border-b border-gray-700 flex items-center gap-3">
-          <span className="text-yellow-400">🍽️</span>
-          <span className="tracking-tight">Restaurant Admin</span>
+        <div className="p-6 text-2xl font-bold border-b border-gray-700 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-yellow-400">🍽️</span>
+            <span className="tracking-tight">Restaurant Admin</span>
+          </div>
+          <button onClick={() => toggleSidebar(!sidebarOpen)} className="md:hidden">
+            {sidebarOpen ? (
+              <XMarkIcon className="w-6 h-6" />
+            ) : (
+              <Bars3Icon className="w-6 h-6" />
+            )}
+          </button>
         </div>
         <nav className="mt-6 flex-1 space-y-1 px-4">
           {navItems.map(({ name, icon: Icon, href }) => (
@@ -70,7 +80,7 @@ export default function Sidebar({ className }) {
                   ? 'bg-gray-700 text-white shadow-md'
                   : 'text-gray-200 hover:bg-gray-700 hover:text-white'
               }`}
-              onClick={() => setSidebarOpen(false)}
+              onClick={() => toggleSidebar(false)}
             >
               <Icon className="w-5 h-5 mr-3" />
               <span className="text-sm font-medium">{name}</span>
@@ -90,11 +100,9 @@ export default function Sidebar({ className }) {
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-30 md:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => toggleSidebar(false)}
         />
       )}
     </>
   );
 }
-
-//test

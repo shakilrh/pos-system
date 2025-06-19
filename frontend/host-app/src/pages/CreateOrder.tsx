@@ -329,7 +329,7 @@ export default function CreateOrder() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Create New Order</h1>
           <button
-            onClick={() => router.push('/orders')}
+            onClick={() => router.push('/Orders')}
             className="flex items-center gap-2 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
           >
             <ArrowLeftIcon className="h-5 w-5" />
