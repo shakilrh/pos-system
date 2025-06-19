@@ -269,7 +269,7 @@ export default function Orders() {
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-5">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Orders</h1>

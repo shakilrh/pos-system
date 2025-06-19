@@ -89,7 +89,7 @@ export default function MenuManagement() {
   }
 
   return (
-    <div className="flex-1 container mx-auto p-4 sm:p-6 lg:p-8 bg-white dark:bg-gray-900">
+    <div className="flex-1 container mx-auto p-4 sm:p-6 lg:p-5">
       <div className="flex justify-end mb-4">
 
       </div>

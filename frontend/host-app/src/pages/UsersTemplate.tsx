@@ -183,8 +183,7 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+    <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">User Management</h2>
 
         {/* Create User Form */}
@@ -452,7 +451,6 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
           </div>
         )}
       </div>
-    </div>
   );
 };
 

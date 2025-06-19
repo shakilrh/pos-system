@@ -75,7 +75,7 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 border border-gray-200 dark:border-gray-700">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Manage Roles</h2>
 
       {/* Create Role Form */}
