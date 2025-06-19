@@ -6,11 +6,6 @@ export const RemoteHeader = dynamic(
   { ssr: false }
 );
 
-export const RemoteSidebar = dynamic(
-  () => import('remoteApp/Sidebar').catch(() => () => <div>Sidebar failed to load</div>),
-  { ssr: false }
-);
-
 export const RemoteFooter = dynamic(
   () => import('remoteApp/Footer').catch(() => () => <div>Footer failed to load</div>),
   { ssr: false }

@@ -5,20 +5,24 @@ import { useRouter, usePathname } from 'next/navigation';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import 'shared-tailwind/styles';
 
+// Fallback components
+const FallbackHeader = () => <div>Header failed to load</div>;
+const FallbackFooter = () => <div>Footer failed to load</div>;
+
 const Header = dynamic(
   () => import('remoteApp/Header').catch((err) => {
     console.error('Header load error:', err);
-    return () => <div>Header failed to load</div>;
+    return () => FallbackHeader;
   }),
   { ssr: false }
 );
 
-import Sidebar from '../components/Sidebar'; // Local Sidebar
+import Sidebar from '../components/Sidebar'; // Ensure this path is correct
 
 const Footer = dynamic(
   () => import('remoteApp/Footer').catch((err) => {
     console.error('Footer load error:', err);
-    return () => <div>Footer failed to load</div>;
+    return () => FallbackFooter;
   }),
   { ssr: false }
 );
@@ -26,9 +30,9 @@ const Footer = dynamic(
 const publicRoutes = ['/login', '/forgot-password', '/RegisterAdmin'];
 
 function AppContent({ Component, pageProps }: AppProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false); // Add dark mode state
-  const { isAuthenticated, isLoading } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
+  const { isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -46,8 +50,18 @@ function AppContent({ Component, pageProps }: AppProps) {
     document.documentElement.classList.toggle('dark', darkMode);
   }, [darkMode]);
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const toggleDarkMode = () => setDarkMode(!darkMode);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setSidebarOpen(false);
+      await router.push('/login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      window.location.href = '/login';
+    }
+  };
 
   if (isLoading) {
     return (
@@ -65,13 +79,29 @@ function AppContent({ Component, pageProps }: AppProps) {
     return null;
   }
 
+  if (!Sidebar) {
+    console.error('Sidebar component is undefined');
+    return <div>Sidebar failed to load</div>;
+  }
+
   return (
     <div className={`flex flex-col min-h-screen ${darkMode ? 'dark' : ''}`}>
-      <Header onSidebarToggle={toggleSidebar} onDarkModeToggle={toggleDarkMode} darkMode={darkMode} />
-        <Sidebar className={`top-16 bottom-0 w-64 z-40 ${sidebarOpen ? 'block' : 'hidden md:block'}`} />
-        <main className="ml-64 mt-16 flex-1 z-10">
+      <Header
+        onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+        onDarkModeToggle={toggleDarkMode}
+        darkMode={darkMode}
+        onLogout={handleLogout}
+      />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar
+          className={`top-16 z-40 ${sidebarOpen ? 'w-64' : 'w-16'} bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-2xl`}
+          setSidebarOpen={setSidebarOpen}
+          sidebarOpen={sidebarOpen}
+        />
+        <main className={`flex-1 mt-16 overflow-auto ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
           <Component {...pageProps} />
         </main>
+      </div>
       <Footer />
     </div>
   );
