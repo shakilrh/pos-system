@@ -65,7 +65,13 @@ export const fetchProducts = async (
       headers: { Authorization: `Bearer ${token}` },
     };
 
-    if (categoryId && categoryId !== 'all') {
+    if (categoryId === 'inactive') {
+      url = `${API_BASE_URL}/products/api/v1/deactive`;
+      options = {
+        ...options,
+        method: 'GET',
+      };
+    } else if (categoryId && categoryId !== 'all') {
       url = `${API_BASE_URL}/products/api/v1/by-category`;
       options = {
         ...options,
@@ -329,4 +335,4 @@ export const updateProductStatus = async (
     toast.error(message);
     throw error;
   }
-};
+}
