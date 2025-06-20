@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TrashIcon, PencilIcon, PlusCircleIcon, ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/solid';
 import { fetchProducts, updateProductStatus } from '../../services/productService';
 import { Category, Product } from './productTypes';
@@ -10,7 +10,7 @@ interface ProductListProps {
   logout: () => void;
   categories: Category[];
   filterCategory: string | null;
-  handleFilterChange: (value: string) => void; // Updated to use handleFilterChange
+  handleFilterChange: (value: string) => void;
   isCategoryFormActive: boolean;
   onAdd: () => void;
   onEdit: (product: Product) => void;
@@ -35,6 +35,7 @@ export default function ProductList({
   const [loading, setLoading] = React.useState(true);
   const [gridErrorMessage, setGridErrorMessage] = React.useState<string | null>(null);
   const [currentProductPage, setCurrentProductPage] = React.useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
   const itemsPerPage = 10;
 
   React.useEffect(() => {
@@ -55,6 +56,12 @@ export default function ProductList({
         } else {
           filteredProducts = productList.filter((product) => product.isActive);
         }
+        // Apply search filter
+        if (searchTerm) {
+          filteredProducts = filteredProducts.filter((product) =>
+            product.name.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+        }
         setProducts(filteredProducts);
         setGridErrorMessage(filteredProducts.length === 0 && filterCategory !== null ? 'No products found for this filter' : null);
       } catch (err) {
@@ -64,7 +71,7 @@ export default function ProductList({
       }
     };
     fetchData();
-  }, [isAuthenticated, token, logout, categories, filterCategory]);
+  }, [isAuthenticated, token, logout, categories, filterCategory, searchTerm]);
 
   React.useEffect(() => {
     const totalProductPages = Math.ceil(products.length / itemsPerPage);
@@ -75,13 +82,12 @@ export default function ProductList({
     }
   }, [products, currentProductPage]);
 
-  const handleFilterChangeLocal = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleFilterChangeLocal = async (value: string) => {
     if (!isAuthenticated || !token) {
       toast.error('Please log in to filter products');
       return;
     }
-    const value = e.target.value;
-    handleFilterChange(value); // Call the passed handler instead of setFilterCategory
+    handleFilterChange(value);
     setCurrentProductPage(1);
     try {
       const productList = await fetchProducts(token, logout, categories, value === 'all' ? null : value);
@@ -92,6 +98,12 @@ export default function ProductList({
         filteredProducts = productList.filter((product) => product.category_id === value && product.isActive);
       } else {
         filteredProducts = productList.filter((product) => product.isActive);
+      }
+      // Apply search filter
+      if (searchTerm) {
+        filteredProducts = filteredProducts.filter((product) =>
+          product.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
       }
       setProducts(filteredProducts);
       setGridErrorMessage(filteredProducts.length === 0 ? `No ${value === 'inactive' ? 'inactive' : 'active'} products found` : null);
@@ -113,7 +125,13 @@ export default function ProductList({
     try {
       await updateProductStatus(token, logout, product._id, newStatus);
       const updatedProducts = await fetchProducts(token, logout, categories, filterCategory || 'all');
-      const filteredProducts = updatedProducts.filter((p) => p.isActive || (filterCategory === 'inactive' && !p.isActive));
+      let filteredProducts = updatedProducts.filter((p) => p.isActive || (filterCategory === 'inactive' && !p.isActive));
+      // Apply search filter
+      if (searchTerm) {
+        filteredProducts = filteredProducts.filter((product) =>
+          product.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
       setProducts(filteredProducts);
       toast.success(`Product ${newStatus ? 'activated' : 'deactivated'} successfully`);
     } catch (err) {
@@ -161,20 +179,51 @@ export default function ProductList({
         </button>
       </div>
       <div className="mb-4">
-        <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Category</label>
-        <select
-          id="categoryFilter"
-          value={filterCategory || 'all'}
-          onChange={handleFilterChangeLocal}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={isCategoryFormActive}
-        >
-          <option value="all">All Categories</option>
-          <option value="inactive">Inactive Products</option>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search Products</label>
+        <div className="relative">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
+            placeholder="Search products..."
+          />
+        </div>
+      </div>
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Category</label>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => handleFilterChangeLocal('all')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+              filterCategory === '' || filterCategory === 'all' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+            }`}
+            disabled={isCategoryFormActive}
+          >
+            All Products
+          </button>
+          <button
+            onClick={() => handleFilterChangeLocal('inactive')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+              filterCategory === 'inactive' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+            }`}
+            disabled={isCategoryFormActive}
+          >
+            Inactive Products
+          </button>
           {categories.map((category) => (
-            <option key={category._id} value={category._id}>{category.name}</option>
+            <button
+              key={category._id}
+              onClick={() => handleFilterChangeLocal(category._id)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                filterCategory === category._id ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
+              disabled={isCategoryFormActive}
+            >
+              {category.name}
+            </button>
           ))}
-        </select>
+        </div>
       </div>
       {currentProducts.length > 0 ? (
         <div className="grid grid-cols-5 gap-2">
