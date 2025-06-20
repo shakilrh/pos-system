@@ -21,7 +21,7 @@ const FallbackIcon = () => (
 const navItems = [
   { name: 'Dashboard', icon: HomeIcon || FallbackIcon, href: '/dashboard' },
   { name: 'Menu Management', icon: ShoppingBagIcon || FallbackIcon, href: '/MenuManagement' },
-  { name: 'Orders', icon: ChartBarIcon || FallbackIcon, href: '/Orders' },
+  { name: 'Orders', icon: ChartBarIcon || FallbackIcon, href: 'Orders/orders' },
   { name: 'Roles Management', icon: UsersIcon || FallbackIcon, href: '/RoleAndUserManagement' },
   { name: 'Logout', icon: ArrowRightOnRectangleIcon || FallbackIcon, href: '/login' },
 ];

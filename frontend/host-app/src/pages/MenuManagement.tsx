@@ -1,33 +1,11 @@
 import { useState, useEffect } from 'react';
-import { MoonIcon, SunIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../context/AuthContext';
-import Categories from './Categories';
-import Products from './products';
-
-interface Category {
-  _id: string;
-  name: string;
-  description: string;
-  created_by: string;
-  createdAt?: string;
-  updatedAt?: string;
-  __v: number;
-}
-
-interface Product {
-  _id: string;
-  name: string;
-  price: number;
-  category_id: string;
-  categoryName: string;
-  description: string;
-  pictureUrl?: string | null;
-  displayPrice: string;
-}
+import Categories from './Categories/categories';
+import Products from './Products/products';
+import { Category, Product } from './Products/productTypes';
 
 export default function MenuManagement() {
   const { isAuthenticated, token, logout } = useAuth();
-  const [darkMode, setDarkMode] = useState<boolean>(false);
   const [clientLoaded, setClientLoaded] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [categories, setCategories] = useState<Category[]>([]);
@@ -44,20 +22,9 @@ export default function MenuManagement() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme');
-      setDarkMode(savedTheme === 'dark');
       setClientLoaded(true);
     }
   }, []);
-
-  useEffect(() => {
-    if (clientLoaded) {
-      document.documentElement.classList.toggle('dark', darkMode);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('theme', darkMode ? 'dark' : 'light');
-      }
-    }
-  }, [darkMode, clientLoaded]);
 
   if (!clientLoaded) {
     return (
@@ -90,9 +57,6 @@ export default function MenuManagement() {
 
   return (
     <div className="flex-1 container mx-auto p-4 sm:p-6 lg:p-5">
-      <div className="flex justify-end mb-4">
-
-      </div>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <Categories
           token={token}
