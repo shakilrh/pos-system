@@ -15,7 +15,6 @@ export default function Orders() {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [message, setMessage] = useState<string>('');
-  const [localLoading, setLocalLoading] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
@@ -33,12 +32,10 @@ export default function Orders() {
   useEffect(() => {
     if (!isAuthenticated || !token) {
       setMessage('Please log in to view orders');
-      setLocalLoading(false);
       return;
     }
 
     const fetchOrders = async () => {
-      setLocalLoading(true);
       try {
         const [orderList, queue] = await Promise.all([
           getAllOrders(token, logout),
@@ -58,16 +55,14 @@ export default function Orders() {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch orders';
         setMessage(errorMessage);
         console.error('Failed to fetch orders', error);
-      } finally {
-        setLocalLoading(false);
       }
     };
 
     fetchOrders();
   }, [isAuthenticated, token, logout, itemsPerPage]);
 
-  if (isLoading || localLoading) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+  if (isLoading) {
+    return null; // Global loading will handle this
   }
 
   if (!isAuthenticated) {

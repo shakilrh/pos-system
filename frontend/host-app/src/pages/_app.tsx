@@ -4,6 +4,7 @@ import { AppProps } from 'next/app';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import 'shared-tailwind/styles';
+import Link from 'next/link';
 
 // Fallback components
 const FallbackHeader = () => <div>Header failed to load</div>;
@@ -32,6 +33,7 @@ const publicRoutes = ['/login', '/forgot-password', '/RegisterAdmin'];
 function AppContent({ Component, pageProps }: AppProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(false);
   const { isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -47,7 +49,34 @@ function AppContent({ Component, pageProps }: AppProps) {
   }, [isAuthenticated, isLoading, pathname, router]);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    const handleRouteChange = () => {
+      setIsPageLoading(true);
+      timeoutId = setTimeout(() => setIsPageLoading(false), 500); // Simulate loading for 500ms
+    };
+
+    const prevPathname = pathname;
+    const checkPathChange = () => {
+      if (prevPathname !== pathname) {
+        handleRouteChange();
+      }
+    };
+
+    const interval = setInterval(checkPathChange, 100);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeoutId);
+    };
+  }, [pathname]);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    setDarkMode(savedTheme === 'dark');
+  }, []);
+
+  useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
   const toggleDarkMode = () => setDarkMode(!darkMode);
@@ -88,8 +117,8 @@ function AppContent({ Component, pageProps }: AppProps) {
     <div className={`flex flex-col min-h-screen ${darkMode ? 'dark' : ''}`}>
       <Header
         onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
-        onDarkModeToggle={toggleDarkMode}
         darkMode={darkMode}
+        onDarkModeToggle={toggleDarkMode}
         onLogout={handleLogout}
       />
       <div className="flex flex-1 overflow-hidden">
@@ -98,8 +127,17 @@ function AppContent({ Component, pageProps }: AppProps) {
           setSidebarOpen={setSidebarOpen}
           sidebarOpen={sidebarOpen}
         />
-        <main className={`flex-1 mt-16  bg-gray-100 overflow-auto ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
-          <Component {...pageProps} />
+        <main className={`flex-1 mt-16 bg-gray-100 overflow-auto ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
+          {isPageLoading ? (
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 border-t-4 border-b-4 border-blue-500 rounded-full animate-spin"></div>
+                <p className="mt-4 text-lg font-semibold text-gray-700">Loading...</p>
+              </div>
+            </div>
+          ) : (
+            <Component {...pageProps} key={pathname} />
+          )}
         </main>
       </div>
       <Footer />
