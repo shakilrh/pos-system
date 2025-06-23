@@ -79,9 +79,16 @@ export default function Products({
       try {
         setGridErrorMessage(null);
         const productList = await fetchProducts(token, logout, categories, filterCategory || 'all');
-        const activeProducts = productList.filter((product) => product.isActive);
-        setProducts(activeProducts);
-        setGridErrorMessage(activeProducts.length === 0 && filterCategory !== null ? 'No active products found for this category' : null);
+        let filteredProducts = productList;
+        if (filterCategory === 'inactive') {
+          filteredProducts = productList.filter((product) => !product.isActive);
+        } else if (filterCategory && filterCategory !== 'all') {
+          filteredProducts = productList.filter((product) => product.category_id === filterCategory && product.isActive);
+        } else {
+          filteredProducts = productList.filter((product) => product.isActive);
+        }
+        setProducts(filteredProducts);
+        setGridErrorMessage(filteredProducts.length === 0 && filterCategory !== null ? 'No products found for this filter' : null);
       } catch (err) {
         setGridErrorMessage(err instanceof Error ? err.message : 'Failed to fetch products');
         toast.error(err instanceof Error ? err.message : 'Failed to fetch products');
@@ -118,10 +125,10 @@ export default function Products({
       return;
     }
     const value = e.target.value;
-    setFilterCategory(value === 'inactive' ? null : value);
+    setFilterCategory(value === 'inactive' ? 'inactive' : value === 'all' ? null : value);
     setCurrentProductPage(1);
     try {
-      const productList = await fetchProducts(token, logout, categories, value === 'inactive' ? null : value);
+      const productList = await fetchProducts(token, logout, categories, value === 'all' ? null : value);
       let filteredProducts = productList;
       if (value === 'inactive') {
         filteredProducts = productList.filter((product) => !product.isActive);
@@ -187,7 +194,6 @@ export default function Products({
 
     try {
       await updateProductStatus(token, logout, product._id, newStatus);
-      // Re-fetch products to ensure the updated state is reflected
       const updatedProducts = await fetchProducts(token, logout, categories, filterCategory || 'all');
       const filteredProducts = updatedProducts.filter((p) => p.isActive || (filterCategory === 'inactive' && !p.isActive));
       setProducts(filteredProducts);
@@ -232,7 +238,7 @@ export default function Products({
       formData.append('picture', newProductPicture);
 
       const newProduct = await addProduct(token, logout, categories, formData);
-      setProducts([...products, newProduct].filter((p) => p.isActive));
+      setProducts([...products, newProduct].filter((p) => p.isActive || filterCategory === 'inactive'));
       resetForm();
       toast.success('Product added successfully');
     } catch (err) {
@@ -285,7 +291,7 @@ export default function Products({
       if (editProductPicture) formData.append('picture', editProductPicture);
 
       const updatedProduct = await updateProduct(token, logout, categories, formData);
-      setProducts(products.map((prod) => (prod._id === editingProductId ? updatedProduct : prod)).filter((p) => p.isActive));
+      setProducts(products.map((prod) => (prod._id === editingProductId ? updatedProduct : prod)).filter((p) => p.isActive || filterCategory === 'inactive'));
       resetForm();
       toast.success('Product updated successfully');
     } catch (err) {
@@ -513,13 +519,14 @@ export default function Products({
           </select>
         </div>
         {currentProducts.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-5 gap-2">
             {currentProducts.map((product) => (
               <div
                 key={`product-${product._id}`}
                 className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:scale-[1.02] hover:shadow-lg transition-all duration-300 ${!product.isActive ? 'opacity-50' : ''}`}
+                style={{ height: '240px', width: '180px' }}
               >
-                <div className="relative h-32 cursor-pointer" onClick={() => !isCategoryFormActive && showProductDetails(product)}>
+                <div className="relative h-1/2 cursor-pointer" onClick={() => !isCategoryFormActive && showProductDetails(product)}>
                   {product.pictureUrl ? (
                     <img
                       src={product.pictureUrl}
@@ -533,13 +540,15 @@ export default function Products({
                     </div>
                   )}
                 </div>
-                <div className="p-2">
-                  <h3 className="text-md font-semibold text-gray-900 dark:text-white truncate">{product.name}</h3>
-                  <div className="flex items-center mt-2 justify-between">
-                    <p className="text-blue-400 dark:text-blue-600 font-medium text-sm">{product.displayPrice}</p>
-                    <p className="text-gray-400 dark:text-gray-500 text-xs">{product.categoryName}</p>
+                <div className="p-2 flex flex-col justify-between h-1/2">
+                  <div>
+                    <h3 className="text-md font-semibold text-gray-900 dark:text-white truncate">{product.name}</h3>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-blue-400 dark:text-blue-600 font-medium text-sm">{product.displayPrice}</p>
+                      <p className="text-gray-400 dark:text-gray-500 text-xs">{product.categoryName}</p>
+                    </div>
                   </div>
-                  <div className="mt-2 flex justify-between items-center">
+                  <div className="flex justify-between items-center mt-2">
                     <label className="flex items-center space-x-2 cursor-pointer">
                       <div className="relative">
                         <input
@@ -554,10 +563,10 @@ export default function Products({
                       </div>
                       <span className="text-sm text-gray-600 dark:text-gray-400">{product.isActive ? 'Active' : 'Deactive'}</span>
                     </label>
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-1">
                       <button
                         onClick={() => !isCategoryFormActive && handleEditProduct(product)}
-                        className="text-blue-600 dark:hover:text-blue-400 p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                        className="text-blue-600 dark:hover:text-blue-400 p-0.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50"
                         title="Edit"
                         disabled={isCategoryFormActive}
                       >
@@ -565,7 +574,7 @@ export default function Products({
                       </button>
                       <button
                         onClick={() => !isCategoryFormActive && handleDeleteProduct(product._id, product.name)}
-                        className="text-red-600 dark:hover:text-red-400 p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50"
+                        className="text-red-600 dark:hover:text-red-400 p-0.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50"
                         title="Delete"
                         disabled={isCategoryFormActive}
                       >

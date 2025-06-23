@@ -41,7 +41,7 @@ interface Order {
   payment_method: string | null;
   payment_status: string;
   received_amount: number;
-  order_number: number;
+  order_number: string;
   createdAt: string;
   updatedAt: string;
   service_type: 'dine_in' | 'take_away';
@@ -52,7 +52,7 @@ interface Order {
 
 interface QueueOrder {
   _id: string;
-  order_number: number;
+  order_number: string;
   status: string;
   estimated_completion: string;
   customer_name: string;
@@ -61,7 +61,7 @@ interface QueueOrder {
 
 interface PhysicalQueueOrder {
   _id: string;
-  order_number: number;
+  order_number: string;
   status: string;
   customer_name: string;
   position: number;
@@ -122,7 +122,7 @@ export const createOrder = async (
 
     const data: ApiResponse<Order> = await response.json();
     if (!response.ok || !data.success) {
-      throw new Error(handleApiError(data, logout));
+      throw new Error(data.message || handleApiError(data, logout));
     }
 
     return 'data' in data.data ? data.data.data : data.data;
@@ -130,6 +130,37 @@ export const createOrder = async (
     const message = err instanceof Error ? err.message : 'Failed to create order';
     toast.error(message);
     throw err;
+  }
+};
+
+export const updateOrder = async (
+  token: string,
+  logout: () => void,
+  order_id: string,
+  updateData: {
+    items?: OrderItem[];
+    customer_name?: string;
+    service_type?: 'dine_in' | 'take_away';
+  }
+): Promise<Order> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/api/v1/update`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ order_id, ...updateData }),
+    });
+
+    const data: ApiResponse<Order> = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || handleApiError(data, logout));
+    }
+
+    return 'data' in data.data ? data.data.data : data.data;
+  } catch (err) {
+    throw new Error(err instanceof Error ? err.message : 'Failed to update order');
   }
 };
 
@@ -151,7 +182,7 @@ export const confirmOrder = async (
 
     const data: ApiResponse<Order> = await response.json();
     if (!response.ok || !data.success) {
-      throw new Error(handleApiError(data, logout));
+      throw new Error(data.message || handleApiError(data, logout));
     }
 
     return 'data' in data.data ? data.data.data : data.data;
@@ -160,70 +191,10 @@ export const confirmOrder = async (
   }
 };
 
-export const processPayment = async (
-  token: string,
-  logout: () => void,
-  order_id: string,
-  received_amount: number,
-  payment_method: string
-): Promise<Order> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/orders/api/v1/payment`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ order_id, received_amount, payment_method }),
-    });
-
-    const data: ApiResponse<Order> = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(handleApiError(data, logout));
-    }
-
-    return 'data' in data.data ? data.data.data : data.data;
-  } catch (err) {
-    throw new Error(err instanceof Error ? err.message : 'Failed to process payment');
-  }
-};
-
-export const updateOrder = async (
-  token: string,
-  logout: () => void,
-  order_id: string,
-  updateData: {
-    items?: OrderItem[];
-    delivery_address?: string;
-    customer_name?: string;
-    service_type?: 'dine_in' | 'take_away';
-  }
-): Promise<Order> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/orders/api/v1/update`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ order_id, ...updateData }),
-    });
-
-    const data: ApiResponse<Order> = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(handleApiError(data, logout));
-    }
-
-    return 'data' in data.data ? data.data.data : data.data;
-  } catch (err) {
-    throw new Error(err instanceof Error ? err.message : 'Failed to update order');
-  }
-};
-
 export const markOrderAsReady = async (
   token: string,
   logout: () => void,
-  order_number: number
+  order_number: string
 ): Promise<Order> => {
   try {
     const response = await fetch(`${API_BASE_URL}/orders/api/v1/ready`, {
@@ -237,7 +208,7 @@ export const markOrderAsReady = async (
 
     const data: ApiResponse<Order> = await response.json();
     if (!response.ok || !data.success) {
-      throw new Error(handleApiError(data, logout));
+      throw new Error(data.message || handleApiError(data, logout));
     }
 
     return 'data' in data.data ? data.data.data : data.data;
@@ -249,7 +220,7 @@ export const markOrderAsReady = async (
 export const markOrderAsPicked = async (
   token: string,
   logout: () => void,
-  order_number: number
+  order_number: string
 ): Promise<Order> => {
   try {
     const response = await fetch(`${API_BASE_URL}/orders/api/v1/picked`, {
@@ -263,7 +234,7 @@ export const markOrderAsPicked = async (
 
     const data: ApiResponse<Order> = await response.json();
     if (!response.ok || !data.success) {
-      throw new Error(handleApiError(data, logout));
+      throw new Error(data.message || handleApiError(data, logout));
     }
 
     return 'data' in data.data ? data.data.data : data.data;
@@ -289,7 +260,7 @@ export const cancelOrder = async (
 
     const data: ApiResponse<Order> = await response.json();
     if (!response.ok || !data.success) {
-      throw new Error(handleApiError(data, logout));
+      throw new Error(data.message || handleApiError(data, logout));
     }
 
     return 'data' in data.data ? data.data.data : data.data;
@@ -311,7 +282,7 @@ export const getAllOrders = async (token: string, logout: () => void): Promise<O
 
     const data: ApiResponse<Order[]> = await response.json();
     if (!data.success) {
-      throw new Error(handleApiError(data, logout));
+      throw new Error(data.message || handleApiError(data, logout));
     }
 
     return 'data' in data.data ? data.data.data : data.data || [];
@@ -321,39 +292,35 @@ export const getAllOrders = async (token: string, logout: () => void): Promise<O
   }
 };
 
-export const getPendingOrders = async (token: string, logout: () => void): Promise<Order[]> => {
+// Add this to your existing orderService.tsx
+export const processPayment = async (
+  token: string,
+  logout: () => void,
+  order_id: string,
+  received_amount: number,
+  payment_method: string
+): Promise<Order> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/orders/api/v1/pending`, {
-      headers: { Authorization: `Bearer ${token}` },
+    const response = await fetch(`${API_BASE_URL}/orders/api/v1/payment`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ order_id, received_amount, payment_method }),
     });
 
-    const data: ApiResponse<Order[]> = await response.json();
+    const data: ApiResponse<Order> = await response.json();
     if (!response.ok || !data.success) {
-      throw new Error(handleApiError(data, logout));
+      throw new Error(data.message || handleApiError(data, logout));
     }
 
-    return 'data' in data.data ? data.data.data : data.data || [];
+    return 'data' in data.data ? data.data.data : data.data;
   } catch (err) {
-    throw new Error(err instanceof Error ? err.message : 'Failed to fetch pending orders');
+    throw new Error(err instanceof Error ? err.message : 'Failed to process payment');
   }
 };
 
-export const getOrderQueue = async (token: string, logout: () => void): Promise<QueueOrder[]> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/orders/api/v1/queue`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    const data: ApiResponse<QueueOrder[]> = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(handleApiError(data, logout));
-    }
-
-    return 'data' in data.data ? data.data.data : data.data || [];
-  } catch (err) {
-    throw new Error(err instanceof Error ? err.message : 'Failed to fetch order queue');
-  }
-};
 
 export const getPhysicalQueue = async (token: string, logout: () => void): Promise<PhysicalQueueOrder[]> => {
   try {
@@ -363,7 +330,7 @@ export const getPhysicalQueue = async (token: string, logout: () => void): Promi
 
     const data: ApiResponse<PhysicalQueueOrder[]> = await response.json();
     if (!response.ok || !data.success) {
-      throw new Error(handleApiError(data, logout));
+      throw new Error(data.message || handleApiError(data, logout));
     }
 
     return 'data' in data.data ? data.data.data : data.data || [];
