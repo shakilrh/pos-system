@@ -85,9 +85,9 @@ export default function Sidebar({ className, setSidebarOpen, sidebarOpen }) {
                 if (name === 'Logout') {
                   e.preventDefault();
                   handleLogout();
-                } else if (sidebarOpen) {
+                } /*else if (sidebarOpen) {
                   setSidebarOpen(false);
-                }
+                }*/
               }}
               className={`flex items-center p-2 rounded-lg transition-all duration-200 ${
                 pathname === href || (name === 'Logout' && pathname === '/login')
