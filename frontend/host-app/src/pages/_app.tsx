@@ -91,6 +91,7 @@ function AppContent({ Component, pageProps }: AppProps) {
         onDarkModeToggle={toggleDarkMode}
         darkMode={darkMode}
         onLogout={handleLogout}
+        onNavigate={(path: string) => router.push(path)}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
