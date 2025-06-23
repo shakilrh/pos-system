@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { createOrder, getAllOrders, processPayment } from '../services/OrderService';
-import { fetchProducts } from '../services/ProductService';
-import { fetchCategories } from '../services/CategoryService';
+import { createOrder, getAllOrders, processPayment } from '../services/orderService';
+import { fetchProducts } from '../services/productService';
+import { fetchCategories } from '../services/categoryService';
 import { MagnifyingGlassIcon, XMarkIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import QRCode from 'react-qr-code';
@@ -32,16 +32,9 @@ interface OrderItem {
   sub_total?: number;
 }
 
-interface OrderItemResponse {
-  product_id: string;
-  product: Product;
-  quantity: number;
-  sub_total: number;
-}
-
 interface Order {
   _id: string;
-  items: OrderItemResponse[];
+  items: OrderItem[];
   order_type: string;
   customer_name: string;
   service_type: 'dine_in' | 'take_away';
@@ -51,6 +44,305 @@ interface Order {
   status: string;
   payment_status: string;
 }
+
+const OrderDetailsTemplate = ({
+                                customerName,
+                                setCustomerName,
+                                serviceType,
+                                setServiceType,
+                                isPaid,
+                                handleIsPaidChange,
+                                receivedAmount,
+                                paymentMethod,
+                                setPaymentMethod,
+                                orderItems,
+                                errors,
+                                calculateTotalOrderAmount,
+                                handleCreateOrder,
+                                localLoading,
+                              }: {
+  customerName: string;
+  setCustomerName: (name: string) => void;
+  serviceType: 'dine_in' | 'take_away';
+  setServiceType: (type: 'dine_in' | 'take_away') => void;
+  isPaid: boolean;
+  handleIsPaidChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  receivedAmount: number;
+  paymentMethod: string;
+  setPaymentMethod: (method: string) => void;
+  orderItems: OrderItem[];
+  errors: { customerName: string; orderItems: string };
+  calculateTotalOrderAmount: () => number;
+  handleCreateOrder: () => void;
+  localLoading: boolean;
+}) => {
+  return (
+    <div className="lg:w-1/3 w-full bg-white rounded-lg shadow-md p-6">
+      <h2 className="text-xl font-bold text-gray-800 mb-4">Order Details</h2>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
+          <input
+            type="text"
+            placeholder="Enter customer name"
+            value={customerName}
+            onChange={(e) => {
+              setCustomerName(e.target.value);
+              if (e.target.value.trim()) {
+                setErrors(prev => ({ ...prev, customerName: '' }));
+              }
+            }}
+            className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 ${
+              errors.customerName ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors.customerName && (
+            <p className="mt-1 text-sm text-red-600">{errors.customerName}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Service Type</label>
+          <select
+            value={serviceType}
+            onChange={(e) => setServiceType(e.target.value as 'dine_in' | 'take_away')}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
+          >
+            <option value="dine_in">Dine-In</option>
+            <option value="take_away">Takeaway</option>
+          </select>
+        </div>
+
+        <label className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={isPaid}
+            onChange={handleIsPaidChange}
+            className="h-4 w-4 text-indigo-600 rounded"
+          />
+          <span>Mark as Paid</span>
+        </label>
+
+        {isPaid && (
+          <div className="space-y-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Received Amount</label>
+              <input
+                type="number"
+                value={receivedAmount}
+                readOnly
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 bg-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
+              >
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="online">Online</option>
+              </select>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4">
+          <h3 className="font-semibold">Order Summary</h3>
+          {orderItems.length === 0 ? (
+            <>
+              <p className="text-gray-500">No items added to the order</p>
+              {errors.orderItems && (
+                <p className="mt-1 text-sm text-red-600">{errors.orderItems}</p>
+              )}
+            </>
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead>
+              <tr className="border-b">
+                <th className="py-2 px-4">Item</th>
+                <th className="py-2 px-4">Qty</th>
+                <th className="py-2 px-4">Price</th>
+                <th className="py-2 px-4">Total</th>
+              </tr>
+              </thead>
+              <tbody>
+              {orderItems.map((item) => (
+                <tr key={item.product_id} className="border-b">
+                  <td className="py-2 px-4">{item.product?.name || `Product ${item.product_id}`}</td>
+                  <td className="py-2 px-4">{item.quantity}</td>
+                  <td className="py-2 px-4">${(item.product?.price || 0).toFixed(2)}</td>
+                  <td className="py-2 px-4">${(item.sub_total || 0).toFixed(2)}</td>
+                </tr>
+              ))}
+              <tr className="font-bold">
+                <td colSpan={3} className="py-2 px-4 text-right">Total</td>
+                <td className="py-2 px-4">${calculateTotalOrderAmount().toFixed(2)}</td>
+              </tr>
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <button
+          onClick={handleCreateOrder}
+          className={`w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition-all duration-200 ${
+            localLoading ? 'opacity-70 cursor-not-allowed' : ''
+          }`}
+        >
+          {localLoading ? 'Creating Order...' : 'Place Order'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const MenuItemsTemplate = ({
+                             searchTerm,
+                             setSearchTerm,
+                             selectedCategory,
+                             setSelectedCategory,
+                             categories,
+                             filteredProducts,
+                             addProductToOrder,
+                           }: {
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  selectedCategory: string;
+  setSelectedCategory: (id: string) => void;
+  categories: Category[];
+  filteredProducts: Product[];
+  addProductToOrder: (product: Product) => void;
+}) => {
+  return (
+    <div className="lg:w-2/3 w-full bg-white rounded-lg shadow-md p-6">
+      <h2 className="text-xl font-bold text-gray-800 mb-4">Menu Items</h2>
+      <div className="relative mb-4">
+        <input
+          type="text"
+          placeholder="Search products..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
+        />
+        {searchTerm && (
+          <XMarkIcon
+            onClick={() => setSearchTerm('')}
+            className="absolute right-3 top-3 h-5 w-5 text-gray-500 cursor-pointer hover:text-gray-700"
+          />
+        )}
+      </div>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <button
+          onClick={() => setSelectedCategory('')}
+          className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+            selectedCategory === '' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+          }`}
+        >
+          All Products
+        </button>
+        {categories.map((category) => (
+          <button
+            key={category._id}
+            onClick={() => setSelectedCategory(category._id)}
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+              selectedCategory === category._id
+                ? 'bg-indigo-500 text-white'
+                : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+            }`}
+          >
+            {category.name}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-5 gap-4 max-h-[calc(100vh-300px)] overflow-y-auto">
+        {filteredProducts.map((product) => (
+          <div
+            key={product._id}
+            onClick={() => addProductToOrder(product)}
+            className="bg-white rounded-lg p-2 flex flex-col items-center cursor-pointer border border-gray-200 hover:shadow-sm hover:scale-105 transition-all duration-200"
+            style={{ minHeight: '120px', minWidth: '120px' }}
+          >
+            <img
+              src={product.pictureUrl || 'https://via.placeholder.com/96'}
+              alt={product.name}
+              className="w-20 h-20 object-cover rounded-md mb-2"
+            />
+            <span className="text-sm font-semibold text-gray-800 text-center">{product.name}</span>
+            <span className="text-sm text-green-600">${product.price.toFixed(2)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const ReceiptTemplate = ({
+                           createdOrder,
+                           onPrint,
+                           onClose,
+                         }: {
+  createdOrder: Order;
+  onPrint: () => void;
+  onClose: () => void;
+}) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+        <h2 className="text-lg font-bold mb-4">Order #: {createdOrder.order_number}</h2>
+        <p>Customer: {createdOrder.customer_name}</p>
+        <p>Type: {createdOrder.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}</p>
+        <p>Status: {createdOrder.status.replace('_', ' ')}</p>
+        <p>Payment: {createdOrder.payment_status}</p>
+        <div className="mt-4">
+          <h3 className="font-semibold">Items:</h3>
+          <table className="w-full text-left">
+            <thead>
+            <tr>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Price</th>
+              <th>Total</th>
+            </tr>
+            </thead>
+            <tbody>
+            {createdOrder.items.map((item) => (
+              <tr key={item.product_id}>
+                <td>{item.product.name}</td>
+                <td>{item.quantity}</td>
+                <td>${item.product.price.toFixed(2)}</td>
+                <td>${item.sub_total.toFixed(2)}</td>
+              </tr>
+            ))}
+            </tbody>
+          </table>
+          <p className="mt-2 font-bold">Total: ${createdOrder.total_amount.toFixed(2)}</p>
+        </div>
+        <div className="mt-4 flex justify-center">
+          <QRCode value={`order:${createdOrder._id}`} size={100} />
+        </div>
+        <p className="text-center mt-2">Scan for order tracking</p>
+        <div className="mt-4 flex justify-between">
+          <button
+            onClick={onPrint}
+            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+          >
+            <PrinterIcon className="w-5 h-5 inline-block mr-2" />
+            Print Receipt
+          </button>
+          <button
+            onClick={onClose}
+            className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function CreateOrder() {
   const { isAuthenticated, isLoading, token, logout, user } = useAuth();
@@ -62,13 +354,16 @@ export default function CreateOrder() {
   const [customerName, setCustomerName] = useState('');
   const [receivedAmount, setReceivedAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('cash');
-  const [message, setMessage] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isPaid, setIsPaid] = useState(false);
+  const [errors, setErrors] = useState({
+    customerName: '',
+    orderItems: ''
+  });
 
   useEffect(() => {
     if (isLoading) return;
@@ -80,12 +375,10 @@ export default function CreateOrder() {
     const fetchData = async () => {
       setLocalLoading(true);
       try {
-        console.log('Fetching categories and products with token:', token);
         const fetchedCategories = await fetchCategories(token, logout);
         setCategories(fetchedCategories);
-        setSelectedCategory(''); // Default to "All Products"
+        setSelectedCategory('');
         const fetchedProducts = await fetchProducts(token, logout, fetchedCategories);
-        // Filter for active products only, matching products.tsx logic
         const activeProducts = fetchedProducts.filter((product) => product.isActive);
         setProducts(activeProducts);
       } catch (error) {
@@ -100,6 +393,27 @@ export default function CreateOrder() {
 
     fetchData();
   }, [isAuthenticated, isLoading, token, user?._id, router, logout]);
+
+  const validateForm = () => {
+    const newErrors = {
+      customerName: '',
+      orderItems: ''
+    };
+    let isValid = true;
+
+    if (!customerName.trim()) {
+      newErrors.customerName = 'Customer name is required';
+      isValid = false;
+    }
+
+    if (orderItems.length === 0) {
+      newErrors.orderItems = 'Please add at least one product';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
 
   const addProductToOrder = (product: Product) => {
     const existingItem = orderItems.find((item) => item.product_id === product._id);
@@ -121,6 +435,9 @@ export default function CreateOrder() {
           sub_total: product.price,
         },
       ]);
+    }
+    if (orderItems.length === 0) {
+      setErrors(prev => ({ ...prev, orderItems: '' }));
     }
   };
 
@@ -168,12 +485,8 @@ export default function CreateOrder() {
       router.push('/login');
       return;
     }
-    if (orderItems.length === 0) {
-      toast.error('Please add at least one product');
-      return;
-    }
-    if (!customerName.trim()) {
-      toast.error('Customer name is required');
+
+    if (!validateForm()) {
       return;
     }
 
@@ -185,32 +498,38 @@ export default function CreateOrder() {
         customer_name: customerName,
         service_type: serviceType,
       };
-      console.log('Creating order with data:', orderData);
+
       const response = await createOrder(token, logout, orderData.items, {
         order_type: orderData.order_type,
         customer_name: orderData.customer_name,
         service_type: orderData.service_type,
       });
-      console.log('Order created response:', response);
 
-      let updatedOrder: Order = { ...response, items: orderItems.map(item => ({
+      let updatedOrder: Order = {
+        ...response,
+        items: orderItems.map(item => ({
           product_id: item.product_id,
           product: item.product || { name: `Product ${item.product_id}`, price: 0 },
           quantity: item.quantity,
           sub_total: item.sub_total || 0
-        })) };
+        }))
+      };
+
       if (isPaid && response._id) {
-        console.log('Processing payment for order:', response._id);
-        const paymentResponse = await processPayment(token, logout, response._id, receivedAmount, paymentMethod);
+        const paymentResponse = await processPayment(
+          token,
+          logout,
+          response._id,
+          receivedAmount,
+          paymentMethod
+        );
         updatedOrder = { ...paymentResponse, items: updatedOrder.items };
-        setMessage('Payment processed successfully');
       }
 
       setCreatedOrder(updatedOrder);
       setShowReceipt(true);
       toast.success('Order created successfully');
-      const allOrders = await getAllOrders(token, logout);
-      console.log('Updated orders:', allOrders);
+      await getAllOrders(token, logout);
     } catch (error) {
       console.error('Error creating order:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create order');
@@ -319,6 +638,10 @@ export default function CreateOrder() {
     setReceivedAmount(0);
     setPaymentMethod('cash');
     setIsPaid(false);
+    setErrors({
+      customerName: '',
+      orderItems: ''
+    });
   };
 
   if (isLoading || localLoading) {
@@ -328,225 +651,41 @@ export default function CreateOrder() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-6">
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
-        {/* Order Details Section */}
-        <div className="lg:w-1/3 w-full bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Order Details</h2>
-          <div className="space-y-4">
-            <input
-              type="text"
-              placeholder="Enter customer name"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
-              required
-            />
-            <select
-              value={serviceType}
-              onChange={(e) => setServiceType(e.target.value as 'dine_in' | 'take_away')}
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
-            >
-              <option value="dine_in">Dine-In</option>
-              <option value="take_away">Takeaway</option>
-            </select>
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={isPaid}
-                onChange={handleIsPaidChange}
-                className="h-4 w-4 text-indigo-600 rounded"
-              />
-              <span>Mark as Paid</span>
-            </label>
-            {isPaid && (
-              <div className="space-y-2">
-                <input
-                  type="number"
-                  value={receivedAmount}
-                  readOnly
-                  placeholder="Received amount"
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 bg-gray-100"
-                />
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
-                >
-                  <option value="cash">Cash</option>
-                  <option value="card">Card</option>
-                  <option value="online">Online</option>
-                </select>
-              </div>
-            )}
-            <div className="mt-4">
-              <h3 className="font-semibold">Order Summary</h3>
-              {orderItems.length === 0 ? (
-                <p className="text-gray-500">No items added to the order</p>
-              ) : (
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                  <tr className="border-b">
-                    <th className="py-2 px-4">Item</th>
-                    <th className="py-2 px-4">Qty</th>
-                    <th className="py-2 px-4">Price</th>
-                    <th className="py-2 px-4">Total</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  {orderItems.map((item) => (
-                    <tr key={item.product_id} className="border-b">
-                      <td className="py-2 px-4">{item.product?.name || `Product ${item.product_id}`}</td>
-                      <td className="py-2 px-4">{item.quantity}</td>
-                      <td className="py-2 px-4">${(item.product?.price || 0).toFixed(2)}</td>
-                      <td className="py-2 px-4">${(item.sub_total || 0).toFixed(2)}</td>
-                    </tr>
-                  ))}
-                  <tr className="font-bold">
-                    <td colSpan={3} className="py-2 px-4 text-right">Total</td>
-                    <td className="py-2 px-4">${calculateTotalOrderAmount().toFixed(2)}</td>
-                  </tr>
-                  </tbody>
-                </table>
-              )}
-            </div>
-            <button
-              onClick={handleCreateOrder}
-              className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition-all duration-200"
-            >
-              {localLoading ? 'Creating Order...' : 'Place Order'}
-            </button>
-          </div>
-        </div>
+        <OrderDetailsTemplate
+          customerName={customerName}
+          setCustomerName={setCustomerName}
+          serviceType={serviceType}
+          setServiceType={setServiceType}
+          isPaid={isPaid}
+          handleIsPaidChange={handleIsPaidChange}
+          receivedAmount={receivedAmount}
+          paymentMethod={paymentMethod}
+          setPaymentMethod={setPaymentMethod}
+          orderItems={orderItems}
+          errors={errors}
+          calculateTotalOrderAmount={calculateTotalOrderAmount}
+          handleCreateOrder={handleCreateOrder}
+          localLoading={localLoading}
+        />
 
-        {/* Menu Items Section */}
-        <div className="lg:w-2/3 w-full bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Menu Items</h2>
-          <div className="relative mb-4">
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
-            />
-            {searchTerm && (
-              <XMarkIcon
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-3 h-5 w-5 text-gray-500 cursor-pointer hover:text-gray-700"
-              />
-            )}
-          </div>
-          <div className="flex space-x-2 mb-4 overflow-x-auto">
-            <button
-              onClick={() => setSelectedCategory('')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                selectedCategory === '' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-              }`}
-            >
-              All Products
-            </button>
-            {categories.map((category) => (
-              <button
-                key={category._id}
-                onClick={() => setSelectedCategory(category._id)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  selectedCategory === category._id
-                    ? 'bg-indigo-500 text-white'
-                    : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                }`}
-              >
-                {category.name}
-              </button>
-            ))}
-          </div>
-          <div className="grid grid-cols-5 gap-4 max-h-[calc(100vh-300px)] overflow-y-auto">
-            {filteredProducts.map((product: Product) => (
-              <div
-                key={product._id}
-                onClick={() => addProductToOrder(product)}
-                className="bg-white rounded-lg p-2 flex flex-col items-center cursor-pointer border border-gray-200 hover:shadow-sm hover:scale-105 transition-all duration-200"
-                style={{ minHeight: '120px', minWidth: '120px' }}
-              >
-                <img
-                  src={product.pictureUrl || 'https://via.placeholder.com/96'}
-                  alt={product.name}
-                  className="w-20 h-20 object-cover rounded-md mb-2"
-                />
-                <span className="text-sm font-semibold text-gray-800 text-center">{product.name}</span>
-                <span className="text-sm text-green-600">${product.price.toFixed(2)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <MenuItemsTemplate
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          categories={categories}
+          filteredProducts={filteredProducts}
+          addProductToOrder={addProductToOrder}
+        />
       </div>
 
       {showReceipt && createdOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h2 className="text-lg font-bold mb-4">Order #: {createdOrder.order_number}</h2>
-            <p>Customer: {createdOrder.customer_name}</p>
-            <p>Type: {createdOrder.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}</p>
-            <p>Status: {createdOrder.status.replace('_', ' ')}</p>
-            <p>Payment: {createdOrder.payment_status}</p>
-            <div className="mt-4">
-              <h3 className="font-semibold">Items:</h3>
-              <table className="w-full text-left">
-                <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Qty</th>
-                  <th>Price</th>
-                  <th>Total</th>
-                </tr>
-                </thead>
-                <tbody>
-                {createdOrder.items.map((item) => (
-                  <tr key={item.product_id}>
-                    <td>{item.product.name}</td>
-                    <td>{item.quantity}</td>
-                    <td>${item.product.price.toFixed(2)}</td>
-                    <td>${item.sub_total.toFixed(2)}</td>
-                  </tr>
-                ))}
-                </tbody>
-              </table>
-              <p className="mt-2 font-bold">Total: ${createdOrder.total_amount.toFixed(2)}</p>
-            </div>
-            <div className="mt-4 flex justify-center">
-              <QRCode value={`order:${createdOrder._id}`} size={100} />
-            </div>
-            <p className="text-center mt-2">Scan for order tracking</p>
-            <div className="mt-4 flex justify-between">
-              <button
-                onClick={handlePrintReceipt}
-                className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
-              >
-                <PrinterIcon className="w-5 h-5 inline-block mr-2" />
-                Print Receipt
-              </button>
-              <button
-                onClick={handleCloseReceipt}
-                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+        <ReceiptTemplate
+          createdOrder={createdOrder}
+          onPrint={handlePrintReceipt}
+          onClose={handleCloseReceipt}
+        />
       )}
-
-      <style jsx>{`
-        @keyframes subtle-zoom {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-          100% { transform: scale(1); }
-        }
-        .hover\:shadow-sm:hover {
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .hover\:scale-105:hover {
-          animation: subtle-zoom 0.3s ease-in-out;
-        }
-      `}</style>
     </div>
   );
 }
