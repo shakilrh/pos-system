@@ -2,9 +2,19 @@
 import { useState } from 'react';
 import { Bars3Icon, UserCircleIcon, BellIcon } from '@heroicons/react/24/outline';
 
-export default function Header({ onSidebarToggle }: { onSidebarToggle: () => void }) {
+export default function Header({ onSidebarToggle, onNavigate }: { onSidebarToggle: () => void; onNavigate: (path: string) => void; }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
+  const handleProfileClick = () => {
+    onNavigate('/profile'); // Trigger navigation to /profile
+    setIsProfileOpen(false); // Close the dropdown
+  };
+
+  const handleSettingsClick = () => {
+    onNavigate('/settings'); // Trigger navigation to /settings
+    setIsProfileOpen(false); // Close the dropdown
+  };
+  
   return (
 /*    <header className="bg-gray-900 text-white p-4 fixed top-0 w-full shadow-lg z-50 ">*/
       <header className="fixed top-0 left-0 w-full h-16 bg-gray-100 shadow-lg z-50 p-4">
@@ -42,20 +52,18 @@ export default function Header({ onSidebarToggle }: { onSidebarToggle: () => voi
                   <p className="text-sm font-medium">Admin User</p>
                   <p className="text-xs text-gray-400">admin@rasant.com</p>
                 </div>
-                <a
-                  href="/profile"
-                  className="block px-4 py-2 text-sm hover:bg-gray-700"
-                  onClick={() => setIsProfileOpen(false)}
+                <button
+                  onClick={handleProfileClick}
+                  className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-700"
                 >
                   Profile
-                </a>
-                <a
-                  href="/settings"
-                  className="block px-4 py-2 text-sm hover:bg-gray-700"
-                  onClick={() => setIsProfileOpen(false)}
+                </button>
+                <button
+                  onClick={handleSettingsClick}
+                  className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-700"
                 >
                   Settings
-                </a>
+                </button>
               </div>
             )}
           </div>
