@@ -1,4 +1,3 @@
-
 'use client';
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 
@@ -9,6 +8,7 @@ interface User {
   user_type: string;
   role_id: string | null;
   profile?: any;
+  logoUrl?: string; // Added to match expected profile data
 }
 
 interface AuthContextType {
@@ -18,6 +18,7 @@ interface AuthContextType {
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  setUser: (user: User | null) => void; // Added setUser to interface
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -94,7 +95,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, user, token, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, user, token, login, logout, setUser }}>
       {children}
     </AuthContext.Provider>
   );
@@ -109,4 +110,3 @@ export const useAuth = () => {
 };
 
 export { AuthContext, AuthProvider };
-//test
