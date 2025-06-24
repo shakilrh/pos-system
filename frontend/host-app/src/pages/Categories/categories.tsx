@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeftIcon, ArrowRightIcon, PencilIcon, TrashIcon, PlusCircleIcon, XMarkIcon } from '@heroicons/react/24/solid';
-import toast, { Toaster } from 'react-hot-toast';
 import { fetchCategories, addCategory, updateCategory, deleteCategory } from '../../services/categoryService';
 import { Category } from './categoryTypes';
+import FlashMessage from '../FlashMessage'; // Adjust the import path as necessary
 
 interface CategoriesProps {
   token: string | null;
@@ -17,8 +17,7 @@ interface CategoriesProps {
 export default function Categories({ token, isAuthenticated, logout, categories, setCategories, onFormActive, isProductFormActive }: CategoriesProps) {
   const [currentCategoryPage, setCurrentCategoryPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
-  const [tableErrorMessage, setTableErrorMessage] = useState<string | null>(null);
+  const [flashMessage, setFlashMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [formMode, setFormMode] = useState<'add' | 'edit' | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDesc, setNewCategoryDesc] = useState('');
@@ -35,16 +34,13 @@ export default function Categories({ token, isAuthenticated, logout, categories,
       setLoading(false);
       return;
     }
-
     const fetchData = async () => {
       try {
-        setTableErrorMessage(null);
+        setFlashMessage(null);
         const categoryList = await fetchCategories(token, logout);
         setCategories(categoryList);
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to fetch categories';
-        setTableErrorMessage(message);
-        toast.error(message);
+        setFlashMessage({ message: err instanceof Error ? err.message : 'Failed to fetch categories', type: 'error' });
       } finally {
         setLoading(false);
       }
@@ -67,25 +63,14 @@ export default function Categories({ token, isAuthenticated, logout, categories,
 
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAuthenticated || !token) {
-      toast.error('Please log in to add a category');
-      return;
-    }
-    if (!newCategoryName.trim() || !newCategoryDesc.trim()) {
-      toast.error('Name and description are required');
-      return;
-    }
 
     try {
-      setFormErrorMessage(null);
       const newCategory = await addCategory(token, logout, newCategoryName, newCategoryDesc);
       setCategories([...categories, newCategory]);
       resetForm();
-      toast.success('Category added successfully');
+      setFlashMessage({ message: 'Category added successfully', type: 'success' });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to add category';
-      setFormErrorMessage(message);
-      toast.error(message);
+      setFlashMessage({ message: err instanceof Error ? err.message : 'Failed to add category', type: 'error' });
     }
   };
 
@@ -98,25 +83,16 @@ export default function Categories({ token, isAuthenticated, logout, categories,
 
   const handleSaveEditCategory = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAuthenticated || !token || !editingCategoryId) {
-      toast.error('Please log in to update a category');
-      return;
-    }
-    if (!editCategoryName.trim() || !editCategoryDesc.trim()) {
-      toast.error('Name and description are required');
-      return;
-    }
 
     try {
-      setFormErrorMessage(null);
-      const updatedCategory = await updateCategory(token, logout, editingCategoryId, editCategoryName, editCategoryDesc);
-      setCategories(categories.map((cat) => (cat._id === editingCategoryId ? updatedCategory : cat)));
-      resetForm();
-      toast.success('Category updated successfully');
+      if (editingCategoryId) {
+        const updatedCategory = await updateCategory(token, logout, editingCategoryId, editCategoryName, editCategoryDesc);
+        setCategories(categories.map((cat) => (cat._id === editingCategoryId ? updatedCategory : cat)));
+        resetForm();
+        setFlashMessage({ message: 'Category updated successfully', type: 'success' });
+      }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to update category';
-      setFormErrorMessage(message);
-      toast.error(message);
+      setFlashMessage({ message: err instanceof Error ? err.message : 'Failed to update category', type: 'error' });
     }
   };
 
@@ -127,20 +103,14 @@ export default function Categories({ token, isAuthenticated, logout, categories,
   };
 
   const confirmDelete = async () => {
-    if (!isAuthenticated || !token || !deleteCategoryId) {
-      toast.error('Please log in to delete');
-      return;
-    }
-
     try {
-      setTableErrorMessage(null);
-      await deleteCategory(token, logout, deleteCategoryId);
-      setCategories(categories.filter((cat) => cat._id !== deleteCategoryId));
-      toast.success('Category deleted successfully');
+      if (deleteCategoryId) {
+        await deleteCategory(token, logout, deleteCategoryId);
+        setCategories(categories.filter((cat) => cat._id !== deleteCategoryId));
+        setFlashMessage({ message: 'Category deleted successfully', type: 'success' });
+      }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to delete category';
-      setTableErrorMessage(message);
-      toast.error(message);
+      setFlashMessage({ message: err instanceof Error ? err.message : 'Failed to delete category', type: 'error' });
     } finally {
       setIsDeleteModalOpen(false);
       setDeleteCategoryId(null);
@@ -155,8 +125,7 @@ export default function Categories({ token, isAuthenticated, logout, categories,
     setEditingCategoryId(null);
     setEditCategoryName('');
     setEditCategoryDesc('');
-    setFormErrorMessage(null);
-    setTableErrorMessage(null);
+    setFlashMessage(null);
   };
 
   const indexOfLastCategory = currentCategoryPage * itemsPerPage;
@@ -183,13 +152,26 @@ export default function Categories({ token, isAuthenticated, logout, categories,
 
   return (
     <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700 h-full relative" style={{ opacity: isProductFormActive ? 0.5 : 1 }}>
-      <Toaster position="top-right" />
+      {flashMessage && !formMode && (
+        <FlashMessage
+          message={flashMessage.message}
+          type={flashMessage.type}
+          onClose={() => setFlashMessage(null)}
+        />
+      )}
       <div className="absolute inset-0 z-10 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-y-auto" style={{ display: formMode ? 'block' : 'none' }}>
-        <div className="flex justify-between items-center mb-4">
+        {flashMessage && formMode && (
+          <FlashMessage
+            message={flashMessage.message}
+            type={flashMessage.type}
+            onClose={() => setFlashMessage(null)}
+          />
+        )}
+        <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {formMode === 'add' ? 'Add New Category' : 'Edit Category'}
           </h3>
-          <button onClick={resetForm} className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+          <button onClick={resetForm} className="text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200">
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
@@ -202,7 +184,6 @@ export default function Categories({ token, isAuthenticated, logout, categories,
               onChange={(e) => (formMode === 'edit' ? setEditCategoryName(e.target.value) : setNewCategoryName(e.target.value))}
               placeholder="Enter category name"
               className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
             />
           </div>
           <div>
@@ -213,12 +194,8 @@ export default function Categories({ token, isAuthenticated, logout, categories,
               placeholder="Enter category description"
               className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               rows={3}
-              required
             />
           </div>
-          {formErrorMessage && (
-            <div className="text-red-500 dark:text-red-400 text-sm text-center">{formErrorMessage}</div>
-          )}
           <div className="flex justify-end space-x-3">
             <button
               type="button"
@@ -237,7 +214,7 @@ export default function Categories({ token, isAuthenticated, logout, categories,
         </form>
       </div>
       <div className="relative z-0" style={{ opacity: formMode ? 0.5 : 1, pointerEvents: formMode ? 'none' : 'auto' }}>
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
             <span className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 p-2 rounded-lg mr-2">
               Categories
@@ -296,9 +273,6 @@ export default function Categories({ token, isAuthenticated, logout, categories,
             </tbody>
           </table>
         </div>
-        {tableErrorMessage && (
-          <div className="mt-4 text-red-500 dark:text-red-400 text-center text-sm">{tableErrorMessage}</div>
-        )}
         {totalCategoryPages > 1 && (
           <div className="flex justify-between items-center mt-4 px-2">
             <button
@@ -330,6 +304,13 @@ export default function Categories({ token, isAuthenticated, logout, categories,
       {isDeleteModalOpen && deleteCategoryId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm">
+            {flashMessage && (
+              <FlashMessage
+                message={flashMessage.message}
+                type={flashMessage.type}
+                onClose={() => setFlashMessage(null)}
+              />
+            )}
             <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Confirm Deletion</h3>
               <button
@@ -337,9 +318,9 @@ export default function Categories({ token, isAuthenticated, logout, categories,
                   setIsDeleteModalOpen(false);
                   setDeleteCategoryId(null);
                   setDeleteCategoryName('');
-                  setTableErrorMessage(null);
+                  setFlashMessage(null);
                 }}
-                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                className="text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
               >
                 <XMarkIcon className="w-6 h-6" />
               </button>
@@ -354,7 +335,7 @@ export default function Categories({ token, isAuthenticated, logout, categories,
                     setIsDeleteModalOpen(false);
                     setDeleteCategoryId(null);
                     setDeleteCategoryName('');
-                    setTableErrorMessage(null);
+                    setFlashMessage(null);
                   }}
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                 >

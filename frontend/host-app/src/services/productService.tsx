@@ -117,7 +117,7 @@ export const fetchProducts = async (
         throw new Error(`Invalid price for product ${product.name}`);
       }
       const categoryId = product.category_id?._id || product.category_id;
-      const categoryName = product.category_id?.name || 'Unknown';
+      const categoryName = product.category_id?.name || categories.find((cat) => cat._id === categoryId)?.name || 'Unknown';
       return {
         _id: product._id,
         name: product.name,
@@ -135,7 +135,6 @@ export const fetchProducts = async (
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to fetch products';
-    toast.error(message);
     throw error;
   }
 };
@@ -196,7 +195,6 @@ export const addProduct = async (
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to add product';
-    toast.error(message);
     throw error;
   }
 };
@@ -257,7 +255,6 @@ export const updateProduct = async (
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update product';
-    toast.error(message);
     throw error;
   }
 };
@@ -290,7 +287,6 @@ export const deleteProduct = async (token: string, logout: () => void, id: strin
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to delete product';
-    toast.error(message);
     throw error;
   }
 };
@@ -300,7 +296,7 @@ export const updateProductStatus = async (
   logout: () => void,
   id: string,
   isActive: boolean
-): Promise<void> => {
+): Promise<Product> => {
   try {
     const response = await fetch(`${API_BASE_URL}/products/api/v1/status`, {
       method: 'PATCH',
@@ -330,9 +326,29 @@ export const updateProductStatus = async (
     if (data.type !== 1 || !data.data?.data) {
       throw new Error('Invalid response format');
     }
+
+    const product = data.data.data;
+    if (typeof product.price !== 'number') {
+      throw new Error(`Invalid price for product ${product.name}`);
+    }
+    const categoryId = product.category_id?._id || product.category_id;
+    const categoryName = product.category_id?.name || 'Unknown';
+    return {
+      _id: product._id,
+      name: product.name,
+      price: product.price,
+      category_id: categoryId,
+      categoryName: categoryName,
+      description: product.description || '',
+      pictureUrl: product.pictureUrl || null,
+      created_by: product.created_by,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+      displayPrice: `$${product.price.toFixed(2)}`,
+      isActive: product.status === 'active',
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update product status';
-    toast.error(message);
     throw error;
   }
-}
+};

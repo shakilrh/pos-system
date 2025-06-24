@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { TrashIcon, PencilIcon, PlusCircleIcon, ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/solid';
-import { fetchProducts, updateProductStatus } from '../../services/productService';
 import { Category, Product } from './productTypes';
-import toast from 'react-hot-toast';
 
 interface ProductListProps {
   token: string | null;
@@ -11,11 +9,14 @@ interface ProductListProps {
   categories: Category[];
   filterCategory: string | null;
   handleFilterChange: (value: string) => void;
+  products: Product[];
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   isCategoryFormActive: boolean;
   onAdd: () => void;
   onEdit: (product: Product) => void;
-  onDelete: (id: string, name: string) => void;
-  onView: (product: Product) => void;
+  onDelete: (id: string) => void;
+  onViewDetails: (product: Product) => void;
+  onToggleActive: (product: Product) => void;
 }
 
 export default function ProductList({
@@ -25,53 +26,17 @@ export default function ProductList({
                                       categories,
                                       filterCategory,
                                       handleFilterChange,
+                                      products,
+                                      setProducts,
                                       isCategoryFormActive,
                                       onAdd,
                                       onEdit,
                                       onDelete,
-                                      onView,
+                                      onViewDetails,
+                                      onToggleActive,
                                     }: ProductListProps) {
-  const [products, setProducts] = React.useState<Product[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [gridErrorMessage, setGridErrorMessage] = React.useState<string | null>(null);
   const [currentProductPage, setCurrentProductPage] = React.useState(1);
-  const [searchTerm, setSearchTerm] = useState('');
   const itemsPerPage = 10;
-
-  React.useEffect(() => {
-    if (!isAuthenticated || !token) {
-      setLoading(false);
-      return;
-    }
-
-    const fetchData = async () => {
-      try {
-        setGridErrorMessage(null);
-        const productList = await fetchProducts(token, logout, categories, filterCategory || 'all');
-        let filteredProducts = productList;
-        if (filterCategory === 'inactive') {
-          filteredProducts = productList.filter((product) => !product.isActive);
-        } else if (filterCategory && filterCategory !== 'all') {
-          filteredProducts = productList.filter((product) => product.category_id === filterCategory && product.isActive);
-        } else {
-          filteredProducts = productList.filter((product) => product.isActive);
-        }
-        // Apply search filter
-        if (searchTerm) {
-          filteredProducts = filteredProducts.filter((product) =>
-            product.name.toLowerCase().includes(searchTerm.toLowerCase())
-          );
-        }
-        setProducts(filteredProducts);
-        setGridErrorMessage(filteredProducts.length === 0 && filterCategory !== null ? 'No products found for this filter' : null);
-      } catch (err) {
-        setGridErrorMessage(err instanceof Error ? err.message : 'Failed to fetch products');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [isAuthenticated, token, logout, categories, filterCategory, searchTerm]);
 
   React.useEffect(() => {
     const totalProductPages = Math.ceil(products.length / itemsPerPage);
@@ -82,85 +47,10 @@ export default function ProductList({
     }
   }, [products, currentProductPage]);
 
-  const handleFilterChangeLocal = async (value: string) => {
-    if (!isAuthenticated || !token) {
-      toast.error('Please log in to filter products');
-      return;
-    }
-    handleFilterChange(value);
-    setCurrentProductPage(1);
-    try {
-      const productList = await fetchProducts(token, logout, categories, value === 'all' ? null : value);
-      let filteredProducts = productList;
-      if (value === 'inactive') {
-        filteredProducts = productList.filter((product) => !product.isActive);
-      } else if (value !== 'all') {
-        filteredProducts = productList.filter((product) => product.category_id === value && product.isActive);
-      } else {
-        filteredProducts = productList.filter((product) => product.isActive);
-      }
-      // Apply search filter
-      if (searchTerm) {
-        filteredProducts = filteredProducts.filter((product) =>
-          product.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      }
-      setProducts(filteredProducts);
-      setGridErrorMessage(filteredProducts.length === 0 ? `No ${value === 'inactive' ? 'inactive' : 'active'} products found` : null);
-    } catch (err) {
-      setGridErrorMessage(err instanceof Error ? err.message : 'Failed to fetch products');
-      toast.error(err instanceof Error ? err.message : 'Failed to fetch products');
-    }
-  };
-
-  const handleToggleActive = async (product: Product) => {
-    if (!isAuthenticated || !token) {
-      toast.error('Please log in to update product status');
-      return;
-    }
-    const newStatus = !product.isActive;
-    setProducts((prev) =>
-      prev.map((prod) => (prod._id === product._id ? { ...prod, isActive: newStatus } : prod))
-    );
-    try {
-      await updateProductStatus(token, logout, product._id, newStatus);
-      const updatedProducts = await fetchProducts(token, logout, categories, filterCategory || 'all');
-      let filteredProducts = updatedProducts.filter((p) => p.isActive || (filterCategory === 'inactive' && !p.isActive));
-      // Apply search filter
-      if (searchTerm) {
-        filteredProducts = filteredProducts.filter((product) =>
-          product.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      }
-      setProducts(filteredProducts);
-      toast.success(`Product ${newStatus ? 'activated' : 'deactivated'} successfully`);
-    } catch (err) {
-      setProducts((prev) =>
-        prev.map((prod) =>
-          prod._id === product._id ? { ...prod, isActive: !newStatus } : prod
-        )
-      );
-      toast.error(err instanceof Error ? err.message : 'Failed to update product status');
-    }
-  };
-
   const indexOfLastProduct = currentProductPage * itemsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
   const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
   const totalProductPages = Math.ceil(products.length / itemsPerPage);
-
-  if (loading) {
-    return (
-      <div className="lg:col-span-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-          {Array(4).fill(0).map((_, idx) => (
-            <div key={idx} className="h-40 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="relative z-0" style={{ opacity: isCategoryFormActive ? 0.5 : 1, pointerEvents: isCategoryFormActive ? 'none' : 'auto' }}>
@@ -179,51 +69,20 @@ export default function ProductList({
         </button>
       </div>
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search Products</label>
-        <div className="relative">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
-            placeholder="Search products..."
-          />
-        </div>
-      </div>
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Category</label>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => handleFilterChangeLocal('all')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-              filterCategory === '' || filterCategory === 'all' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-            }`}
-            disabled={isCategoryFormActive}
-          >
-            All Products
-          </button>
-          <button
-            onClick={() => handleFilterChangeLocal('inactive')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-              filterCategory === 'inactive' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-            }`}
-            disabled={isCategoryFormActive}
-          >
-            Inactive Products
-          </button>
+        <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Category</label>
+        <select
+          id="categoryFilter"
+          value={filterCategory || 'all'}
+          onChange={(e) => handleFilterChange(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          disabled={isCategoryFormActive}
+        >
+          <option value="all">All Categories</option>
+          <option value="inactive">Inactive Products</option>
           {categories.map((category) => (
-            <button
-              key={category._id}
-              onClick={() => handleFilterChangeLocal(category._id)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                filterCategory === category._id ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-              }`}
-              disabled={isCategoryFormActive}
-            >
-              {category.name}
-            </button>
+            <option key={category._id} value={category._id}>{category.name}</option>
           ))}
-        </div>
+        </select>
       </div>
       {currentProducts.length > 0 ? (
         <div className="grid grid-cols-5 gap-2">
@@ -233,7 +92,7 @@ export default function ProductList({
               className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:scale-[1.02] hover:shadow-lg transition-all duration-300 ${!product.isActive ? 'opacity-50' : ''}`}
               style={{ height: '240px', width: '180px' }}
             >
-              <div className="relative h-1/2 cursor-pointer" onClick={() => !isCategoryFormActive && onView(product)}>
+              <div className="relative h-1/2 cursor-pointer" onClick={() => !isCategoryFormActive && onViewDetails(product)}>
                 {product.pictureUrl ? (
                   <img
                     src={product.pictureUrl}
@@ -261,7 +120,7 @@ export default function ProductList({
                       <input
                         type="checkbox"
                         checked={product.isActive}
-                        onChange={() => !isCategoryFormActive && handleToggleActive(product)}
+                        onChange={() => !isCategoryFormActive && onToggleActive(product)}
                         className="sr-only"
                         disabled={isCategoryFormActive}
                       />
@@ -280,7 +139,7 @@ export default function ProductList({
                       <PencilIcon className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => !isCategoryFormActive && onDelete(product._id, product.name)}
+                      onClick={() => !isCategoryFormActive && onDelete(product._id)}
                       className="text-red-600 dark:hover:text-red-400 p-0.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50"
                       title="Delete"
                       disabled={isCategoryFormActive}
@@ -294,10 +153,9 @@ export default function ProductList({
           ))}
         </div>
       ) : (
-        <div className="text-center py-8 text-gray-600 dark:text-gray-400">{gridErrorMessage || 'No products available'}</div>
-      )}
-      {gridErrorMessage && currentProducts.length > 0 && (
-        <div className="mt-4 text-red-600 dark:text-red-400 text-center text-sm">{gridErrorMessage}</div>
+        <div className="text-center py-8 text-gray-600 dark:text-gray-400">
+          {products.length === 0 ? 'No products available' : 'No products found for this filter'}
+        </div>
       )}
       {totalProductPages > 0 && (
         <div className="flex justify-between items-center mt-4 px-4">

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon, PlusCircleIcon } from '@heroicons/react/24/solid';
-import { Toaster } from 'react-hot-toast';
 import { addProduct, updateProduct, deleteProduct } from '../../services/productService';
 import { Category, Product } from './productTypes';
+import FlashMessage from '../FlashMessage';
 
 interface ProductCrudProps {
   token: string | null;
   logout: () => void;
   categories: Category[];
-  product?: Product;
+  product?: Product | null;
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   products: Product[];
   editingProductId?: string | null;
@@ -17,6 +17,7 @@ interface ProductCrudProps {
   onCancel: () => void;
   isCategoryFormActive: boolean;
   mode: 'add' | 'edit' | 'delete';
+  setFlashMessageInParent?: (message: { message: string; type: 'success' | 'error' }) => void;
 }
 
 export default function ProductCrud({
@@ -32,6 +33,7 @@ export default function ProductCrud({
                                       onCancel,
                                       isCategoryFormActive,
                                       mode,
+                                      setFlashMessageInParent,
                                     }: ProductCrudProps) {
   const [newProductName, setNewProductName] = useState(product?.name || '');
   const [newProductPrice, setNewProductPrice] = useState(product?.price.toString() || '');
@@ -39,7 +41,7 @@ export default function ProductCrud({
   const [newProductDesc, setNewProductDesc] = useState(product?.description || '');
   const [newProductPicture, setNewProductPicture] = useState<File | null>(null);
   const [newProductPicturePreview, setNewProductPicturePreview] = useState<string | undefined>(product?.pictureUrl || undefined);
-  const [formErrorMessage, setFormErrorMessage] = useState<string | null>(null);
+  const [flashMessage, setFlashMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     return () => {
@@ -59,73 +61,97 @@ export default function ProductCrud({
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProductName.trim() || !newProductPrice.trim() || !newProductCategory || !newProductDesc.trim() || !newProductPicture) {
-      setFormErrorMessage('All fields, including an image, are required');
+    if (!token) {
+      const errorMessage = { message: 'Please log in to add a product', type: 'error' };
+      setFlashMessage(errorMessage);
+      setFlashMessageInParent?.(errorMessage);
       return;
     }
-    const priceNum = parseFloat(newProductPrice);
-    if (isNaN(priceNum) || priceNum <= 0) {
-      setFormErrorMessage('Price must be a valid positive number');
-      return;
-    }
-    const formData = new FormData();
-    formData.append('name', newProductName);
-    formData.append('price', newProductPrice);
-    formData.append('category_id', newProductCategory);
-    formData.append('description', newProductDesc);
-    formData.append('picture', newProductPicture);
+
     try {
+      const formData = new FormData();
+      if (newProductName) formData.append('name', newProductName);
+      if (newProductPrice) formData.append('price', newProductPrice);
+      if (newProductCategory) formData.append('category_id', newProductCategory);
+      if (newProductDesc) formData.append('description', newProductDesc);
+      if (newProductPicture) formData.append('picture', newProductPicture);
+
       const newProduct = await addProduct(token, logout, categories, formData);
-      setProducts([...products, newProduct].filter((p) => p.isActive));
+      setProducts((prev) => [...prev, newProduct]);
+      const successMessage = { message: `Product "${newProductName || 'new product'}" added successfully!`, type: 'success' };
+      setFlashMessageInParent?.(successMessage);
       onCancel();
     } catch (err) {
-      setFormErrorMessage(err instanceof Error ? err.message : 'Failed to add product');
+      const errorMessage = { message: err instanceof Error ? err.message : 'Failed to add product', type: 'error' };
+      setFlashMessage(errorMessage);
+      setFlashMessageInParent?.(errorMessage);
     }
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProductName.trim() || !newProductPrice.trim() || !newProductCategory || !newProductDesc.trim()) {
-      setFormErrorMessage('All fields are required');
+    if (!token || !editingProductId) {
+      const errorMessage = { message: 'Please log in to update a product', type: 'error' };
+      setFlashMessage(errorMessage);
+      setFlashMessageInParent?.(errorMessage);
       return;
     }
-    const priceNum = parseFloat(newProductPrice);
-    if (isNaN(priceNum) || priceNum <= 0) {
-      setFormErrorMessage('Price must be a valid positive number');
-      return;
-    }
-    const formData = new FormData();
-    formData.append('id', editingProductId!);
-    formData.append('name', newProductName);
-    formData.append('price', newProductPrice);
-    formData.append('category_id', newProductCategory);
-    formData.append('description', newProductDesc);
-    if (newProductPicture) formData.append('picture', newProductPicture);
+
     try {
+      const formData = new FormData();
+      formData.append('id', editingProductId);
+      if (newProductName) formData.append('name', newProductName);
+      if (newProductPrice) formData.append('price', newProductPrice);
+      if (newProductCategory) formData.append('category_id', newProductCategory);
+      if (newProductDesc) formData.append('description', newProductDesc);
+      if (newProductPicture) formData.append('picture', newProductPicture);
+
       const updatedProduct = await updateProduct(token, logout, categories, formData);
-      setProducts(products.map((prod) => (prod._id === editingProductId ? updatedProduct : prod)).filter((p) => p.isActive));
+      setProducts((prev) => prev.map((prod) => (prod._id === editingProductId ? updatedProduct : prod)));
+      const successMessage = { message: `Product "${newProductName || 'updated product'}" updated successfully!`, type: 'success' };
+      setFlashMessageInParent?.(successMessage);
       onCancel();
     } catch (err) {
-      setFormErrorMessage(err instanceof Error ? err.message : 'Failed to update product');
+      const errorMessage = { message: err instanceof Error ? err.message : 'Failed to update product', type: 'error' };
+      setFlashMessage(errorMessage);
+      setFlashMessageInParent?.(errorMessage);
     }
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deleteProductId) return;
+    if (!token || !deleteProductId) {
+      const errorMessage = { message: 'Please log in to delete a product', type: 'error' };
+      setFlashMessage(errorMessage);
+      setFlashMessageInParent?.(errorMessage);
+      return;
+    }
+
     try {
       await deleteProduct(token, logout, deleteProductId);
-      setProducts(products.filter((prod) => prod._id !== deleteProductId));
-      if (setGridErrorMessage) setGridErrorMessage(null);
+      setProducts((prev) => prev.filter((prod) => prod._id !== deleteProductId));
+      const successMessage = { message: `Product "${product?.name || 'product'}" deleted successfully!`, type: 'success' };
+      setFlashMessageInParent?.(successMessage);
+      setGridErrorMessage?.(null);
+      setFlashMessage(null);
       onCancel();
     } catch (err) {
-      if (setGridErrorMessage) setGridErrorMessage(err instanceof Error ? err.message : 'Failed to delete product');
+      const errorMessage = { message: err instanceof Error ? err.message : 'Failed to delete product', type: 'error' };
+      setFlashMessage(errorMessage);
+      setFlashMessageInParent?.(errorMessage);
+      setGridErrorMessage?.(err instanceof Error ? err.message : 'Failed to delete product');
     }
   };
 
   if (mode === 'add') {
     return (
       <div className="absolute inset-0 z-10 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-y-auto">
-        <Toaster position="top-right" />
+        {flashMessage && (
+          <FlashMessage
+            message={flashMessage.message}
+            type={flashMessage.type}
+            onClose={() => setFlashMessage(null)}
+          />
+        )}
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add Product</h3>
           <button onClick={onCancel} className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
@@ -142,7 +168,6 @@ export default function ProductCrud({
               onChange={(e) => setNewProductName(e.target.value)}
               placeholder="Enter product name"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
             />
           </div>
           <div>
@@ -155,7 +180,6 @@ export default function ProductCrud({
               placeholder="Price"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               step="0.01"
-              required
             />
           </div>
           <div>
@@ -165,7 +189,6 @@ export default function ProductCrud({
               value={newProductCategory}
               onChange={(e) => setNewProductCategory(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
               disabled={isCategoryFormActive}
             >
               <option value="">Select a category</option>
@@ -183,7 +206,6 @@ export default function ProductCrud({
               placeholder="Product description"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
               rows={3}
-              required
             />
           </div>
           <div>
@@ -195,7 +217,6 @@ export default function ProductCrud({
                 className="hidden"
                 id="imageUpload"
                 accept="image/jpeg,image/png,image/webp"
-                required
                 disabled={isCategoryFormActive}
               />
               <label
@@ -213,7 +234,6 @@ export default function ProductCrud({
               )}
             </div>
           </div>
-          {formErrorMessage && <div className="text-red-500 dark:text-red-400 text-sm text-center">{formErrorMessage}</div>}
           <div className="flex justify-end gap-x-3">
             <button
               type="button"
@@ -238,7 +258,13 @@ export default function ProductCrud({
   if (mode === 'edit') {
     return (
       <div className="absolute inset-0 z-10 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-y-auto">
-        <Toaster position="top-right" />
+        {flashMessage && (
+          <FlashMessage
+            message={flashMessage.message}
+            type={flashMessage.type}
+            onClose={() => setFlashMessage(null)}
+          />
+        )}
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Product</h3>
           <button onClick={onCancel} className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
@@ -255,7 +281,6 @@ export default function ProductCrud({
               onChange={(e) => setNewProductName(e.target.value)}
               placeholder="Enter product name"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
             />
           </div>
           <div>
@@ -268,7 +293,6 @@ export default function ProductCrud({
               placeholder="Price"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               step="0.01"
-              required
             />
           </div>
           <div>
@@ -278,7 +302,6 @@ export default function ProductCrud({
               value={newProductCategory}
               onChange={(e) => setNewProductCategory(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
               disabled={isCategoryFormActive}
             >
               <option value="">Select a category</option>
@@ -296,7 +319,6 @@ export default function ProductCrud({
               placeholder="Product description"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
               rows={3}
-              required
             />
           </div>
           <div>
@@ -325,7 +347,6 @@ export default function ProductCrud({
               )}
             </div>
           </div>
-          {formErrorMessage && <div className="text-red-500 dark:text-red-400 text-sm text-center">{formErrorMessage}</div>}
           <div className="flex justify-end gap-x-3">
             <button
               type="button"
@@ -351,12 +372,16 @@ export default function ProductCrud({
     return (
       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm">
+          {flashMessage && (
+            <FlashMessage
+              message={flashMessage.message}
+              type={flashMessage.type}
+              onClose={() => setFlashMessage(null)}
+            />
+          )}
           <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Confirm Deletion</h3>
-            <button
-              onClick={onCancel}
-              className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-            >
+            <button onClick={onCancel} className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
               <XMarkIcon className="w-6 h-6" />
             </button>
           </div>
