@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Order } from './orderTypes';
+import { markNotificationAsRead, getOrderQueue, QueueOrder } from '../../services/orderService';
 
 interface OrderNotificationsProps {
   orders: Order[];
@@ -16,7 +17,68 @@ interface OrderNotificationsProps {
   setSelectedOrder: (order: Order | null) => void;
   preparationTime: number;
   setTimeLeft: React.Dispatch<React.SetStateAction<{ [key: string]: number }>>;
+  token: string | null;
+  logout: () => void;
+  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
+  setMessage: (message: string) => void;
 }
+
+interface NotificationItem {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  message: string;
+  timestamp: Date;
+  isRead: boolean;
+  status: string;
+  tab: string;
+}
+
+const mapStatusToTab = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    'pending': 'pending',
+    'processing': 'to_be_prepared',
+    'ready': 'ready',
+    'cancelled': 'cancelled',
+    'picked': 'completed'
+  };
+  return statusMap[status] || 'pending';
+};
+
+const getNotificationMessage = (status: string, timestamp: Date): string => {
+  const timeStr = timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const messages: Record<string, string> = {
+    'pending': `${timeStr} - Order received`,
+    'processing': `${timeStr} - Order prepared`,
+    'ready': `${timeStr} - Order ready`,
+    'cancelled': `${timeStr} - Order cancelled`,
+    'picked': `${timeStr} - Order completed`
+  };
+  return messages[status] || `${timeStr} - Order updated`;
+};
+
+const getStatusIcon = (status: string): string => {
+  const icons: Record<string, string> = {
+    'pending': '🆕',
+    'processing': '✅',
+    'ready': '🚀',
+    'cancelled': '❌',
+    'picked': '✔️'
+  };
+  return icons[status] || '📋';
+};
+
+const getStatusColor = (status: string): string => {
+  const colors: Record<string, string> = {
+    'pending': 'border-gray-300 bg-gray-50',
+    'processing': 'border-green-300 bg-green-50',
+    'ready': 'border-blue-300 bg-blue-50',
+    'cancelled': 'border-red-300 bg-red-50',
+    'picked': 'border-orange-300 bg-orange-50'
+  };
+  return colors[status] || 'border-gray-300 bg-gray-50';
+};
 
 export default function OrderNotifications({
                                              orders,
@@ -33,100 +95,60 @@ export default function OrderNotifications({
                                              setSelectedOrder,
                                              preparationTime,
                                              setTimeLeft,
+                                             token,
+                                             logout,
+                                             setOrders,
+                                             setMessage,
                                            }: OrderNotificationsProps) {
-  const [alerts, setAlerts] = useState<{ id: number; text: string; read: boolean; tab: string; orderId?: string }[]>([]);
-  const [lastOrderStatus, setLastOrderStatus] = useState<{ [key: string]: string }>({});
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [queueOrders, setQueueOrders] = useState<QueueOrder[]>([]);
 
   useEffect(() => {
-    const savedAlerts = localStorage.getItem('readAlerts');
-    const initialAlerts: { id: number; text: string; read: boolean; tab: string; orderId?: string }[] = savedAlerts ? JSON.parse(savedAlerts) : [];
-
-    const newAlerts: { id: number; text: string; read: boolean; tab: string; orderId?: string }[] = [];
-    const pendingOrders = groupedOrders.pending || [];
-    const toBePreparedOrders = groupedOrders.to_be_prepared || [];
-    const readyOrders = groupedOrders.ready || [];
-    const cancelledOrders = groupedOrders.cancelled || [];
-    const completedOrders = groupedOrders.completed || [];
-
-    pendingOrders.forEach(order => {
-      const prevStatus = lastOrderStatus[order._id] || '';
-      if (order.status.toLowerCase() === 'pending' && prevStatus !== 'pending') {
-        const existingAlert = initialAlerts.find(a => a.orderId === order._id && a.text.includes(order.order_number));
-        newAlerts.push({
-          id: Date.now() + Math.random(),
-          text: `🆕 New order #${order.order_number} received! (${order.customer_name})`,
-          read: existingAlert ? existingAlert.read : false,
-          tab: 'pending',
-          orderId: order._id
-        });
+    const fetchQueueOrders = async () => {
+      if (token) {
+        try {
+          const queueData = await getOrderQueue(token, logout);
+          setQueueOrders(queueData);
+        } catch (error) {
+          console.error('Failed to fetch queue orders:', error);
+          setMessage('Failed to load queue data');
+        }
       }
-      setLastOrderStatus(prev => ({ ...prev, [order._id]: order.status.toLowerCase() }));
-    });
+    };
 
-    toBePreparedOrders.forEach(order => {
-      const prevStatus = lastOrderStatus[order._id] || '';
-      if (order.status.toLowerCase() === 'processing' && prevStatus !== 'processing') {
-        const existingAlert = initialAlerts.find(a => a.orderId === order._id && a.text.includes(order.order_number));
-        newAlerts.push({
-          id: Date.now() + Math.random(),
-          text: `✅ Order #${order.order_number} accepted! (${order.customer_name})`,
-          read: existingAlert ? existingAlert.read : false,
-          tab: 'to_be_prepared',
-          orderId: order._id
-        });
-      }
-      setLastOrderStatus(prev => ({ ...prev, [order._id]: order.status.toLowerCase() }));
-    });
+    fetchQueueOrders();
+    const interval = setInterval(fetchQueueOrders, 30000);
+    return () => clearInterval(interval);
+  }, [token, logout, setMessage]);
 
-    readyOrders.forEach(order => {
-      const prevStatus = lastOrderStatus[order._id] || '';
-      if (order.status.toLowerCase() === 'ready' && prevStatus !== 'ready') {
-        const existingAlert = initialAlerts.find(a => a.orderId === order._id && a.text.includes(order.order_number));
-        newAlerts.push({
-          id: Date.now() + Math.random(),
-          text: `🚀 Order #${order.order_number} is ready! (${order.customer_name})`,
-          read: existingAlert ? existingAlert.read : false,
-          tab: 'ready',
-          orderId: order._id
-        });
-      }
-      setLastOrderStatus(prev => ({ ...prev, [order._id]: order.status.toLowerCase() }));
+  useEffect(() => {
+    const newNotifications: NotificationItem[] = [];
+    ['pending', 'to_be_prepared', 'ready', 'cancelled', 'completed'].forEach(tab => {
+      const tabOrders = groupedOrders[tab] || [];
+      tabOrders.forEach(order => {
+        const currentStatus = order.status.toLowerCase();
+        const existing = notifications.find(n => n.orderId === order._id);
+        if (!existing || existing.status !== currentStatus) {
+          const timestamp = new Date(order.createdAt || new Date());
+          newNotifications.push({
+            id: `${order._id}-${Date.now()}`,
+            orderId: order._id,
+            orderNumber: order.order_number,
+            customerName: order.customer_name || 'Guest',
+            message: getNotificationMessage(currentStatus, timestamp),
+            timestamp,
+            isRead: order.notification_status === 1,
+            status: currentStatus,
+            tab: mapStatusToTab(currentStatus)
+          });
+        }
+      });
     });
-
-    cancelledOrders.forEach(order => {
-      const prevStatus = lastOrderStatus[order._id] || '';
-      if (order.status.toLowerCase() === 'cancelled' && prevStatus !== 'cancelled') {
-        const existingAlert = initialAlerts.find(a => a.orderId === order._id && a.text.includes(order.order_number));
-        newAlerts.push({
-          id: Date.now() + Math.random(),
-          text: `❌ Order #${order.order_number} cancelled! (${order.customer_name})`,
-          read: existingAlert ? existingAlert.read : false,
-          tab: 'cancelled',
-          orderId: order._id
-        });
-      }
-      setLastOrderStatus(prev => ({ ...prev, [order._id]: order.status.toLowerCase() }));
-    });
-
-    completedOrders.forEach(order => {
-      const prevStatus = lastOrderStatus[order._id] || '';
-      if (order.status.toLowerCase() === 'picked' && prevStatus !== 'picked') {
-        const existingAlert = initialAlerts.find(a => a.orderId === order._id && a.text.includes(order.order_number));
-        newAlerts.push({
-          id: Date.now() + Math.random(),
-          text: `✔️ Order #${order.order_number} completed! (${order.customer_name})`,
-          read: existingAlert ? existingAlert.read : false,
-          tab: 'completed',
-          orderId: order._id
-        });
-      }
-      setLastOrderStatus(prev => ({ ...prev, [order._id]: order.status.toLowerCase() }));
-    });
-
-    if (newAlerts.length > 0) {
-      setAlerts(prev => [...newAlerts, ...prev.filter(a => !newAlerts.some(na => na.id === a.id))]);
+    if (newNotifications.length > 0) {
+      setNotifications(prev => [...newNotifications.filter(n => !prev.some(p => p.orderId === n.orderId)), ...prev].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
     }
-  }, [orders, groupedOrders.pending, groupedOrders.to_be_prepared, groupedOrders.ready, groupedOrders.cancelled, groupedOrders.completed]);
+  }, [orders, groupedOrders, notifications, queueOrders]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -136,144 +158,104 @@ export default function OrderNotifications({
         const estimatedTime = order.estimated_time || preparationTime;
         const elapsedMs = Date.now() - createdAt.getTime();
         const estimatedTimeMs = estimatedTime * 60 * 1000;
-        const remainingMs = Math.max(0, estimatedTimeMs - elapsedMs);
-        newTimeLeft[order._id] = Math.floor(remainingMs / 1000);
+        newTimeLeft[order._id] = Math.max(0, Math.floor((estimatedTimeMs - elapsedMs) / 1000));
       });
       setTimeLeft(newTimeLeft);
     }, 1000);
     return () => clearInterval(timer);
   }, [groupedOrders.to_be_prepared, preparationTime, setTimeLeft]);
 
-  const getUnreadAlertsCount = (tabKey: string) => {
-    return alerts.filter(alert => !alert.read && alert.tab === tabKey).length;
-  };
-
-  const markAlertAsRead = (alertId: number) => {
-    setAlerts(prev => {
-      const updatedAlerts = prev.map(alert =>
-        alert.id === alertId ? { ...alert, read: true } : alert
-      );
-      localStorage.setItem('readAlerts', JSON.stringify(updatedAlerts));
-      return updatedAlerts;
-    });
-  };
-
-  const openModalForTab = (tabKey: string) => {
-    setShowModal(true);
-  };
-
-  const handleNotificationClick = (alert: { id: number; text: string; read: boolean; tab: string; orderId?: string }) => {
-    markAlertAsRead(alert.id);
-    if (alert.orderId) {
-      const order = orders.find(o => o._id === alert.orderId);
-      if (order) {
-        setSelectedOrder(order);
-        setShowOrderModal(true);
-        setShowModal(false);
+  const handleNotificationClick = async (notification: NotificationItem) => {
+    if (token && notification.orderId) {
+      try {
+        const order = orders.find(o => o._id === notification.orderId);
+        if (order) {
+          const response = await markNotificationAsRead(token, logout, order.order_number);
+          setOrders(prevOrders => prevOrders.map(o => o._id === response._id ? { ...response, items: o.items } : o));
+          setSelectedOrderId(order._id);
+        }
+      } catch (error) {
+        setMessage(`❌ Failed to mark notification as read: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   };
 
-  return (
-    <div className="mb-8 bg-white rounded-xl shadow-sm p-2">
-      <div className="flex flex-wrap gap-2">
-        {tabs.map(tab => {
-          const ordersCount = groupedOrders[tab.key]?.length || 0;
-          const unreadCount = getUnreadAlertsCount(tab.key);
-          return (
-            <div key={tab.key} className="relative flex-1 min-w-[140px]">
-              <button
-                onClick={() => {
-                  setActiveTab(tab.key);
-                  setPage(1);
-                }}
-                className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                  activeTab === tab.key
-                    ? `${tab.color} text-white shadow-md transform scale-105`
-                    : `${tab.lightColor} ${tab.textColor} hover:scale-102`
-                }`}
-              >
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <span>{tab.label}</span>
-                    <span className="ml-2 bg-gray-200 text-gray-800 rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                      {ordersCount}
-                    </span>
-                  </div>
-                </div>
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openModalForTab(tab.key);
-                }}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center"
-              >
-                <span className="text-lg">🔔</span>
-                {unreadCount > 0 && (
-                  <span className="ml-0.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-            </div>
-          );
-        })}
-      </div>
+  const renderOrderDetails = (orderId: string) => {
+    const order = orders.find(o => o._id === orderId);
+    const queueOrder = queueOrders.find(q => q.order_id === orderId);
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-96 max-h-[80vh] flex flex-col">
-            <h2 className="text-xl font-bold mb-4">
-              {tabs.find(t => t.key === activeTab)?.label} Notifications
-            </h2>
-            <div className="flex-1 overflow-y-auto pr-2" style={{ maxHeight: '60vh' }}>
-              {alerts
-                .filter(alert => alert.tab === activeTab)
-                .sort((a, b) => b.id - a.id)
-                .map(alert => (
-                  <div
-                    key={alert.id}
-                    onClick={() => handleNotificationClick(alert)}
-                    className={`p-3 rounded border mb-2 cursor-pointer ${
-                      alert.read ? 'bg-gray-50 text-gray-700' : 'bg-white font-bold text-black'
-                    } ${
-                      alert.text.includes('🆕') ? 'border-blue-200' :
-                        alert.text.includes('✅') ? 'border-green-200' :
-                          alert.text.includes('🚀') ? 'border-blue-200' :
-                            alert.text.includes('❌') ? 'border-red-200' :
-                              alert.text.includes('✔️') ? 'border-orange-200' : 'border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-start">
-                      <span className="mr-2 mt-0.5">
-                        {alert.text.includes('🆕') ? '🆕' :
-                          alert.text.includes('✅') ? '✅' :
-                            alert.text.includes('🚀') ? '🚀' :
-                              alert.text.includes('❌') ? '❌' :
-                                alert.text.includes('✔️') ? '✔️' : '🔔'}
-                      </span>
-                      <span>
-                        {alert.text.replace(/🆕|✅|🚀|❌|✔️/g, '').trim()}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              {alerts.filter(alert => alert.tab === activeTab).length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  No notifications yet
-                </div>
-              )}
-            </div>
-            <button
-              onClick={() => setShowModal(false)}
-              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 w-full"
-            >
-              Close
-            </button>
-          </div>
+    if (!order) return null;
+
+    const orderItems = queueOrder?.items || order.items || [];
+
+    return (
+      <div className="p-4 bg-gray-50 rounded-lg mt-4">
+        <h3 className="text-lg font-bold mb-2">Order #{order.order_number} Details</h3>
+        <div className="space-y-4">
+          <p><strong>Customer:</strong> {order.customer_name || 'Guest'}</p>
+          <h4 className="font-semibold mt-2">Items:</h4>
+          <ul className="list-disc pl-5 space-y-2">
+            {orderItems.length > 0 ? (
+              orderItems.map((item, index) => {
+                const productName = item.product?.name || item.product_name || 'Unknown';
+                const quantity = item.quantity || 1;
+                const pictureUrl = item.product?.pictureUrl;
+
+                return (
+                  <li key={index} className="flex items-center space-x-2">
+                    {pictureUrl ? (
+                      <img src={pictureUrl} alt={productName} className="w-8 h-8 object-cover rounded-md" />
+                    ) : (
+                      <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 text-xs">📦</div>
+                    )}
+                    <span>{productName} x{quantity}</span>
+                  </li>
+                );
+              })
+            ) : (
+              <li className="text-gray-500">No items available</li>
+            )}
+          </ul>
+          <button
+            onClick={() => setSelectedOrderId(null)}
+            className="mt-4 flex items-center px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+            Back
+          </button>
         </div>
-      )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ display: showModal ? 'flex' : 'none' }}>
+      <div className="bg-white rounded-xl p-6 w-96 max-h-[50vh] flex flex-col">
+        <h2 className="text-xl font-bold mb-4">{tabs.find(t => t.key === activeTab)?.label} Notifications</h2>
+        <div className="flex-1 overflow-y-auto pr-2" style={{ maxHeight: '40vh' }}>
+          {!selectedOrderId && notifications
+            .filter(n => n.tab === activeTab)
+            .map(notification => (
+              <div
+                key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
+                className={`p-3 rounded border mb-2 cursor-pointer ${notification.isRead ? 'bg-gray-50 text-gray-700' : 'bg-white font-bold text-black'} ${getStatusColor(notification.status)}`}
+              >
+                <div className="flex items-start">
+                  <span className="mr-2 mt-0.5">{getStatusIcon(notification.status)}</span>
+                  <span>{notification.message}</span>
+                </div>
+              </div>
+            ))}
+          {selectedOrderId && renderOrderDetails(selectedOrderId)}
+          {!selectedOrderId && notifications.filter(n => n.tab === activeTab).length === 0 && (
+            <div className="text-center py-8 text-gray-500">No notifications yet</div>
+          )}
+        </div>
+        <button onClick={() => setShowModal(false)} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 w-full">Close</button>
+      </div>
     </div>
   );
 }
