@@ -16,10 +16,10 @@ export default function Header({
   darkMode: boolean;
   onDarkModeToggle: () => void;
   onLogout: () => void;
-  token: string | null; // Added token prop
-  user: any | null; // Added user prop
+  token: string | null;
+  user: any | null;
 }) {
-  const [logo, setLogo] = useState<string>(''); // State for logo URL
+  const [logo, setLogo] = useState<string>('');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const referenceRef = useRef<HTMLButtonElement>(null);
   const popperRef = useRef<HTMLDivElement>(null);
@@ -31,6 +31,24 @@ export default function Header({
       { name: 'flip', options: { fallbackPlacements: ['bottom-start', 'top-end', 'top-start'] } },
     ],
   });
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isProfileOpen &&
+        referenceRef.current &&
+        popperRef.current &&
+        !referenceRef.current.contains(event.target as Node) &&
+        !popperRef.current.contains(event.target as Node)
+      ) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isProfileOpen]);
 
   // Fetch logo from backend
   useEffect(() => {
@@ -87,7 +105,7 @@ export default function Header({
           </button>
           <div className="flex items-center gap-2">
             <img
-              src={logo || '/file.svg'} // Fallback to default image if logo is not available
+              src={logo || '/file.svg'}
               alt="Logo"
               className="w-8 h-8 rounded-full object-cover"
             />
