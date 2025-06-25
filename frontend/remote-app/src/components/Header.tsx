@@ -1,8 +1,25 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePopper } from 'react-popper';
 import { Bars3Icon, UserCircleIcon, BellIcon } from '@heroicons/react/24/outline';
 
-export default function Header({ onSidebarToggle, onNavigate }: { onSidebarToggle: () => void; onNavigate: (path: string) => void; }) {
+export default function Header({
+  onSidebarToggle,
+  onNavigate,
+  darkMode,
+  onDarkModeToggle,
+  onLogout,
+  token,
+  user,
+}: {
+  onSidebarToggle: () => void;
+  onNavigate: (path: string) => void;
+  darkMode: boolean;
+  onDarkModeToggle: () => void;
+  onLogout: () => void;
+  token: string | null; // Added token prop
+  user: any | null; // Added user prop
+}) {
+  const [logo, setLogo] = useState<string>(''); // State for logo URL
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const referenceRef = useRef<HTMLButtonElement>(null);
   const popperRef = useRef<HTMLDivElement>(null);
@@ -14,6 +31,42 @@ export default function Header({ onSidebarToggle, onNavigate }: { onSidebarToggl
       { name: 'flip', options: { fallbackPlacements: ['bottom-start', 'top-end', 'top-start'] } },
     ],
   });
+
+  // Fetch logo from backend
+  useEffect(() => {
+    const fetchLogo = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch('http://192.168.18.107:3000/users/api/v1/details', {
+          method: 'GET',
+          credentials: 'include',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error('Failed to fetch logo');
+        const response = await res.json();
+        const userData = response.data.data.user;
+        setLogo(userData.logoUrl || '');
+      } catch (err) {
+        console.error('Fetch logo error:', err);
+      }
+    };
+
+    fetchLogo();
+  }, [token]);
+
+  // Set logo from user context if available (fallback)
+  useEffect(() => {
+    setLogo(user?.logoUrl || '');
+  }, [user]);
+
+  useEffect(() => {
+    const handleThemeChange = (e: CustomEvent) => {
+      const { theme } = e.detail;
+      document.documentElement.setAttribute('data-theme', theme);
+    };
+    window.addEventListener('themeChange', handleThemeChange as EventListener);
+    return () => window.removeEventListener('themeChange', handleThemeChange as EventListener);
+  }, []);
 
   const handleProfileClick = () => {
     onNavigate('/profile');
@@ -33,16 +86,17 @@ export default function Header({ onSidebarToggle, onNavigate }: { onSidebarToggl
             <Bars3Icon className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-2">
-            <span className="text-indigo-400 text-xl">🍽️</span>
+            <img
+              src={logo || '/file.svg'} // Fallback to default image if logo is not available
+              alt="Logo"
+              className="w-8 h-8 rounded-full object-cover"
+            />
             <span className="text-lg font-semibold tracking-tight">Rasant POS</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
           <button className="relative text-gray-300 hover:text-white">
             <BellIcon className="w-6 h-6" />
-            {/* <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-              3
-            </span> */}
           </button>
           <div className="relative">
             <button
@@ -51,7 +105,7 @@ export default function Header({ onSidebarToggle, onNavigate }: { onSidebarToggl
               className="flex items-center gap-2 text-gray-300 hover:text-white"
             >
               <UserCircleIcon className="w-6 h-6" />
-              <span className="hidden md:block text-sm font-medium">Admin User</span>
+              <span className="hidden md:block text-sm font-medium">{user?.name || 'Admin User'}</span>
             </button>
             {isProfileOpen && (
               <div
@@ -61,20 +115,26 @@ export default function Header({ onSidebarToggle, onNavigate }: { onSidebarToggl
                 className="w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20"
               >
                 <div className="px-4 py-3 border-b border-gray-100">
-                  <p className="text-sm font-semibold text-gray-900">Admin User</p>
-                  <p className="text-xs text-gray-500">admin@rasant.com</p>
+                  <p className="text-sm font-semibold text-gray-900">{user?.name || 'Admin User'}</p>
+                  <p className="text-xs text-gray-500">{user?.email || 'admin@rasant.com'}</p>
                 </div>
                 <button
                   onClick={handleProfileClick}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  👤 Profile 
+                  👤 Profile
                 </button>
                 <button
                   onClick={handleSettingsClick}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   ⚙️ Settings
+                </button>
+                <button
+                  onClick={onLogout}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  🚪 Logout
                 </button>
               </div>
             )}

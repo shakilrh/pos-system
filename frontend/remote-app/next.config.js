@@ -11,6 +11,11 @@ module.exports = {
           './Sidebar': './src/components/Sidebar.tsx',
           './Footer': './src/components/Footer.tsx',
         },
+        remotes: {
+          host: `host@http://localhost:3000/_next/static/${
+            isServer ? 'ssr' : 'chunks'
+          }/remoteEntry.js`, // Align with host
+        },
         shared: {
           react: {
             singleton: true,
