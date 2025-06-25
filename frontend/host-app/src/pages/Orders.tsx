@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { BellIcon, MoonIcon, SunIcon } from '@heroicons/react/24/outline';
-import { getAllOrders, confirmOrder, cancelOrder, markOrderAsReady, markOrderAsPicked, processPayment, updateOrder } from '../services/OrderService';
+import { getAllOrders, confirmOrder, cancelOrder, markOrderAsReady, markOrderAsPicked, processPayment, updateOrder } from '../services/orderService';
 import Link from 'next/link';
 
 interface Product {

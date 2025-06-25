@@ -50,13 +50,36 @@ interface Order {
   __v: number;
 }
 
+interface QueueOrderItem {
+  product: {
+    _id: string;
+    name: string;
+  };
+  quantity: number;
+}
+
 interface QueueOrder {
-  _id: string;
   order_number: string;
+  time_left: number;
+  estimated_time: string;
+  order_id: string;
+  order_type: string;
   status: string;
-  estimated_completion: string;
   customer_name: string;
-  items: OrderItem[];
+  service_type: 'dine_in' | 'take_away';
+  notification: string;
+  notification_status: number;
+  items: QueueOrderItem[];
+}
+
+interface QueueApiResponse {
+  statusCode: number;
+  message: string;
+  success: boolean;
+  type: number;
+  data: {
+    data: QueueOrder[];
+  };
 }
 
 interface PhysicalQueueOrder {
@@ -292,6 +315,29 @@ export const getAllOrders = async (token: string, logout: () => void): Promise<O
   }
 };
 
+// Queue API - New function
+export const getOrderQueue = async (token: string, logout: () => void): Promise<QueueOrder[]> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/api/v1/queue`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: QueueApiResponse = await response.json();
+    if (!data.success) {
+      throw new Error(data.message || handleApiError(data, logout));
+    }
+
+    return data.data.data || [];
+  } catch (err) {
+    console.error('Error in getOrderQueue:', err);
+    throw new Error(err instanceof Error ? err.message : 'Failed to fetch order queue');
+  }
+};
+
 // Add this to your existing orderService.tsx
 export const processPayment = async (
   token: string,
@@ -321,6 +367,32 @@ export const processPayment = async (
   }
 };
 
+// Add this to your existing orderService.tsx
+export const markNotificationAsRead = async (
+  token: string,
+  logout: () => void,
+  order_number: string
+): Promise<Order> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/api/v1/notification`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ order_number }),
+    });
+
+    const data: ApiResponse<Order> = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || handleApiError(data, logout));
+    }
+
+    return 'data' in data.data ? data.data.data : data.data;
+  } catch (err) {
+    throw new Error(err instanceof Error ? err.message : 'Failed to mark notification as read');
+  }
+};
 
 export const getPhysicalQueue = async (token: string, logout: () => void): Promise<PhysicalQueueOrder[]> => {
   try {
@@ -338,3 +410,6 @@ export const getPhysicalQueue = async (token: string, logout: () => void): Promi
     throw new Error(err instanceof Error ? err.message : 'Failed to fetch physical queue');
   }
 };
+
+// Export the types for use in other files
+export type { QueueOrder, QueueOrderItem };

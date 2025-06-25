@@ -5,8 +5,8 @@ import { createOrder, getAllOrders, processPayment } from '../services/orderServ
 import { fetchProducts } from '../services/productService';
 import { fetchCategories } from '../services/categoryService';
 import { MagnifyingGlassIcon, XMarkIcon, PrinterIcon } from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
 import QRCode from 'react-qr-code';
+import FlashMessage from './FlashMessage';
 
 interface Product {
   _id: string;
@@ -56,7 +56,6 @@ const OrderDetailsTemplate = ({
                                 paymentMethod,
                                 setPaymentMethod,
                                 orderItems,
-                                errors,
                                 calculateTotalOrderAmount,
                                 handleCreateOrder,
                                 localLoading,
@@ -71,7 +70,6 @@ const OrderDetailsTemplate = ({
   paymentMethod: string;
   setPaymentMethod: (method: string) => void;
   orderItems: OrderItem[];
-  errors: { customerName: string; orderItems: string };
   calculateTotalOrderAmount: () => number;
   handleCreateOrder: () => void;
   localLoading: boolean;
@@ -86,19 +84,9 @@ const OrderDetailsTemplate = ({
             type="text"
             placeholder="Enter customer name"
             value={customerName}
-            onChange={(e) => {
-              setCustomerName(e.target.value);
-              if (e.target.value.trim()) {
-                setErrors(prev => ({ ...prev, customerName: '' }));
-              }
-            }}
-            className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 ${
-              errors.customerName ? 'border-red-500' : 'border-gray-300'
-            }`}
+            onChange={(e) => setCustomerName(e.target.value)}
+            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 border-gray-300"
           />
-          {errors.customerName && (
-            <p className="mt-1 text-sm text-red-600">{errors.customerName}</p>
-          )}
         </div>
 
         <div>
@@ -152,12 +140,7 @@ const OrderDetailsTemplate = ({
         <div className="mt-4">
           <h3 className="font-semibold">Order Summary</h3>
           {orderItems.length === 0 ? (
-            <>
-              <p className="text-gray-500">No items added to the order</p>
-              {errors.orderItems && (
-                <p className="mt-1 text-sm text-red-600">{errors.orderItems}</p>
-              )}
-            </>
+            <p className="text-gray-500">No items added to the order</p>
           ) : (
             <table className="w-full text-left border-collapse">
               <thead>
@@ -360,10 +343,7 @@ export default function CreateOrder() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isPaid, setIsPaid] = useState(false);
-  const [errors, setErrors] = useState({
-    customerName: '',
-    orderItems: ''
-  });
+  const [flashMessage, setFlashMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -383,9 +363,7 @@ export default function CreateOrder() {
         setProducts(activeProducts);
       } catch (error) {
         console.error('Error fetching data:', error);
-        toast.error(error instanceof Error ? error.message : 'Failed to fetch data');
-        setProducts([]);
-        setCategories([]);
+        setFlashMessage({ message: error instanceof Error ? error.message : 'Failed to fetch data', type: 'error' });
       } finally {
         setLocalLoading(false);
       }
@@ -395,23 +373,14 @@ export default function CreateOrder() {
   }, [isAuthenticated, isLoading, token, user?._id, router, logout]);
 
   const validateForm = () => {
-    const newErrors = {
-      customerName: '',
-      orderItems: ''
-    };
     let isValid = true;
-
     if (!customerName.trim()) {
-      newErrors.customerName = 'Customer name is required';
+      setFlashMessage({ message: 'Customer name is required', type: 'error' });
+      isValid = false;
+    } else if (orderItems.length === 0) {
+      setFlashMessage({ message: 'Please add at least one product', type: 'error' });
       isValid = false;
     }
-
-    if (orderItems.length === 0) {
-      newErrors.orderItems = 'Please add at least one product';
-      isValid = false;
-    }
-
-    setErrors(newErrors);
     return isValid;
   };
 
@@ -435,25 +404,6 @@ export default function CreateOrder() {
           sub_total: product.price,
         },
       ]);
-    }
-    if (orderItems.length === 0) {
-      setErrors(prev => ({ ...prev, orderItems: '' }));
-    }
-  };
-
-  const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity >= 0) {
-      if (quantity === 0) {
-        setOrderItems(orderItems.filter((item) => item.product_id !== productId));
-      } else {
-        setOrderItems(
-          orderItems.map((item) =>
-            item.product_id === productId
-              ? { ...item, quantity, sub_total: (item.product?.price || 0) * quantity }
-              : item
-          )
-        );
-      }
     }
   };
 
@@ -481,7 +431,7 @@ export default function CreateOrder() {
 
   const handleCreateOrder = async () => {
     if (!token || !user?._id) {
-      toast.error('Please log in to create order');
+      setFlashMessage({ message: 'Please log in to create order', type: 'error' });
       router.push('/login');
       return;
     }
@@ -507,32 +457,25 @@ export default function CreateOrder() {
 
       let updatedOrder: Order = {
         ...response,
-        items: orderItems.map(item => ({
+        items: orderItems.map((item) => ({
           product_id: item.product_id,
           product: item.product || { name: `Product ${item.product_id}`, price: 0 },
           quantity: item.quantity,
-          sub_total: item.sub_total || 0
-        }))
+          sub_total: item.sub_total || 0,
+        })),
       };
 
       if (isPaid && response._id) {
-        const paymentResponse = await processPayment(
-          token,
-          logout,
-          response._id,
-          receivedAmount,
-          paymentMethod
-        );
+        const paymentResponse = await processPayment(token, logout, response._id, receivedAmount, paymentMethod);
         updatedOrder = { ...paymentResponse, items: updatedOrder.items };
       }
 
       setCreatedOrder(updatedOrder);
       setShowReceipt(true);
-      toast.success('Order created successfully');
+      setFlashMessage({ message: 'Order created successfully', type: 'success' });
       await getAllOrders(token, logout);
     } catch (error) {
-      console.error('Error creating order:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create order');
+      setFlashMessage({ message: error instanceof Error ? error.message : 'Failed to create order', type: 'error' });
     } finally {
       setLocalLoading(false);
     }
@@ -638,10 +581,6 @@ export default function CreateOrder() {
     setReceivedAmount(0);
     setPaymentMethod('cash');
     setIsPaid(false);
-    setErrors({
-      customerName: '',
-      orderItems: ''
-    });
   };
 
   if (isLoading || localLoading) {
@@ -650,6 +589,13 @@ export default function CreateOrder() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-6">
+      {flashMessage && (
+        <FlashMessage
+          message={flashMessage.message}
+          type={flashMessage.type}
+          onClose={() => setFlashMessage(null)}
+        />
+      )}
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
         <OrderDetailsTemplate
           customerName={customerName}
@@ -662,7 +608,6 @@ export default function CreateOrder() {
           paymentMethod={paymentMethod}
           setPaymentMethod={setPaymentMethod}
           orderItems={orderItems}
-          errors={errors}
           calculateTotalOrderAmount={calculateTotalOrderAmount}
           handleCreateOrder={handleCreateOrder}
           localLoading={localLoading}
@@ -680,11 +625,7 @@ export default function CreateOrder() {
       </div>
 
       {showReceipt && createdOrder && (
-        <ReceiptTemplate
-          createdOrder={createdOrder}
-          onPrint={handlePrintReceipt}
-          onClose={handleCloseReceipt}
-        />
+        <ReceiptTemplate createdOrder={createdOrder} onPrint={handlePrintReceipt} onClose={handleCloseReceipt} />
       )}
     </div>
   );
