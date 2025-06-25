@@ -9,7 +9,8 @@ module.exports = {
         'spacing': 'margin, padding',
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'sans-serif'],
+        /*sans: ['Roboto', 'sans-serif'],*/
+        sans: ['Nuntio', 'sans-serif'],
       },
     },
   },

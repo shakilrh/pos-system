@@ -26,6 +26,10 @@
 
   "dependencies": {
 
+    "@fontsource/nunito": "^5.2.6",
+
+    "@fontsource/roboto": "^5.2.6",
+
     "@heroicons/react": "^2.2.0",
 
     "@module-federation/nextjs-mf": "^7.0.0",

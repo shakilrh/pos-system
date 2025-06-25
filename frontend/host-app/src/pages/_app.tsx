@@ -4,6 +4,8 @@ import { AppProps } from 'next/app';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import 'shared-tailwind/styles';
+/*import '@fontsource/roboto';*/
+import '@fontsource/nunito';
 import Link from 'next/link';
 
 // Fallback components
@@ -114,7 +116,7 @@ function AppContent({ Component, pageProps }: AppProps) {
   }
 
   return (
-    <div className={`flex flex-col min-h-screen ${darkMode ? 'dark' : ''}`}>
+    <div className={`font-sans flex flex-col min-h-screen ${darkMode ? 'dark' : ''}`}>
       <Header
         onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
         darkMode={darkMode}
