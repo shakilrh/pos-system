@@ -1,5 +1,4 @@
 const NextFederationPlugin = require('@module-federation/nextjs-mf');
-const path = require('path');
 
 module.exports = {
   webpack(config, { isServer }) {
@@ -12,11 +11,25 @@ module.exports = {
             isServer ? 'ssr' : 'chunks'
           }/remoteEntry.js`,
         },
+        exposes: {
+          './AuthContext': './src/context/AuthContext.tsx', // Keep for other components if needed
+        },
         shared: {
-          react: { singleton: true, eager: true, requiredVersion: false },
-          'react-dom': { singleton: true, eager: true, requiredVersion: false },
-          'react/jsx-runtime': { singleton: true, eager: true, requiredVersion: false },
-          'react/jsx-dev-runtime': { singleton: true, eager: true, requiredVersion: false },
+          react: {
+            singleton: true,
+            eager: true,
+            requiredVersion: require('react/package.json').version,
+          },
+          'react-dom': {
+            singleton: true,
+            eager: true,
+            requiredVersion: require('react-dom/package.json').version,
+          },
+          'next/router': {
+            singleton: true,
+            eager: true,
+            requiredVersion: require('next/package.json').version,
+          },
           'shared-tailwind': { singleton: true, eager: true, requiredVersion: false },
         },
       })
@@ -24,5 +37,3 @@ module.exports = {
     return config;
   },
 };
-
-//test

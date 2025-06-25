@@ -4,9 +4,7 @@ import { AppProps } from 'next/app';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import 'shared-tailwind/styles';
-import Link from 'next/link';
 
-// Fallback components
 const FallbackHeader = () => <div>Header failed to load</div>;
 const FallbackFooter = () => <div>Footer failed to load</div>;
 
@@ -18,7 +16,7 @@ const Header = dynamic(
   { ssr: false }
 );
 
-import Sidebar from '../components/Sidebar'; // Ensure this path is correct
+import Sidebar from '../components/Sidebar';
 
 const Footer = dynamic(
   () => import('remoteApp/Footer').catch((err) => {
@@ -34,7 +32,7 @@ function AppContent({ Component, pageProps }: AppProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(false);
-  const { isAuthenticated, isLoading, logout } = useAuth();
+  const { isAuthenticated, isLoading, logout, token, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -52,7 +50,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     let timeoutId: NodeJS.Timeout;
     const handleRouteChange = () => {
       setIsPageLoading(true);
-      timeoutId = setTimeout(() => setIsPageLoading(false), 500); // Simulate loading for 500ms
+      timeoutId = setTimeout(() => setIsPageLoading(false), 500);
     };
 
     const prevPathname = pathname;
@@ -78,6 +76,18 @@ function AppContent({ Component, pageProps }: AppProps) {
     document.documentElement.classList.toggle('dark', darkMode);
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
+
+  useEffect(() => {
+    const handleThemeChange = (e: CustomEvent) => {
+      const { theme: newTheme } = e.detail;
+      document.documentElement.setAttribute('data-theme', newTheme);
+    };
+
+    window.addEventListener('themeChange', handleThemeChange as EventListener);
+    return () => {
+      window.removeEventListener('themeChange', handleThemeChange as EventListener);
+    };
+  }, []);
 
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
@@ -121,6 +131,8 @@ function AppContent({ Component, pageProps }: AppProps) {
         onDarkModeToggle={toggleDarkMode}
         onLogout={handleLogout}
         onNavigate={(path: string) => router.push(path)}
+        token={token} // Pass token as prop
+        user={user} // Pass user as prop
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
