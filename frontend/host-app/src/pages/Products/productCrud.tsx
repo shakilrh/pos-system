@@ -41,7 +41,19 @@ export default function ProductCrud({
   const [newProductDesc, setNewProductDesc] = useState(product?.description || '');
   const [newProductPicture, setNewProductPicture] = useState<File | null>(null);
   const [newProductPicturePreview, setNewProductPicturePreview] = useState<string | undefined>(product?.pictureUrl || undefined);
+  const [newProductTimeRequired, setNewProductTimeRequired] = useState(product?.time_required?.toString() || '');
   const [flashMessage, setFlashMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    // Reset state when product changes
+    setNewProductName(product?.name || '');
+    setNewProductPrice(product?.price.toString() || '');
+    setNewProductCategory(product?.category_id || '');
+    setNewProductDesc(product?.description || '');
+    setNewProductPicture(null);
+    setNewProductPicturePreview(product?.pictureUrl || undefined);
+    setNewProductTimeRequired(product?.time_required?.toString() || '');
+  }, [product]);
 
   useEffect(() => {
     return () => {
@@ -75,6 +87,7 @@ export default function ProductCrud({
       if (newProductCategory) formData.append('category_id', newProductCategory);
       if (newProductDesc) formData.append('description', newProductDesc);
       if (newProductPicture) formData.append('picture', newProductPicture);
+      if (newProductTimeRequired) formData.append('time_required', newProductTimeRequired);
 
       const newProduct = await addProduct(token, logout, categories, formData);
       setProducts((prev) => [...prev, newProduct]);
@@ -105,6 +118,7 @@ export default function ProductCrud({
       if (newProductCategory) formData.append('category_id', newProductCategory);
       if (newProductDesc) formData.append('description', newProductDesc);
       if (newProductPicture) formData.append('picture', newProductPicture);
+      if (newProductTimeRequired) formData.append('time_required', newProductTimeRequired);
 
       const updatedProduct = await updateProduct(token, logout, categories, formData);
       setProducts((prev) => prev.map((prod) => (prod._id === editingProductId ? updatedProduct : prod)));
@@ -168,6 +182,7 @@ export default function ProductCrud({
               onChange={(e) => setNewProductName(e.target.value)}
               placeholder="Enter product name"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
             />
           </div>
           <div>
@@ -180,6 +195,21 @@ export default function ProductCrud({
               placeholder="Price"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               step="0.01"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="productTimeRequired" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preparation Time (minutes)</label>
+            <input
+              id="productTimeRequired"
+              type="number"
+              value={newProductTimeRequired}
+              onChange={(e) => setNewProductTimeRequired(e.target.value)}
+              placeholder="Time required in minutes"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              step="1"
+              min="0"
+              required
             />
           </div>
           <div>
@@ -190,6 +220,7 @@ export default function ProductCrud({
               onChange={(e) => setNewProductCategory(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               disabled={isCategoryFormActive}
+              required
             >
               <option value="">Select a category</option>
               {categories.map((category) => (
@@ -204,7 +235,7 @@ export default function ProductCrud({
               value={newProductDesc}
               onChange={(e) => setNewProductDesc(e.target.value)}
               placeholder="Product description"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
               rows={3}
             />
           </div>
@@ -296,6 +327,19 @@ export default function ProductCrud({
             />
           </div>
           <div>
+            <label htmlFor="productTimeRequired" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preparation Time (minutes)</label>
+            <input
+              id="productTimeRequired"
+              type="number"
+              value={newProductTimeRequired}
+              onChange={(e) => setNewProductTimeRequired(e.target.value)}
+              placeholder="Time required in minutes"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              step="1"
+              min="0"
+            />
+          </div>
+          <div>
             <label htmlFor="productCategory" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
             <select
               id="productCategory"
@@ -317,7 +361,7 @@ export default function ProductCrud({
               value={newProductDesc}
               onChange={(e) => setNewProductDesc(e.target.value)}
               placeholder="Product description"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
               rows={3}
             />
           </div>

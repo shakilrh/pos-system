@@ -1,24 +1,6 @@
 import toast from 'react-hot-toast';
 
-interface Category {
-  _id: string;
-  name: string;
-}
-
-interface Product {
-  _id: string;
-  name: string;
-  price: number;
-  category_id: string;
-  categoryName: string;
-  description: string;
-  pictureUrl?: string | null;
-  created_by?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  displayPrice: string;
-  isActive: boolean;
-}
+import { Category, Product } from './productTypes';
 
 interface ApiResponse<T> {
   statusCode: number;
@@ -26,11 +8,11 @@ interface ApiResponse<T> {
   success: boolean;
   type: number;
   data: { data: T };
-  error?: string;
+  error?: string | null;
   details?: any;
 }
 
-const handleApiError = (response: ApiResponse<any>, logout: () => void): string => {
+const handleApiError = (response: any, error: string | null, logout: () => void): string => {
   if (!response.success) {
     switch (response.error) {
       case 'DATA_NOT_FOUND': return response.message || 'Not Found';
@@ -124,13 +106,14 @@ export const fetchProducts = async (
         price: product.price,
         category_id: categoryId,
         categoryName: categoryName,
-        description: product.description || '',
+        description: product.description || null,
         pictureUrl: product.pictureUrl || null,
-        created_by: product.created_by,
+        created_by: product.created_by || null,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
         displayPrice: `$${product.price.toFixed(2)}`,
         isActive: product.status === 'active',
+        time_required: product.time_required || 0,
       };
     });
   } catch (error) {
@@ -185,13 +168,14 @@ export const addProduct = async (
       price: product.price,
       category_id: categoryId,
       categoryName: categoryName,
-      description: product.description || '',
+      description: product.description || null,
       pictureUrl: product.pictureUrl || null,
-      created_by: product.created_by,
+      created_by: product.created_by || null,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
       displayPrice: `$${product.price.toFixed(2)}`,
       isActive: product.status === 'active',
+      time_required: product.time_required || 0,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to add product';
@@ -245,13 +229,14 @@ export const updateProduct = async (
       price: product.price,
       category_id: categoryId,
       categoryName: categoryName,
-      description: product.description || '',
+      description: product.description || null,
       pictureUrl: product.pictureUrl || null,
-      created_by: product.created_by,
+      created_by: product.created_by || null,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
       displayPrice: `$${product.price.toFixed(2)}`,
       isActive: product.status === 'active',
+      time_required: product.time_required || 0,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update product';
@@ -339,13 +324,14 @@ export const updateProductStatus = async (
       price: product.price,
       category_id: categoryId,
       categoryName: categoryName,
-      description: product.description || '',
+      description: product.description || null,
       pictureUrl: product.pictureUrl || null,
-      created_by: product.created_by,
+      created_by: product.created_by || null,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
       displayPrice: `$${product.price.toFixed(2)}`,
       isActive: product.status === 'active',
+      time_required: product.time_required || 0,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update product status';
