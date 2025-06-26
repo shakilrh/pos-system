@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import OrderList from './orderList';
-import OrderDetails from './orderDetails';
+import createOrder from './createOrder';
 import { getAllOrders, getPhysicalQueue } from '../../services/orderService';
 import { Order } from './orderTypes';
 
@@ -75,7 +75,7 @@ export default function Orders() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Orders</h1>
           <div className="flex space-x-4">
-            <a href="/CreateOrder">
+            <a href="./createOrder">
               <button className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600">
                 Create New Order
               </button>
