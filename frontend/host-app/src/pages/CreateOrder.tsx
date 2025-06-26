@@ -5,7 +5,6 @@ import { createOrder, getAllOrders, processPayment } from '../services/orderServ
 import { fetchProducts } from '../services/productService';
 import { fetchCategories } from '../services/categoryService';
 import { MagnifyingGlassIcon, XMarkIcon, PrinterIcon } from '@heroicons/react/24/outline';
-import QRCode from 'react-qr-code';
 import FlashMessage from './FlashMessage';
 
 interface Product {
@@ -18,6 +17,7 @@ interface Product {
   pictureUrl?: string | null;
   displayPrice: string;
   isActive: boolean;
+  time_required?: number; // in minutes
 }
 
 interface Category {
@@ -43,6 +43,7 @@ interface Order {
   createdAt: string;
   status: string;
   payment_status: string;
+  estimated_preparation_time?: number; // in minutes
 }
 
 const OrderDetailsTemplate = ({
@@ -50,13 +51,14 @@ const OrderDetailsTemplate = ({
                                 setCustomerName,
                                 serviceType,
                                 setServiceType,
-                                isPaid,
-                                handleIsPaidChange,
                                 receivedAmount,
+                                setReceivedAmount,
                                 paymentMethod,
                                 setPaymentMethod,
                                 orderItems,
+                                setOrderItems,
                                 calculateTotalOrderAmount,
+                                calculateEstimatedTime,
                                 handleCreateOrder,
                                 localLoading,
                               }: {
@@ -64,16 +66,21 @@ const OrderDetailsTemplate = ({
   setCustomerName: (name: string) => void;
   serviceType: 'dine_in' | 'take_away';
   setServiceType: (type: 'dine_in' | 'take_away') => void;
-  isPaid: boolean;
-  handleIsPaidChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   receivedAmount: number;
+  setReceivedAmount: (amount: number) => void;
   paymentMethod: string;
   setPaymentMethod: (method: string) => void;
   orderItems: OrderItem[];
+  setOrderItems: React.Dispatch<React.SetStateAction<OrderItem[]>>;
   calculateTotalOrderAmount: () => number;
+  calculateEstimatedTime: () => number;
   handleCreateOrder: () => void;
   localLoading: boolean;
 }) => {
+  const totalAmount = calculateTotalOrderAmount();
+  const estimatedTime = calculateEstimatedTime();
+  const showPayment = serviceType === 'take_away';
+
   return (
     <div className="lg:w-1/3 w-full bg-white rounded-lg shadow-md p-6">
       <h2 className="text-xl font-bold text-gray-800 mb-4">Order Details</h2>
@@ -101,29 +108,25 @@ const OrderDetailsTemplate = ({
           </select>
         </div>
 
-        <label className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            checked={isPaid}
-            onChange={handleIsPaidChange}
-            className="h-4 w-4 text-indigo-600 rounded"
-          />
-          <span>Mark as Paid</span>
-        </label>
-
-        {isPaid && (
+        {showPayment && (
           <div className="space-y-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Received Amount</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Received Amount *</label>
               <input
                 type="number"
                 value={receivedAmount}
-                readOnly
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 bg-gray-100"
+                onChange={(e) => setReceivedAmount(Number(e.target.value))}
+                min={totalAmount}
+                step="0.01"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
+                placeholder={`Minimum: $${totalAmount.toFixed(2)}`}
               />
+              {receivedAmount < totalAmount && receivedAmount > 0 && (
+                <p className="text-red-500 text-xs mt-1">Amount must be at least ${totalAmount.toFixed(2)}</p>
+              )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method *</label>
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
@@ -142,40 +145,60 @@ const OrderDetailsTemplate = ({
           {orderItems.length === 0 ? (
             <p className="text-gray-500">No items added to the order</p>
           ) : (
-            <table className="w-full text-left border-collapse">
-              <thead>
-              <tr className="border-b">
-                <th className="py-2 px-4">Item</th>
-                <th className="py-2 px-4">Qty</th>
-                <th className="py-2 px-4">Price</th>
-                <th className="py-2 px-4">Total</th>
-              </tr>
-              </thead>
-              <tbody>
-              {orderItems.map((item) => (
-                <tr key={item.product_id} className="border-b">
-                  <td className="py-2 px-4">{item.product?.name || `Product ${item.product_id}`}</td>
-                  <td className="py-2 px-4">{item.quantity}</td>
-                  <td className="py-2 px-4">${(item.product?.price || 0).toFixed(2)}</td>
-                  <td className="py-2 px-4">${(item.sub_total || 0).toFixed(2)}</td>
+            <>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                <tr className="border-b">
+                  <th className="py-2 px-4">Item</th>
+                  <th className="py-2 px-4">Qty</th>
+                  <th className="py-2 px-4">Price</th>
+                  <th className="py-2 px-4">Total</th>
+                  <th className="py-2 px-4">Action</th>
                 </tr>
-              ))}
-              <tr className="font-bold">
-                <td colSpan={3} className="py-2 px-4 text-right">Total</td>
-                <td className="py-2 px-4">${calculateTotalOrderAmount().toFixed(2)}</td>
-              </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                {orderItems.map((item, index) => (
+                  <tr key={item.product_id} className="border-b">
+                    <td className="py-2 px-4">{item.product?.name || `Product ${item.product_id}`}</td>
+                    <td className="py-2 px-4">{item.quantity}</td>
+                    <td className="py-2 px-4">${(item.product?.price || 0).toFixed(2)}</td>
+                    <td className="py-2 px-4">${(item.sub_total || 0).toFixed(2)}</td>
+                    <td className="py-2 px-4">
+                      <XMarkIcon
+                        onClick={() => setOrderItems(orderItems.filter((_, i) => i !== index))}
+                        className="h-5 w-5 text-red-500 cursor-pointer hover:text-red-700"
+                      />
+                    </td>
+                  </tr>
+                ))}
+                <tr className="font-bold">
+                  <td colSpan={3} className="py-2 px-4 text-right">Total</td>
+                  <td className="py-2 px-4">${totalAmount.toFixed(2)}</td>
+                  <td></td>
+                </tr>
+                </tbody>
+              </table>
+              {estimatedTime > 0 && (
+                <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-medium">Estimated Preparation Time:</span> {estimatedTime} minutes
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
 
         <button
           onClick={handleCreateOrder}
-          className={`w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition-all duration-200 ${
-            localLoading ? 'opacity-70 cursor-not-allowed' : ''
+          disabled={localLoading || orderItems.length === 0 || !customerName.trim() || (showPayment && receivedAmount < totalAmount)}
+          className={`w-full py-2 rounded-lg transition-all duration-200 ${
+            localLoading || orderItems.length === 0 || !customerName.trim() || (showPayment && receivedAmount < totalAmount)
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-indigo-500 text-white hover:bg-indigo-600'
           }`}
         >
-          {localLoading ? 'Creating Order...' : 'Place Order'}
+          {localLoading ? 'Processing Order...' : showPayment ? 'Confirm Order & Process Payment' : 'Confirm Order'}
         </button>
       </div>
     </div>
@@ -246,7 +269,7 @@ const MenuItemsTemplate = ({
             key={product._id}
             onClick={() => addProductToOrder(product)}
             className="bg-white rounded-lg p-2 flex flex-col items-center cursor-pointer border border-gray-200 hover:shadow-sm hover:scale-105 transition-all duration-200"
-            style={{ minHeight: '120px', minWidth: '120px' }}
+            style={{ minHeight: '140px', minWidth: '120px' }}
           >
             <img
               src={product.pictureUrl || 'https://via.placeholder.com/96'}
@@ -255,6 +278,9 @@ const MenuItemsTemplate = ({
             />
             <span className="text-sm font-semibold text-gray-800 text-center">{product.name}</span>
             <span className="text-sm text-green-600">${product.price.toFixed(2)}</span>
+            {product.time_required && (
+              <span className="text-xs text-blue-600">{product.time_required} min</span>
+            )}
           </div>
         ))}
       </div>
@@ -266,58 +292,69 @@ const ReceiptTemplate = ({
                            createdOrder,
                            onPrint,
                            onClose,
+                           changeAmount,
                          }: {
   createdOrder: Order;
   onPrint: () => void;
   onClose: () => void;
+  changeAmount: number;
 }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-        <h2 className="text-lg font-bold mb-4">Order #: {createdOrder.order_number}</h2>
-        <p>Customer: {createdOrder.customer_name}</p>
-        <p>Type: {createdOrder.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}</p>
-        <p>Status: {createdOrder.status.replace('_', ' ')}</p>
-        <p>Payment: {createdOrder.payment_status}</p>
-        <div className="mt-4">
-          <h3 className="font-semibold">Items:</h3>
-          <table className="w-full text-left">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-lg font-bold mb-4 text-center">Order Confirmed</h2>
+        <div className="border-b pb-4 mb-4">
+          <p><strong>Order #:</strong> {createdOrder.order_number}</p>
+          <p><strong>Customer:</strong> {createdOrder.customer_name}</p>
+          <p><strong>Type:</strong> {createdOrder.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}</p>
+          <p><strong>Status:</strong> {createdOrder.status.replace('_', ' ')}</p>
+          <p><strong>Payment:</strong> {createdOrder.payment_status}</p>
+          {createdOrder.estimated_preparation_time && (
+            <p><strong>Est. Prep Time:</strong> {createdOrder.estimated_preparation_time} minutes</p>
+          )}
+        </div>
+
+        <div className="mb-4">
+          <h3 className="font-semibold mb-2">Items:</h3>
+          <table className="w-full text-sm">
             <thead>
-            <tr>
-              <th>Item</th>
-              <th>Qty</th>
-              <th>Price</th>
-              <th>Total</th>
+            <tr className="border-b">
+              <th className="text-left py-1">Item</th>
+              <th className="text-center py-1">Qty</th>
+              <th className="text-right py-1">Price</th>
+              <th className="text-right py-1">Total</th>
             </tr>
             </thead>
             <tbody>
             {createdOrder.items.map((item) => (
-              <tr key={item.product_id}>
-                <td>{item.product.name}</td>
-                <td>{item.quantity}</td>
-                <td>${item.product.price.toFixed(2)}</td>
-                <td>${item.sub_total.toFixed(2)}</td>
+              <tr key={item.product_id} className="border-b">
+                <td className="py-1">{item.product.name}</td>
+                <td className="text-center py-1">{item.quantity}</td>
+                <td className="text-right py-1">${item.product.price.toFixed(2)}</td>
+                <td className="text-right py-1">${item.sub_total.toFixed(2)}</td>
               </tr>
             ))}
             </tbody>
           </table>
-          <p className="mt-2 font-bold">Total: ${createdOrder.total_amount.toFixed(2)}</p>
+          <div className="mt-2 pt-2 border-t">
+            <p className="font-bold text-right">Total: ${createdOrder.total_amount.toFixed(2)}</p>
+            {changeAmount > 0 && (
+              <p className="text-right text-green-600">Change: ${changeAmount.toFixed(2)}</p>
+            )}
+          </div>
         </div>
-        <div className="mt-4 flex justify-center">
-          <QRCode value={`order:${createdOrder._id}`} size={100} />
-        </div>
-        <p className="text-center mt-2">Scan for order tracking</p>
-        <div className="mt-4 flex justify-between">
+
+        <div className="mt-4 flex justify-between gap-2">
           <button
             onClick={onPrint}
-            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+            className="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
           >
             <PrinterIcon className="w-5 h-5 inline-block mr-2" />
             Print Receipt
           </button>
           <button
             onClick={onClose}
-            className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+            className="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
           >
             Close
           </button>
@@ -342,8 +379,8 @@ export default function CreateOrder() {
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [isPaid, setIsPaid] = useState(false);
   const [flashMessage, setFlashMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [changeAmount, setChangeAmount] = useState(0);
 
   useEffect(() => {
     if (isLoading) return;
@@ -374,11 +411,16 @@ export default function CreateOrder() {
 
   const validateForm = () => {
     let isValid = true;
+    const totalAmount = calculateTotalOrderAmount();
+
     if (!customerName.trim()) {
       setFlashMessage({ message: 'Customer name is required', type: 'error' });
       isValid = false;
     } else if (orderItems.length === 0) {
       setFlashMessage({ message: 'Please add at least one product', type: 'error' });
+      isValid = false;
+    } else if (serviceType === 'take_away' && receivedAmount < totalAmount) {
+      setFlashMessage({ message: `Received amount must be at least $${totalAmount.toFixed(2)}`, type: 'error' });
       isValid = false;
     }
     return isValid;
@@ -411,23 +453,20 @@ export default function CreateOrder() {
     return orderItems.reduce((sum, item) => sum + (item.sub_total || 0), 0);
   };
 
-  const handleIsPaidChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const checked = e.target.checked;
-    setIsPaid(checked);
-    if (checked) {
-      const total = calculateTotalOrderAmount();
-      setReceivedAmount(total);
-    } else {
-      setReceivedAmount(0);
-    }
+  const calculateEstimatedTime = () => {
+    // Sum up preparation time for all items (quantity * time_required)
+    return orderItems.reduce((totalTime, item) => {
+      const productTime = item.product?.time_required || 0;
+      return totalTime + (productTime * item.quantity);
+    }, 0);
   };
 
   useEffect(() => {
-    if (isPaid) {
-      const total = calculateTotalOrderAmount();
+    const total = calculateTotalOrderAmount();
+    if (serviceType === 'take_away' && (receivedAmount === 0 || receivedAmount < total)) {
       setReceivedAmount(total);
     }
-  }, [orderItems, isPaid]);
+  }, [orderItems, serviceType]);
 
   const handleCreateOrder = async () => {
     if (!token || !user?._id) {
@@ -455,20 +494,23 @@ export default function CreateOrder() {
         service_type: orderData.service_type,
       });
 
-      let updatedOrder: Order = {
-        ...response,
+      const paymentResponse = serviceType === 'take_away' ? await processPayment(token, logout, response._id, receivedAmount, paymentMethod) : { ...response, payment_status: 'pending' };
+
+      const totalAmount = calculateTotalOrderAmount();
+      const change = serviceType === 'take_away' ? receivedAmount - totalAmount : 0;
+      setChangeAmount(change > 0 ? change : 0);
+
+      const updatedOrder: Order = {
+        ...paymentResponse,
         items: orderItems.map((item) => ({
           product_id: item.product_id,
           product: item.product || { name: `Product ${item.product_id}`, price: 0 },
           quantity: item.quantity,
           sub_total: item.sub_total || 0,
         })),
+        estimated_preparation_time: calculateEstimatedTime(),
+        status: serviceType === 'take_away' ? 'confirmed' : 'pending',
       };
-
-      if (isPaid && response._id) {
-        const paymentResponse = await processPayment(token, logout, response._id, receivedAmount, paymentMethod);
-        updatedOrder = { ...paymentResponse, items: updatedOrder.items };
-      }
 
       setCreatedOrder(updatedOrder);
       setShowReceipt(true);
@@ -501,25 +543,33 @@ export default function CreateOrder() {
           <head>
             <title>Receipt</title>
             <style>
-              body { font-family: Arial, sans-serif; text-align: center; }
-              table { width: 100%; border-collapse: collapse; }
-              th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
-              .header { font-size: 24px; font-weight: bold; }
-              .subheader { font-size: 18px; }
-              .qr-code { margin: 20px 0; }
+              body { font-family: Arial, sans-serif; text-align: center; max-width: 300px; margin: 0 auto; padding: 10px; font-size: 14px; }
+              table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+              th, td { padding: 4px 2px; text-align: left; border-bottom: 1px solid #ddd; font-size: 12px; }
+              .header { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
+              .subheader { font-size: 16px; font-weight: bold; margin: 10px 0; }
+              .total-row { font-weight: bold; border-top: 2px solid #000; }
+              .prep-time { background-color: #f0f8ff; padding: 5px; margin: 10px 0; border: 1px solid #ddd; border-radius: 3px; }
+              hr { border: none; border-top: 1px solid #000; margin: 10px 0; }
             </style>
           </head>
           <body>
             <div class="header">Rasnat Restaurant</div>
-            <p>123 Main Street, City</p>
-            <p>Phone: (123) 456-7890</p>
+            <p>123 Main Street, City<br/>Phone: (123) 456-7890</p>
             <hr />
             <p class="subheader">Order #: ${createdOrder.order_number}</p>
             <p>Date: ${currentDate}</p>
-            <p>Type: ${createdOrder.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}</p>
             <p>Customer: ${createdOrder.customer_name}</p>
+            <p>Type: ${createdOrder.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}</p>
             <p>Status: ${createdOrder.status}</p>
             <p>Payment: ${createdOrder.payment_status}</p>
+            ${createdOrder.estimated_preparation_time ?
+        `<div class="prep-time">
+                <strong>Estimated Preparation Time:</strong><br/>
+                ${createdOrder.estimated_preparation_time} minutes
+              </div>` : ''
+      }
+            <hr />
             <table>
               <thead>
                 <tr>
@@ -542,19 +592,20 @@ export default function CreateOrder() {
                     `
         )
         .join('')}
+                <tr class="total-row">
+                  <td colspan="3"><strong>Total</strong></td>
+                  <td><strong>$${createdOrder.total_amount.toFixed(2)}</strong></td>
+                </tr>
+                ${changeAmount > 0 ?
+        `<tr>
+                    <td colspan="3">Change</td>
+                    <td>$${changeAmount.toFixed(2)}</td>
+                  </tr>` : ''
+      }
               </tbody>
             </table>
-            <p>Total: $${createdOrder.total_amount.toFixed(2)}</p>
-            <div class="qr-code">
-              ${QRCode.toString(`order:${createdOrder._id}`, {
-        type: 'svg',
-        width: 100,
-        height: 100,
-        margin: 2,
-      })}
-              <p>Scan for order tracking</p>
-            </div>
-            <p>Thank you for dining with us!</p>
+            <hr />
+            <p><strong>Thank you for dining with us!</strong></p>
             <p>Please visit again</p>
           </body>
         </html>
@@ -580,7 +631,7 @@ export default function CreateOrder() {
     setServiceType('dine_in');
     setReceivedAmount(0);
     setPaymentMethod('cash');
-    setIsPaid(false);
+    setChangeAmount(0);
   };
 
   if (isLoading || localLoading) {
@@ -602,13 +653,14 @@ export default function CreateOrder() {
           setCustomerName={setCustomerName}
           serviceType={serviceType}
           setServiceType={setServiceType}
-          isPaid={isPaid}
-          handleIsPaidChange={handleIsPaidChange}
           receivedAmount={receivedAmount}
+          setReceivedAmount={setReceivedAmount}
           paymentMethod={paymentMethod}
           setPaymentMethod={setPaymentMethod}
           orderItems={orderItems}
+          setOrderItems={setOrderItems}
           calculateTotalOrderAmount={calculateTotalOrderAmount}
+          calculateEstimatedTime={calculateEstimatedTime}
           handleCreateOrder={handleCreateOrder}
           localLoading={localLoading}
         />
@@ -625,7 +677,12 @@ export default function CreateOrder() {
       </div>
 
       {showReceipt && createdOrder && (
-        <ReceiptTemplate createdOrder={createdOrder} onPrint={handlePrintReceipt} onClose={handleCloseReceipt} />
+        <ReceiptTemplate
+          createdOrder={createdOrder}
+          onPrint={handlePrintReceipt}
+          onClose={handleCloseReceipt}
+          changeAmount={changeAmount}
+        />
       )}
     </div>
   );
