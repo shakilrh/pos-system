@@ -331,7 +331,8 @@ export const getOrderQueue = async (token: string, logout: () => void): Promise<
       throw new Error(data.message || handleApiError(data, logout));
     }
 
-    return data.data.data || [];
+    // Extract the innermost data array
+    return data.data.data.data.data || [];
   } catch (err) {
     console.error('Error in getOrderQueue:', err);
     throw new Error(err instanceof Error ? err.message : 'Failed to fetch order queue');
