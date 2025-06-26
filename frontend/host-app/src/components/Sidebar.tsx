@@ -5,6 +5,7 @@ import {
   ShoppingBagIcon,
   Bars3Icon,
   XMarkIcon,
+  PlusCircleIcon,
 } from '@heroicons/react/24/outline';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +30,7 @@ const navItems = [
   { name: 'Dashboard', icon: HomeIcon || FallbackIcon, href: '/dashboard', description: 'Overview of your account' },
   { name: 'Menu Management', icon: ShoppingBagIcon || FallbackIcon, href: '/MenuManagement', description: 'Manage your menu items' },
   { name: 'Orders', icon: ChartBarIcon || FallbackIcon, href: '/Orders/orders', description: 'View and manage orders' },
+  { name: 'Create Orders', icon: PlusCircleIcon || FallbackIcon, href: '/Orders/createOrder', description: 'Create new orders' },
   { name: 'Roles Management', icon: UsersIcon || FallbackIcon, href: '/RoleAndUserManagement', description: 'Control user roles' },
 ];
 

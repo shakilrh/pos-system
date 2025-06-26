@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TrashIcon, PencilIcon, PlusCircleIcon, ArrowLeftIcon, ArrowRightIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import toast, { Toaster } from 'react-hot-toast';
-import { fetchProducts, addProduct, updateProduct, deleteProduct, updateProductStatus } from '../services/ProductService';
+import { fetchProducts, addProduct, updateProduct, deleteProduct, updateProductStatus } from '../services/productService';
 
 interface Category {
   _id: string;

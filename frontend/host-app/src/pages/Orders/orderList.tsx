@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Order } from './orderTypes';
-import OrderModal from './orderModal';
+import PaymentModal, { OrderSearch } from './paymentModal';
 import OrderNotifications from './orderNotifications';
 import {
   markOrderAsReady,
@@ -40,6 +40,64 @@ interface PhysicalQueueOrder {
   estimated_completion?: string;
 }
 
+const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessage, activeTab }: any) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleMarkAsReady = async () => {
+    if (!token) {
+      setMessage('Please log in.');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const updatedOrder = await markOrderAsReady(token, logout, order.order_number);
+      setOrders((prevOrders) =>
+        prevOrders.map((o) =>
+          o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
+        )
+      );
+      setMessage(`Order #${order.order_number} is now ready!`);
+      onClose();
+    } catch (error) {
+      setMessage(`Failed to mark order as ready`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+        <h2 className="text-xl font-bold mb-4">Order #{order.order_number}</h2>
+        <p className="text-sm mb-2">👤 {order.customer_name || 'Guest'}</p>
+        <div className="space-y-2 mb-4">
+          {order.items?.map((item, index) => (
+            <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+              <span className="text-sm font-medium">{item.product?.name || 'Unknown'}</span>
+              <span className="text-sm">x{item.quantity}</span>
+            </div>
+          )) || <div className="text-sm text-gray-500">No items</div>}
+        </div>
+        {activeTab === 'to_be_prepared' && (
+          <button
+            onClick={handleMarkAsReady}
+            disabled={isLoading}
+            className="w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 text-sm"
+          >
+            {isLoading ? 'Processing...' : 'Mark as Ready'}
+          </button>
+        )}
+        <button
+          onClick={onClose}
+          className="mt-4 w-full py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function OrderList({
                                     orders,
                                     page,
@@ -72,6 +130,10 @@ export default function OrderList({
   const [queueCountdowns, setQueueCountdowns] = useState<{ [key: string]: number }>({});
   const [blink, setBlink] = useState(false);
   const [selectedNotificationTab, setSelectedNotificationTab] = useState<string>('');
+  const [paymentSearchTerm, setPaymentSearchTerm] = useState('');
+  const [preparationSearchTerm, setPreparationSearchTerm] = useState('');
+  const [selectedPaymentOrder, setSelectedPaymentOrder] = useState<Order | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const outerTabs = [
     { key: 'physical', label: 'Physical Orders', color: 'bg-blue-600', lightColor: 'bg-blue-100', textColor: 'text-blue-700' },
@@ -79,30 +141,36 @@ export default function OrderList({
 
   const tabs = [
     { key: 'to_be_prepared', label: 'To Be Prepared', color: 'bg-green-500', lightColor: 'bg-green-100', textColor: 'text-green-700', borderColor: 'border-green-300' },
-    { key: 'ready', label: 'Ready Orders', color: 'bg-blue-500', lightColor: 'bg-blue-100', textColor: 'text-blue-700', borderColor: 'border-blue-300' },
-    { key: 'cancelled', label: 'Cancelled Orders', color: 'bg-red-500', lightColor: 'bg-red-100', textColor: 'text-red-700', borderColor: 'border-red-300' },
-    { key: 'completed', label: 'Completed Orders', color: 'bg-orange-500', lightColor: 'bg-orange-100', textColor: 'text-orange-700', borderColor: 'border-orange-300' },
+    { key: 'ready', label: 'Ready', color: 'bg-blue-500', lightColor: 'bg-blue-100', textColor: 'text-blue-700', borderColor: 'border-blue-300' },
+    { key: 'cancelled', label: 'Cancelled', color: 'bg-red-500', lightColor: 'bg-red-100', textColor: 'text-red-700', borderColor: 'border-red-300' },
+    { key: 'completed', label: 'Completed', color: 'bg-orange-500', lightColor: 'bg-orange-100', textColor: 'text-orange-700', borderColor: 'border-orange-300' },
   ];
 
   useEffect(() => {
     const fetchQueueData = async () => {
-      if (token) {
+      if (token && orders.length > 0) {
         try {
-          const queue = await getOrderQueue(token, logout);
-          setQueueData(queue); // This should now be an array
+          const response = await getOrderQueue(token, logout);
+          const queue = response?.data || []; // Default to empty array if data is undefined
+          setQueueData(queue);
           const countdowns: { [key: string]: number } = {};
           queue.forEach((item) => (countdowns[item.order_number] = item.time_left * 60 || 0));
           setQueueCountdowns(countdowns);
         } catch (error) {
-          console.error('Failed to fetch queue data:', error);
-          setMessage('Failed to load queue data');
+          console.error('Error fetching queue data:', error);
+          setQueueData([]);
+          setQueueCountdowns({});
         }
+      } else {
+        setQueueData([]);
+        setQueueCountdowns({});
       }
     };
     fetchQueueData();
     const interval = setInterval(fetchQueueData, 10000);
     return () => clearInterval(interval);
-  }, [token, logout, setMessage]);
+  }, [token, logout, orders.length]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setQueueCountdowns((prev) => {
@@ -134,8 +202,18 @@ export default function OrderList({
 
   const filteredOrdersByType = React.useMemo(
     () => orders.filter((order) => order.order_type === 'physical' || !order.order_type),
-    [orders, outerActiveTab]
+    [orders]
   );
+
+  const handlePaymentOrderSelect = (order: Order) => {
+    setSelectedPaymentOrder(order);
+    setShowPaymentModal(true);
+  };
+
+  const handlePreparationOrderSelect = (order: Order) => {
+    setSelectedOrder(order);
+    setShowOrderModal(true);
+  };
 
   const groupedOrders = React.useMemo(() => {
     const groups: Record<string, Order[]> = {
@@ -162,15 +240,26 @@ export default function OrderList({
 
   const filteredOrders = React.useMemo(() => {
     const ordersInActiveTab = groupedOrders[activeTab] || [];
-    return ordersInActiveTab.filter(
-      (order) =>
-        order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order._id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.order_number.toString().includes(searchTerm.toLowerCase())
-    );
-  }, [groupedOrders, activeTab, searchTerm]);
+    let filtered = ordersInActiveTab;
+    if (activeTab === 'to_be_prepared') {
+      filtered = ordersInActiveTab.filter(
+        (order) =>
+          order.customer_name?.toLowerCase().includes(preparationSearchTerm.toLowerCase()) ||
+          order._id?.toLowerCase().includes(preparationSearchTerm.toLowerCase()) ||
+          order.order_number.toString().includes(preparationSearchTerm.toLowerCase())
+      );
+    } else if (activeTab === 'ready') {
+      filtered = ordersInActiveTab.filter(
+        (order) =>
+          order.customer_name?.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
+          order._id?.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
+          order.order_number.toString().includes(paymentSearchTerm.toLowerCase())
+      );
+    }
+    return filtered;
+  }, [groupedOrders, activeTab, preparationSearchTerm, paymentSearchTerm]);
 
-  const paginatedOrders = filteredOrders.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const paginatedOrders = filteredOrders.slice((page - 1) * 8, page * 8);
 
   const mapStatusToTab = (status: string): string => {
     const statusMap: Record<string, string> = {
@@ -255,7 +344,6 @@ export default function OrderList({
   };
 
   const currentTab = tabs.find((tab) => tab.key === activeTab);
-  const currentOuterTab = outerTabs.find((tab) => tab.key === outerActiveTab);
 
   const handleNotificationClick = (tabKey: string) => {
     setSelectedNotificationTab(tabKey);
@@ -264,26 +352,26 @@ export default function OrderList({
 
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold text-gray-800">Order Management</h1>
         <div className="text-sm text-gray-500">Total Orders: {filteredOrders.length}</div>
       </div>
 
-      {message && activeTab !== 'to_be_prepared' && (
-        <div className="p-4 mb-4 bg-red-100 rounded-lg shadow-sm border-l-4 border-red-500 text-red-700">{message}</div>
-      )}
+      <div className="h-10 mb-4">
+        {message && (
+          <div
+            className={`p-2 bg-red-100 rounded-lg shadow-sm border-l-4 ${
+              blink && activeTab === 'to_be_prepared'
+                ? 'border-yellow-500 bg-yellow-100 text-yellow-700'
+                : 'border-red-500 text-red-700'
+            } h-full flex items-center text-sm`}
+          >
+            {message}
+          </div>
+        )}
+      </div>
 
-      {message && activeTab === 'to_be_prepared' && (
-        <div
-          className={`flex items-center p-4 mb-4 bg-red-100 rounded-lg shadow-sm border-l-4 ${
-            blink ? 'border-yellow-500 bg-yellow-100 text-yellow-700' : 'border-red-700 bg-red-100 text-red-700'
-          }`}
-        >
-          {message}
-        </div>
-      )}
-
-      <div className="mb-8 bg-white rounded-xl shadow-sm p-4">
+      <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
         <div className="flex flex-wrap gap-2">
           {tabs.map((tab) => {
             const ordersCount = groupedOrders[tab.key]?.length || 0;
@@ -295,11 +383,11 @@ export default function OrderList({
                     setActiveTab(tab.key);
                     setPage(1);
                   }}
-                  className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                  className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                     activeTab === tab.key
                       ? `${tab.color} text-white shadow-md transform scale-105`
                       : `${tab.lightColor} ${tab.textColor} hover:scale-102`
-                  }`}
+                  } text-sm`}
                 >
                   <div className="flex justify-between items-center">
                     <div className="flex items-center">
@@ -328,6 +416,31 @@ export default function OrderList({
         </div>
       </div>
 
+      {activeTab === 'to_be_prepared' && (
+        <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
+          <OrderSearch
+            orders={orders}
+            onOrderSelect={handlePreparationOrderSelect}
+            searchTerm={preparationSearchTerm}
+            setSearchTerm={setPreparationSearchTerm}
+            statusFilter="processing"
+          />
+        </div>
+      )}
+
+      {activeTab === 'ready' && (
+        <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
+          <div className="text-lg font-semibold text-gray-800 mb-2">💳 Process Payment & Pickup</div>
+          <OrderSearch
+            orders={orders}
+            onOrderSelect={handlePaymentOrderSelect}
+            searchTerm={paymentSearchTerm}
+            setSearchTerm={setPaymentSearchTerm}
+            statusFilter="ready"
+          />
+        </div>
+      )}
+
       {showOrderModal && selectedOrder && (
         <OrderModal
           order={selectedOrder}
@@ -337,6 +450,7 @@ export default function OrderList({
           setOrders={setOrders}
           orders={orders}
           setMessage={setMessage}
+          activeTab={activeTab}
         />
       )}
 
@@ -363,17 +477,17 @@ export default function OrderList({
       )}
 
       {outerActiveTab === 'physical' && (
-        <div className="space-y-3">
-          {paginatedOrders.map((order) => (
-            <div
-              key={order._id}
-              className={`bg-white rounded-lg shadow-sm border-l-4 ${currentTab?.borderColor} hover:shadow-md transition-shadow duration-200 ${
-                order.notification_status === 0 ? 'ring-2 ring-blue-200' : ''
-              }`}
-            >
-              <div className="p-4">
+        <div className="space-y-2">
+          {paginatedOrders.length > 0 ? (
+            paginatedOrders.map((order) => (
+              <div
+                key={order._id}
+                className={`bg-white rounded-lg shadow-sm border-l-4 ${currentTab?.borderColor} hover:shadow-md transition-shadow duration-200 ${
+                  order.notification_status === 0 ? 'ring-2 ring-blue-200' : ''
+                } p-3`}
+              >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-3">
                     <div className="flex flex-col">
                       <div className="flex items-center space-x-2">
                         <h3 className="font-bold text-lg text-gray-800">#{order.order_number}</h3>
@@ -396,7 +510,7 @@ export default function OrderList({
                       {order.items?.map((item, index) => (
                         <div
                           key={index}
-                          className="flex items-center space-x-1 px-2 py-1 bg-gray-50 rounded-md border min-w-max"
+                          className="flex items-center space-x-1 px-1 py-0.5 bg-gray-50 rounded-md border min-w-max"
                         >
                           {renderOrderItemImage(item)}
                           <div className="flex flex-col">
@@ -413,6 +527,15 @@ export default function OrderList({
                     {getTimeDisplay(order)}
                     <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadge(order.status)}`}>
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    </span>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        order.payment_status === 'paid'
+                          ? 'bg-green-100 text-green-700 border-green-300'
+                          : 'bg-gray-100 text-gray-700 border-gray-300'
+                      }`}
+                    >
+                      {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
                     </span>
                     {(activeTab === 'completed' || activeTab === 'cancelled') && (
                       <div className="flex flex-col items-end">
@@ -445,13 +568,13 @@ export default function OrderList({
                               setIsLoading(false);
                             }
                           }}
-                          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 text-sm"
+                          className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 text-sm"
                           disabled={isLoading}
                         >
                           Mark as Ready
                         </button>
                       )}
-                      {activeTab === 'ready' && (
+                      {activeTab === 'ready' && order.payment_status === 'paid' && (
                         <button
                           onClick={async () => {
                             if (!token) {
@@ -466,7 +589,7 @@ export default function OrderList({
                                   o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
                                 )
                               );
-                              setMessage(`🚚 Order #${order.order_number} has been picked up!`);
+                              setMessage(`✅ Order #${order.order_number} has been picked up!`);
                             } catch (error) {
                               setMessage(
                                 `❌ ${error instanceof Error ? error.message : 'Failed to mark order as picked'}`
@@ -475,49 +598,67 @@ export default function OrderList({
                               setIsLoading(false);
                             }
                           }}
-                          className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50 text-sm"
+                          className="px-3 py-1 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50 text-sm"
                           disabled={isLoading}
                         >
                           Mark as Picked
+                        </button>
+                      )}
+                      {activeTab === 'ready' && order.payment_status === 'not_paid' && (
+                        <button
+                          onClick={() => handlePaymentOrderSelect(order)}
+                          className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm"
+                        >
+                          Process Payment
                         </button>
                       )}
                     </div>
                   </div>
                 </div>
               </div>
+            ))
+          ) : (
+            <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+              <div className="text-5xl mb-3">📋</div>
+              <h3 className="text-lg font-medium text-gray-600 mb-1">No orders found</h3>
+              <p className="text-sm text-gray-500">
+                {preparationSearchTerm || paymentSearchTerm ? 'Try adjusting your search criteria.' : 'Orders will appear here when available.'}
+              </p>
             </div>
-          ))}
+          )}
         </div>
       )}
 
-      {outerActiveTab === 'physical' && filteredOrders.length === 0 && (
-        <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-          <div className="text-5xl mb-3">📋</div>
-          <h3 className="text-lg font-medium text-gray-600 mb-1">
-            No {tabs.find((t) => t.key === activeTab)?.label.toLowerCase()} found
-          </h3>
-          <p className="text-sm text-gray-500">
-            {searchTerm ? 'Try adjusting your search criteria.' : 'Orders will appear here when available.'}
-          </p>
-        </div>
+      {showPaymentModal && selectedPaymentOrder && (
+        <PaymentModal
+          order={selectedPaymentOrder}
+          token={token}
+          logout={logout}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setSelectedPaymentOrder(null);
+          }}
+          setOrders={setOrders}
+          orders={orders}
+          setMessage={setMessage}
+        />
       )}
 
-      {outerActiveTab === 'physical' && filteredOrders.length > itemsPerPage && (
+      {outerActiveTab === 'physical' && filteredOrders.length > 8 && (
         <div className="mt-6 bg-white rounded-lg shadow-sm p-3">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
             <div className="text-sm text-gray-500">
-              Showing {Math.min((page - 1) * itemsPerPage + 1, filteredOrders.length)}-
-              {Math.min(page * itemsPerPage, filteredOrders.length)} of {filteredOrders.length} orders
+              Showing {Math.min((page - 1) * 8 + 1, filteredOrders.length)}-
+              {Math.min(page * 8, filteredOrders.length)} of {filteredOrders.length} orders
             </div>
             <div className="flex items-center space-x-3">
               <select
-                value={itemsPerPage}
+                value={8}
                 onChange={(e) => setItemsPerPage(Number(e.target.value))}
                 className="p-2 border border-gray-300 rounded-md bg-white text-gray-800 text-sm focus:ring-2 focus:ring-blue-500"
+                disabled
               >
-                <option value={10}>10 per page</option>
-                <option value={20}>20 per page</option>
-                <option value={30}>30 per page</option>
+                <option value={8}>8 per page</option>
               </select>
               <div className="flex space-x-1">
                 <button
@@ -527,7 +668,7 @@ export default function OrderList({
                 >
                   Previous
                 </button>
-                {Array.from({ length: Math.min(5, Math.ceil(filteredOrders.length / itemsPerPage)) }, (_, i) => {
+                {Array.from({ length: Math.min(5, Math.ceil(filteredOrders.length / 8)) }, (_, i) => {
                   const pageNumber = i + 1;
                   return (
                     <button
@@ -544,8 +685,8 @@ export default function OrderList({
                   );
                 })}
                 <button
-                  onClick={() => setPage(Math.min(Math.ceil(filteredOrders.length / itemsPerPage), page + 1))}
-                  disabled={page === Math.ceil(filteredOrders.length / itemsPerPage)}
+                  onClick={() => setPage(Math.min(Math.ceil(filteredOrders.length / 8), page + 1))}
+                  disabled={page === Math.ceil(filteredOrders.length / 8)}
                   className="px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-800 disabled:opacity-50 text-sm hover:bg-gray-50 transition-colors"
                 >
                   Next
