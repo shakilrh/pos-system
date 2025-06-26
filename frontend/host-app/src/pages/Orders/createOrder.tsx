@@ -143,10 +143,11 @@ export default function CreateOrder() {
 
   useEffect(() => {
     if (isLoading) return;
-    if (!isAuthenticated || !token || !user?._id) {
+    if (!isAuthenticated) {
       router.push('/login');
       return;
     }
+    console.log('CreateOrder token:', token, 'user:', user?._id);
 
     const fetchData = async () => {
       setLocalLoading(true);
@@ -166,7 +167,7 @@ export default function CreateOrder() {
     };
 
     fetchData();
-  }, [isAuthenticated, isLoading, token, user?._id, router, logout]);
+  }, [isAuthenticated, isLoading, router, token, logout]);
 
   const addProductToOrder = (product: Product) => {
     const existingItem = orderItems.find((item) => item.product_id === product._id);
@@ -210,11 +211,11 @@ export default function CreateOrder() {
   }, [orderItems, serviceType]);
 
   const handleCreateOrder = async () => {
-    if (!token || !user?._id) {
-      setFlashMessage({ message: 'Please log in to create order', type: 'error' });
-      router.push('/login');
+    if (!isAuthenticated) {
+      setFlashMessage({ message: 'Authentication failed, please log in again', type: 'error' });
       return;
     }
+    console.log('Creating order with token:', token, 'user:', user?._id);
 
     setLocalLoading(true);
     try {
@@ -254,6 +255,7 @@ export default function CreateOrder() {
       setFlashMessage({ message: 'Order created successfully', type: 'success' });
       await getAllOrders(token, logout);
     } catch (error) {
+      console.error('Order creation error:', error);
       setFlashMessage({ message: error instanceof Error ? error.message : 'Failed to create order', type: 'error' });
     } finally {
       setLocalLoading(false);
