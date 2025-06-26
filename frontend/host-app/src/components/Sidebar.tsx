@@ -41,8 +41,9 @@ interface SidebarProps {
 export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, refreshUserProfile } = useAuth();
+  const { user, profileLoading, profileError } = useAuth(); // Removed refreshUserProfile
   const [theme, setTheme] = useState('default');
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('appTheme') || 'default';
@@ -59,10 +60,14 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
   }, []);
 
   useEffect(() => {
-    if (user?._id) {
-      refreshUserProfile(); // Refresh user profile to get latest logoUrl
-    }
-  }, [user?._id, refreshUserProfile]);
+    // Removed refreshUserProfile call
+    const timer = setTimeout(() => {
+      if (profileLoading) {
+        setLoadingTimeout(true);
+      }
+    }, 15000); // 15 seconds
+    return () => clearTimeout(timer);
+  }, [profileLoading]); // Updated dependency
 
   const navigate = (path: string) => {
     router.push(path);
@@ -77,7 +82,15 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
       <div className="p-4 flex items-center justify-between border-b border-gray-700">
         {sidebarOpen && (
           <div className="text-left flex items-center">
-            {user?.logoUrl ? (
+            {(profileLoading && !loadingTimeout) ? (
+              <div className="w-8 h-8 mr-2 rounded-full bg-gray-600 animate-pulse" />
+            ) : profileError || loadingTimeout ? (
+              <img
+                src="/fallback-avatar.png"
+                alt="Default avatar"
+                className="w-8 h-8 mr-2 rounded-full object-cover border-2 border-primary-color"
+              />
+            ) : user?.logoUrl ? (
               <img
                 src={user.logoUrl}
                 alt={`${user.name || 'User'}'s logo`}
@@ -95,8 +108,21 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
             )}
             <div>
               <span className="text-2xl font-bold truncate flex items-center">
-                {user?.name || 'User'} <ActiveUserIcon />
+                {(profileLoading && !loadingTimeout) ? (
+                  <div className="w-20 h-6 bg-gray-600 animate-pulse rounded" />
+                ) : profileError || loadingTimeout ? (
+                  <>
+                    User <ActiveUserIcon />
+                  </>
+                ) : (
+                  <>
+                    {user?.name || 'User'} <ActiveUserIcon />
+                  </>
+                )}
               </span>
+              {profileError && !profileLoading && (
+                <p className="text-sm text-red-400">{profileError}</p>
+              )}
               <p className="text-sm text-gray-400">Welcome to Your Dashboard</p>
             </div>
           </div>

@@ -15,6 +15,8 @@ interface User {
   updatedAt?: string;
   __v?: number;
   logoUrl?: string;
+  store_name?: string;
+  store_logo?: string;
 }
 
 interface ApiResponse {
@@ -23,7 +25,7 @@ interface ApiResponse {
   success: boolean;
   error?: string;
   type: number;
-  data?: { data?: { users?: User[] } | User } | User | { role_id: string };
+  data?: { data?: { users?: User[] } | { user?: User } } | User | { role_id: string };
 }
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000';
@@ -71,15 +73,18 @@ export const fetchUsers = async (token: string, logout: () => void): Promise<Use
         _id: user._id || user.user_id || '',
         role_id: user.role_id?._id || user.role_id || null,
         logoUrl: user.logoUrl || '',
+        store_name: user.store_name || '',
+        store_logo: user.store_logo || '',
       })) || [];
     }
     throw new Error('Invalid response format');
   } catch (err) {
+    console.error('Fetch users error:', err);
     throw new Error(err instanceof Error ? err.message : 'Failed to fetch users');
   }
 };
 
-export const fetchUserProfile = async (token: string, logout: () => void, userId: string): Promise<User> => {
+export const fetchUserProfile = async (token: string, logout: () => void): Promise<User> => {
   try {
     const response = await fetch(`${API_BASE_URL}/users/api/v1/details`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -95,17 +100,28 @@ export const fetchUserProfile = async (token: string, logout: () => void, userId
       throw new Error(handleApiError(data, logout));
     }
 
-    if (data.success && data.type === 1 && data.data) {
-      const user = data.data as User;
+    if (
+      data.success &&
+      data.type === 1 &&
+      data.data &&
+      'data' in data.data &&
+      'user' in (data.data as { data: { user?: User } }).data &&
+      (data.data as { data: { user?: User } }).data.user
+    ) {
+      const user = (data.data as { data: { user: User } }).data.user;
       return {
         ...user,
-        _id: user._id || user.user_id || '',
+        _id: user.id || user.user_id || '',
         role_id: user.role_id || null,
         logoUrl: user.logoUrl || '',
+        name: user.name || 'User',
+        store_name: user.store_name || '',
+        store_logo: user.store_logo || '',
       };
     }
-    throw new Error('Invalid response format');
+    throw new Error('Invalid response format: user data missing');
   } catch (err) {
+    console.error('Fetch user profile error:', err, { token, response: err instanceof Error ? err.message : 'Unknown error' });
     throw new Error(err instanceof Error ? err.message : 'Failed to fetch user profile');
   }
 };
@@ -137,10 +153,18 @@ export const createUser = async (
 
     if (data.success && data.type === 1 && data.data) {
       const newUser = data.data as User;
-      return { ...newUser, _id: newUser._id || newUser.user_id || '', role_id: newUser.role_id || null, logoUrl: newUser.logoUrl || '' };
+      return {
+        ...newUser,
+        _id: newUser._id || newUser.user_id || '',
+        role_id: newUser.role_id || null,
+        logoUrl: newUser.logoUrl || '',
+        store_name: newUser.store_name || '',
+        store_logo: newUser.store_logo || '',
+      };
     }
     throw new Error('Invalid response format');
   } catch (err) {
+    console.error('Create user error:', err);
     throw new Error(err instanceof Error ? err.message : 'Failed to create user');
   }
 };
@@ -172,10 +196,18 @@ export const updateUser = async (
 
     if (data.success && data.type === 1 && data.data) {
       const updatedUser = data.data as User;
-      return { ...updatedUser, _id: updatedUser._id || updatedUser.user_id || '', role_id: updatedUser.role_id || null, logoUrl: updatedUser.logoUrl || '' };
+      return {
+        ...updatedUser,
+        _id: updatedUser._id || updatedUser.user_id || '',
+        role_id: updatedUser.role_id || null,
+        logoUrl: updatedUser.logoUrl || '',
+        store_name: updatedUser.store_name || '',
+        store_logo: updatedUser.store_logo || '',
+      };
     }
     throw new Error('Invalid response format');
   } catch (err) {
+    console.error('Update user error:', err);
     throw new Error(err instanceof Error ? err.message : 'Failed to update user');
   }
 };
@@ -205,6 +237,7 @@ export const deleteUser = async (token: string, logout: () => void, id: string):
       throw new Error('Invalid response format');
     }
   } catch (err) {
+    console.error('Delete user error:', err);
     throw new Error(err instanceof Error ? err.message : 'Failed to delete user');
   }
 };
@@ -219,7 +252,6 @@ export const assignRole = async (
     const response = await fetch(`${API_BASE_URL}/users/api/v1/assign-role`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
@@ -238,10 +270,18 @@ export const assignRole = async (
 
     if (data.success && data.type === 1 && data.data) {
       const updatedUser = 'data' in data.data ? (data.data as { data: User }).data : data.data as User;
-      return { ...updatedUser, _id: updatedUser._id || updatedUser.user_id || '', role_id: updatedUser.role_id || null, logoUrl: updatedUser.logoUrl || '' };
+      return {
+        ...updatedUser,
+        _id: updatedUser._id || updatedUser.user_id || '',
+        role_id: updatedUser.role_id || null,
+        logoUrl: updatedUser.logoUrl || '',
+        store_name: updatedUser.store_name || '',
+        store_logo: updatedUser.store_logo || '',
+      };
     }
     throw new Error('Invalid response format');
   } catch (err) {
+    console.error('Assign role error:', err);
     throw new Error(err instanceof Error ? err.message : 'Failed to assign role');
   }
 };

@@ -10,11 +10,15 @@ interface User {
   role_id: string | null;
   profile?: any;
   logoUrl?: string;
+  store_name?: string;
+  store_logo?: string;
 }
 
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
+  profileLoading: boolean;
+  profileError: string | null;
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
@@ -28,8 +32,59 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 1000; // 1 second
+  const TIMEOUT_MS = 10000; // 10 seconds
+
+  const withTimeout = async <T>(promise: Promise<T>, ms: number): Promise<T> => {
+    const timeout = new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error('Request timed out')), ms);
+    });
+    return Promise.race([promise, timeout]);
+  };
+
+  const refreshUserProfile = async (tokenParam?: string): Promise<void> => {
+    const currentToken = tokenParam || token;
+    if (!currentToken) {
+      console.error('No token available to refresh user profile', { token, tokenParam });
+      setProfileError('No authentication token');
+      return;
+    }
+    setProfileLoading(true);
+    setProfileError(null);
+    try {
+      const updatedUser = await withTimeout(fetchUserProfile(currentToken, logout), TIMEOUT_MS);
+      localStorage.setItem('authUser', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      console.log('User profile refreshed successfully:', updatedUser);
+    } catch (error) {
+      console.error('Error refreshing user profile:', error, { token: currentToken });
+      if (MAX_RETRIES > 0) {
+        console.log(`Retrying user profile refresh, ${MAX_RETRIES} attempts left`);
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+        return refreshUserProfile(currentToken);
+      }
+      setProfileError('Failed to load user profile after retries');
+      setUser((prev) => ({
+        ...prev,
+        _id: prev?._id || '',
+        name: prev?.name || 'User',
+        email: prev?.email || '',
+        user_type: prev?.user_type || 'worker',
+        role_id: prev?.role_id || null,
+        logoUrl: prev?.logoUrl || '',
+        store_name: prev?.store_name || '',
+        store_logo: prev?.store_logo || '',
+      }));
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -40,10 +95,17 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         try {
           setToken(storedToken);
           const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
+          setUser({
+            ...parsedUser,
+            _id: parsedUser._id || parsedUser.id || '',
+            name: parsedUser.name || 'User',
+            logoUrl: parsedUser.logoUrl || '',
+            store_name: parsedUser.store_name || '',
+            store_logo: parsedUser.store_logo || '',
+          });
           setIsAuthenticated(true);
           console.log('Token loaded from localStorage:', storedToken);
-          await refreshUserProfile(); // Refresh user profile
+          await refreshUserProfile(storedToken); // Single call on init
         } catch (error) {
           console.error('Error parsing user data:', error);
           logout();
@@ -73,17 +135,33 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
       const responseData = await response.json();
       const { token, user } = responseData.data.data;
-      console.log('Login response token:', token);
+      console.log('Login response:', { token, user });
+
+      if (!token) {
+        throw new Error('No token received from login API');
+      }
+
+      const normalizedUser = {
+        ...user,
+        _id: user._id || user.id || '',
+        role_id: user.role_id || null,
+        logoUrl: user.logoUrl || '',
+        name: user.name || 'User',
+        store_name: user.store_name || '',
+        store_logo: user.store_logo || '',
+      };
 
       localStorage.setItem('authToken', token);
-      localStorage.setItem('authUser', JSON.stringify({ ...user, logoUrl: user.logoUrl || '' }));
+      localStorage.setItem('authUser', JSON.stringify(normalizedUser));
       setToken(token);
-      setUser({ ...user, logoUrl: user.logoUrl || '' });
+      setUser(normalizedUser);
       setIsAuthenticated(true);
       console.log('Auth state updated, token stored:', token);
-      await refreshUserProfile(); // Refresh profile after login to get latest logoUrl
+
+      await refreshUserProfile(token); // Single call after login
     } catch (error) {
       console.error('Login error:', error);
+      setProfileError(error.message || 'Login failed');
       throw error;
     } finally {
       setIsLoading(false);
@@ -96,26 +174,12 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
+    setProfileError(null);
     console.log('Logged out, token removed from localStorage');
   };
 
-  const refreshUserProfile = async () => {
-    if (!token) {
-      console.error('No token available to refresh user profile');
-      return;
-    }
-    try {
-      const updatedUser = await fetchUserProfile(token, logout);
-      localStorage.setItem('authUser', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-      console.log('User profile refreshed:', updatedUser);
-    } catch (error) {
-      console.error('Error refreshing user profile:', error);
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, user, token, login, logout, setUser, refreshUserProfile }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, profileLoading, profileError, user, token, login, logout, setUser, refreshUserProfile }}>
       {children}
     </AuthContext.Provider>
   );
