@@ -14,6 +14,7 @@ interface User {
   createdAt?: string;
   updatedAt?: string;
   __v?: number;
+  logoUrl?: string;
 }
 
 interface ApiResponse {
@@ -69,11 +70,43 @@ export const fetchUsers = async (token: string, logout: () => void): Promise<Use
         ...user,
         _id: user._id || user.user_id || '',
         role_id: user.role_id?._id || user.role_id || null,
+        logoUrl: user.logoUrl || '',
       })) || [];
     }
     throw new Error('Invalid response format');
   } catch (err) {
     throw new Error(err instanceof Error ? err.message : 'Failed to fetch users');
+  }
+};
+
+export const fetchUserProfile = async (token: string, logout: () => void, userId: string): Promise<User> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/api/v1/details`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data: ApiResponse = await response.json();
+
+    if (response.status === 401) {
+      logout();
+      throw new Error('Unauthorized');
+    }
+
+    if (!response.ok || !data.success) {
+      throw new Error(handleApiError(data, logout));
+    }
+
+    if (data.success && data.type === 1 && data.data) {
+      const user = data.data as User;
+      return {
+        ...user,
+        _id: user._id || user.user_id || '',
+        role_id: user.role_id || null,
+        logoUrl: user.logoUrl || '',
+      };
+    }
+    throw new Error('Invalid response format');
+  } catch (err) {
+    throw new Error(err instanceof Error ? err.message : 'Failed to fetch user profile');
   }
 };
 
@@ -104,7 +137,7 @@ export const createUser = async (
 
     if (data.success && data.type === 1 && data.data) {
       const newUser = data.data as User;
-      return { ...newUser, _id: newUser._id || newUser.user_id || '', role_id: newUser.role_id || null };
+      return { ...newUser, _id: newUser._id || newUser.user_id || '', role_id: newUser.role_id || null, logoUrl: newUser.logoUrl || '' };
     }
     throw new Error('Invalid response format');
   } catch (err) {
@@ -139,7 +172,7 @@ export const updateUser = async (
 
     if (data.success && data.type === 1 && data.data) {
       const updatedUser = data.data as User;
-      return { ...updatedUser, _id: updatedUser._id || updatedUser.user_id || '', role_id: updatedUser.role_id || null };
+      return { ...updatedUser, _id: updatedUser._id || updatedUser.user_id || '', role_id: updatedUser.role_id || null, logoUrl: updatedUser.logoUrl || '' };
     }
     throw new Error('Invalid response format');
   } catch (err) {
@@ -187,6 +220,7 @@ export const assignRole = async (
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ user_id, role_id }),
@@ -204,7 +238,7 @@ export const assignRole = async (
 
     if (data.success && data.type === 1 && data.data) {
       const updatedUser = 'data' in data.data ? (data.data as { data: User }).data : data.data as User;
-      return { ...updatedUser, _id: updatedUser._id || updatedUser.user_id || '', role_id: updatedUser.role_id || null };
+      return { ...updatedUser, _id: updatedUser._id || updatedUser.user_id || '', role_id: updatedUser.role_id || null, logoUrl: updatedUser.logoUrl || '' };
     }
     throw new Error('Invalid response format');
   } catch (err) {
