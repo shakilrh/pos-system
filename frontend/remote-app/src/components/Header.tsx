@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { usePopper } from 'react-popper';
 import { Bars3Icon, UserCircleIcon, BellIcon } from '@heroicons/react/24/outline';
+import UserService from '../services/UserService';
 
 export default function Header({
   onSidebarToggle,
@@ -19,7 +20,10 @@ export default function Header({
   token: string | null;
   user: any | null;
 }) {
-  const [logo, setLogo] = useState<string>('');
+  const [storeData, setStoreData] = useState<{ store_name: string; store_logo: string }>({
+    store_name: '',
+    store_logo: '',
+  });
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const referenceRef = useRef<HTMLButtonElement>(null);
   const popperRef = useRef<HTMLDivElement>(null);
@@ -50,32 +54,27 @@ export default function Header({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isProfileOpen]);
 
-  // Fetch logo from backend
+  // Fetch store data using service
   useEffect(() => {
-    const fetchLogo = async () => {
+    const fetchStoreData = async () => {
       if (!token) return;
       try {
-        const res = await fetch('http://192.168.18.107:3000/users/api/v1/details', {
-          method: 'GET',
-          credentials: 'include',
-          headers: { Authorization: `Bearer ${token}` },
+        const response = await UserService.getUserDetails(token);
+        setStoreData({
+          store_name: response.store_name || 'Rasant POS',
+          store_logo: response.store_logo || '/file.svg',
         });
-        if (!res.ok) throw new Error('Failed to fetch logo');
-        const response = await res.json();
-        const userData = response.data.data.user;
-        setLogo(userData.logoUrl || '');
       } catch (err) {
-        console.error('Fetch logo error:', err);
+        console.error('Fetch store data error:', err);
+        setStoreData({
+          store_name: user?.store_name || 'Rasant POS',
+          store_logo: user?.store_logo || '/file.svg',
+        });
       }
     };
 
-    fetchLogo();
-  }, [token]);
-
-  // Set logo from user context if available (fallback)
-  useEffect(() => {
-    setLogo(user?.logoUrl || '');
-  }, [user]);
+    fetchStoreData();
+  }, [token, user]);
 
   useEffect(() => {
     const handleThemeChange = (e: CustomEvent) => {
@@ -105,11 +104,11 @@ export default function Header({
           </button>
           <div className="flex items-center gap-2">
             <img
-              src={logo || '/file.svg'}
-              alt="Logo"
+              src={storeData.store_logo}
+              alt="Store Logo"
               className="w-8 h-8 rounded-full object-cover"
             />
-            <span className="text-lg font-semibold tracking-tight">Rasant POS</span>
+            <span className="text-lg font-semibold tracking-tight">{storeData.store_name}</span>
           </div>
         </div>
         <div className="flex items-center gap-4">

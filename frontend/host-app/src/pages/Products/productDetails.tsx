@@ -53,6 +53,10 @@ export default function ProductDetails({ product, onCancel }: ProductDetailsProp
               <p className="text-gray-700 dark:text-gray-300">{product.description || 'No description provided'}</p>
             </div>
             <div>
+              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Preparation Time</h4>
+              <p className="text-lg text-gray-900 dark:text-white">{product.time_required} minutes</p>
+            </div>
+            <div>
               <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</h4>
               <p className="text-lg text-gray-900 dark:text-white">{product.isActive ? 'Active' : 'Deactive'}</p>
             </div>
