@@ -72,16 +72,7 @@ export default function Orders() {
   return (
     <div className="min-h-screen p-5">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Orders</h1>
-          <div className="flex space-x-4">
-            <a href="./createOrder">
-              <button className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600">
-                Create New Order
-              </button>
-            </a>
-          </div>
-        </div>
+
         <OrderList
           orders={orders}
           page={page}
