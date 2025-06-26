@@ -148,26 +148,28 @@ export default function OrderList({
 
   useEffect(() => {
     const fetchQueueData = async () => {
-      if (token) {
+      if (token && orders.length > 0) {
         try {
-          const queue = await getOrderQueue(token, logout);
+          const response = await getOrderQueue(token, logout);
+          const queue = response?.data || []; // Default to empty array if data is undefined
           setQueueData(queue);
           const countdowns: { [key: string]: number } = {};
           queue.forEach((item) => (countdowns[item.order_number] = item.time_left * 60 || 0));
           setQueueCountdowns(countdowns);
         } catch (error) {
-          if (orders.length === 0) {
-            setQueueData([]);
-          } else {
-            setMessage('Failed to load queue data');
-          }
+          console.error('Error fetching queue data:', error);
+          setQueueData([]);
+          setQueueCountdowns({});
         }
+      } else {
+        setQueueData([]);
+        setQueueCountdowns({});
       }
     };
     fetchQueueData();
     const interval = setInterval(fetchQueueData, 10000);
     return () => clearInterval(interval);
-  }, [token, logout, setMessage, orders.length]);
+  }, [token, logout, orders.length]);
 
   useEffect(() => {
     const interval = setInterval(() => {
