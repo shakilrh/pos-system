@@ -1,4 +1,3 @@
-// OrderDetails.tsx
 import React from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
@@ -34,7 +33,6 @@ export interface OrderDetailsProps {
   orderItems: OrderItem[];
   setOrderItems: React.Dispatch<React.SetStateAction<OrderItem[]>>;
   calculateTotalOrderAmount: () => number;
-  calculateEstimatedTime: () => number;
   handleCreateOrder: () => void;
   localLoading: boolean;
 }
@@ -51,12 +49,10 @@ const OrderDetails = ({
                         orderItems,
                         setOrderItems,
                         calculateTotalOrderAmount,
-                        calculateEstimatedTime,
                         handleCreateOrder,
                         localLoading,
                       }: OrderDetailsProps) => {
   const totalAmount = calculateTotalOrderAmount();
-  const estimatedTime = calculateEstimatedTime();
   const showPayment = serviceType === 'take_away';
 
   return (
@@ -87,7 +83,7 @@ const OrderDetails = ({
         </div>
 
         {showPayment && (
-          <div className="space-y-2">
+          <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Received Amount *</label>
               <input
@@ -103,17 +99,29 @@ const OrderDetails = ({
                 <p className="text-red-500 text-xs mt-1">Amount must be at least ${totalAmount.toFixed(2)}</p>
               )}
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method *</label>
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
-              >
-                <option value="cash">Cash</option>
-                <option value="card">Card</option>
-                <option value="online">Online</option>
-              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Payment Method *</label>
+              <div className="flex gap-4">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={paymentMethod === 'cash'}
+                    onChange={() => setPaymentMethod('cash')}
+                    className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Cash</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={paymentMethod === 'card'}
+                    onChange={() => setPaymentMethod('card')}
+                    className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Card</span>
+                </label>
+              </div>
             </div>
           </div>
         )}
@@ -156,13 +164,6 @@ const OrderDetails = ({
                 </tr>
                 </tbody>
               </table>
-              {estimatedTime > 0 && (
-                <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    <span className="font-medium">Estimated Preparation Time:</span> {estimatedTime} minutes
-                  </p>
-                </div>
-              )}
             </>
           )}
         </div>

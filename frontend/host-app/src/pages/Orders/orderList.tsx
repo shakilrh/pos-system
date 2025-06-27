@@ -5,9 +5,8 @@ import OrderNotifications from './orderNotifications';
 import {
   markOrderAsReady,
   markOrderAsPicked,
-  getOrderQueue,
-  QueueOrder,
   markNotificationAsRead,
+  QueueOrder,
 } from '../../services/orderService';
 
 interface OrderListProps {
@@ -23,21 +22,15 @@ interface OrderListProps {
   setStatusFilter: (filter: string) => void;
   sortConfig: { key: string; direction: 'asc' | 'desc' } | null;
   setSortConfig: (config: { key: string; direction: 'asc' | 'desc' } | null) => void;
+  preparationTime: number;
+  setPreparationTime: (time: number) => void;
   message: string;
   setMessage: (message: string) => void;
   token: string | null;
   logout: () => void;
   onViewDetails: (order: Order) => void;
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
-}
-
-interface PhysicalQueueOrder {
-  _id: string;
-  order_number: string;
-  status: string;
-  customer_name: string;
-  position: number;
-  estimated_completion?: string;
+  queueData: QueueOrder[] | any; // Allow any type as a fallback
 }
 
 const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessage, activeTab }: any) => {
@@ -111,12 +104,15 @@ export default function OrderList({
                                     setStatusFilter,
                                     sortConfig,
                                     setSortConfig,
+                                    preparationTime,
+                                    setPreparationTime,
                                     message,
                                     setMessage,
                                     token,
                                     logout,
                                     onViewDetails,
                                     setOrders,
+                                    queueData, // Use queueData prop instead of fetching internally
                                   }: OrderListProps) {
   const [outerActiveTab, setOuterActiveTab] = useState('physical');
   const [activeTab, setActiveTab] = useState('to_be_prepared');
@@ -124,9 +120,8 @@ export default function OrderList({
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [messageTimeout, setMessageTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [timeLeft, setTimeLeft] = useState<{ [key: string]: number }>({});
+  const [timeLeft, setTimeLeft] = useState<{ [key: string]: number }>({}); // Fixed destructuring
   const [isLoading, setIsLoading] = useState(false);
-  const [queueData, setQueueData] = useState<QueueOrder[]>([]);
   const [queueCountdowns, setQueueCountdowns] = useState<{ [key: string]: number }>({});
   const [blink, setBlink] = useState(false);
   const [selectedNotificationTab, setSelectedNotificationTab] = useState<string>('');
@@ -147,29 +142,15 @@ export default function OrderList({
   ];
 
   useEffect(() => {
-    const fetchQueueData = async () => {
-      if (token && orders.length > 0) {
-        try {
-          const response = await getOrderQueue(token, logout);
-          const queue = response?.data || []; // Default to empty array if data is undefined
-          setQueueData(queue);
-          const countdowns: { [key: string]: number } = {};
-          queue.forEach((item) => (countdowns[item.order_number] = item.time_left * 60 || 0));
-          setQueueCountdowns(countdowns);
-        } catch (error) {
-          console.error('Error fetching queue data:', error);
-          setQueueData([]);
-          setQueueCountdowns({});
-        }
-      } else {
-        setQueueData([]);
-        setQueueCountdowns({});
-      }
-    };
-    fetchQueueData();
-    const interval = setInterval(fetchQueueData, 10000);
-    return () => clearInterval(interval);
-  }, [token, logout, orders.length]);
+    // Initialize countdowns from queueData
+    if (Array.isArray(queueData)) {
+      const countdowns: { [key: string]: number } = {};
+      queueData.forEach((item: QueueOrder) => {
+        countdowns[item.order_number] = item.time_left * 60 || 0;
+      });
+      setQueueCountdowns(countdowns);
+    }
+  }, [queueData]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -183,7 +164,7 @@ export default function OrderList({
             if (updated[orderNumber] === 60 && order?.status.toLowerCase() === 'processing') {
               setMessage(`⚠️ Order #${orderNumber} needs to be ready in 1 minute!`);
             }
-          } else if (updated[orderNumber] === 0 && order?.status.toLowerCase() === 'processing') {
+          } else if (updated[orderNumber] <= 0 && order?.status.toLowerCase() === 'processing') {
             overdueOrders.push(orderNumber);
             updated[orderNumber] = -1;
           }
@@ -199,6 +180,14 @@ export default function OrderList({
     }, 1000);
     return () => clearInterval(interval);
   }, [orders, activeTab, setMessage]);
+
+  useEffect(() => {
+    if (message) {
+      const timeout = setTimeout(() => setMessage(''), 5000);
+      setMessageTimeout(timeout);
+      return () => clearTimeout(timeout);
+    }
+  }, [message, setMessage]);
 
   const filteredOrdersByType = React.useMemo(
     () => orders.filter((order) => order.order_type === 'physical' || !order.order_type),
@@ -259,7 +248,7 @@ export default function OrderList({
     return filtered;
   }, [groupedOrders, activeTab, preparationSearchTerm, paymentSearchTerm]);
 
-  const paginatedOrders = filteredOrders.slice((page - 1) * 8, page * 8);
+  const paginatedOrders = filteredOrders.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   const mapStatusToTab = (status: string): string => {
     const statusMap: Record<string, string> = {
@@ -279,8 +268,10 @@ export default function OrderList({
   };
 
   const getQueueTimeLeft = (orderNumber: string) => {
+    // Type guard to ensure queueData is an array
+    if (!Array.isArray(queueData)) return null;
     const queueOrder = queueData.find((q: QueueOrder) => q.order_number === orderNumber);
-    const countdown = queueCountdowns[orderNumber] || 0;
+    const countdown = queueCountdowns[orderNumber];
     const order = orders.find((o) => o.order_number === orderNumber);
     if (!queueOrder || countdown === undefined) return null;
     const minutes = Math.floor(countdown / 60);
@@ -296,14 +287,6 @@ export default function OrderList({
       formattedTime: isOverdue ? 'OVERDUE' : countdown >= 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}` : '',
     };
   };
-
-  useEffect(() => {
-    if (message && activeTab !== 'to_be_prepared') {
-      const timeout = setTimeout(() => setMessage(''), 5000);
-      setMessageTimeout(timeout);
-      return () => clearTimeout(timeout);
-    }
-  }, [message, setMessage, activeTab]);
 
   const renderOrderItemImage = (item: any) =>
     item.product?.pictureUrl ? (
@@ -322,7 +305,7 @@ export default function OrderList({
 
   const getTimeDisplay = (order: Order) => {
     const timeLeft = getQueueTimeLeft(order.order_number);
-    if (timeLeft && order.status.toLowerCase() !== 'ready') {
+    if (timeLeft && order.status.toLowerCase() === 'processing') {
       return (
         <div
           className={`flex items-center space-x-1 px-2 py-1 rounded-full border text-xs ${
@@ -648,15 +631,14 @@ export default function OrderList({
         <div className="mt-6 bg-white rounded-lg shadow-sm p-3">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
             <div className="text-sm text-gray-500">
-              Showing {Math.min((page - 1) * 8 + 1, filteredOrders.length)}-
-              {Math.min(page * 8, filteredOrders.length)} of {filteredOrders.length} orders
+              Showing {Math.min((page - 1) * itemsPerPage + 1, filteredOrders.length)}-
+              {Math.min(page * itemsPerPage, filteredOrders.length)} of {filteredOrders.length} orders
             </div>
             <div className="flex items-center space-x-3">
               <select
-                value={8}
+                value={itemsPerPage}
                 onChange={(e) => setItemsPerPage(Number(e.target.value))}
                 className="p-2 border border-gray-300 rounded-md bg-white text-gray-800 text-sm focus:ring-2 focus:ring-blue-500"
-                disabled
               >
                 <option value={8}>8 per page</option>
               </select>
@@ -668,7 +650,7 @@ export default function OrderList({
                 >
                   Previous
                 </button>
-                {Array.from({ length: Math.min(5, Math.ceil(filteredOrders.length / 8)) }, (_, i) => {
+                {Array.from({ length: Math.min(5, Math.ceil(filteredOrders.length / itemsPerPage)) }, (_, i) => {
                   const pageNumber = i + 1;
                   return (
                     <button
@@ -685,8 +667,8 @@ export default function OrderList({
                   );
                 })}
                 <button
-                  onClick={() => setPage(Math.min(Math.ceil(filteredOrders.length / 8), page + 1))}
-                  disabled={page === Math.ceil(filteredOrders.length / 8)}
+                  onClick={() => setPage(Math.min(Math.ceil(filteredOrders.length / itemsPerPage), page + 1))}
+                  disabled={page === Math.ceil(filteredOrders.length / itemsPerPage)}
                   className="px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-800 disabled:opacity-50 text-sm hover:bg-gray-50 transition-colors"
                 >
                   Next
@@ -700,4 +682,4 @@ export default function OrderList({
   );
 }
 
-export { OrderListProps, PhysicalQueueOrder };
+export { OrderListProps, QueueOrder };
