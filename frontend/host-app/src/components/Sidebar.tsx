@@ -27,7 +27,7 @@ const ActiveUserIcon = () => (
 );
 
 const navItems = [
-  { name: 'Dashboard', icon: HomeIcon || FallbackIcon, href: '/dashboard', description: 'Overview of your account' },
+  { name: 'Dashboard', icon: HomeIcon || FallbackIcon, href: 'Dashboard/dashboard', description: 'Overview of your account' },
   { name: 'Menu Management', icon: ShoppingBagIcon || FallbackIcon, href: '/MenuManagement', description: 'Manage your menu items' },
   { name: 'Orders', icon: ChartBarIcon || FallbackIcon, href: '/Orders/orders', description: 'View and manage orders' },
   { name: 'Create Orders', icon: PlusCircleIcon || FallbackIcon, href: '/Orders/createOrder', description: 'Create new orders' },
