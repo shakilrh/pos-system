@@ -58,7 +58,8 @@ module.exports = {
         'theme': 'background-color, color, border-color',
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'sans-serif'],
+        /*sans: ['Roboto', 'sans-serif'],*/
+        sans: ['Nuntio', 'sans-serif'],
       },
     },
   },

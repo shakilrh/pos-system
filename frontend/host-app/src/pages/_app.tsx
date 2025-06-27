@@ -4,6 +4,9 @@ import { AppProps } from 'next/app';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import 'shared-tailwind/styles';
+/*import '@fontsource/roboto';*/
+import '@fontsource/nunito';
+import Link from 'next/link';
 
 const FallbackHeader = () => <div>Header failed to load</div>;
 const FallbackFooter = () => <div>Footer failed to load</div>;
