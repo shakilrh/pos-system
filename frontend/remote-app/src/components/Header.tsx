@@ -25,9 +25,10 @@ export default function Header({
     store_logo: '',
   });
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const referenceRef = useRef<HTMLButtonElement>(null);
-  const popperRef = useRef<HTMLDivElement>(null);
-  const { styles, attributes } = usePopper(referenceRef.current, popperRef.current, {
+  const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null);
+  const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
+  
+  const { styles, attributes, update } = usePopper(referenceElement, popperElement, {
     placement: 'bottom-end',
     modifiers: [
       { name: 'offset', options: { offset: [0, 8] } },
@@ -36,15 +37,22 @@ export default function Header({
     ],
   });
 
+  // Update popper position when dropdown opens
+  useEffect(() => {
+    if (isProfileOpen && update) {
+      update();
+    }
+  }, [isProfileOpen, update]);
+
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         isProfileOpen &&
-        referenceRef.current &&
-        popperRef.current &&
-        !referenceRef.current.contains(event.target as Node) &&
-        !popperRef.current.contains(event.target as Node)
+        referenceElement &&
+        popperElement &&
+        !referenceElement.contains(event.target as Node) &&
+        !popperElement.contains(event.target as Node)
       ) {
         setIsProfileOpen(false);
       }
@@ -52,7 +60,7 @@ export default function Header({
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isProfileOpen]);
+  }, [isProfileOpen, referenceElement, popperElement]);
 
   // Fetch store data using service
   useEffect(() => {
@@ -117,7 +125,7 @@ export default function Header({
           </button>
           <div className="relative">
             <button
-              ref={referenceRef}
+              ref={setReferenceElement}
               onClick={() => setIsProfileOpen(!isProfileOpen)}
               className="flex items-center gap-2 text-gray-300 hover:text-white"
             >
@@ -126,7 +134,7 @@ export default function Header({
             </button>
             {isProfileOpen && (
               <div
-                ref={popperRef}
+                ref={setPopperElement}
                 style={styles.popper}
                 {...attributes.popper}
                 className="w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20"
