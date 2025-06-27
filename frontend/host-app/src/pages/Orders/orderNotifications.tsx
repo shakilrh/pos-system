@@ -109,7 +109,7 @@ export default function OrderNotifications({
       if (token) {
         try {
           const queueData = await getOrderQueue(token, logout);
-          setQueueOrders(queueData);
+          setQueueOrders(queueData.data.data || []); // Extract the array from the response
         } catch (error) {
           console.error('Failed to fetch queue orders:', error);
           setMessage('Failed to load queue data');

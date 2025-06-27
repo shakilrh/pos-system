@@ -41,11 +41,11 @@ interface Order {
   customer_name: string;
   service_type: 'dine_in' | 'take_away';
   total_amount: number;
-  order_number: number;
+  order_number: string;
   createdAt: string;
   status: string;
   payment_status: string;
-  estimated_preparation_time?: number;
+  estimated_completion?: string;
 }
 
 const ReceiptTemplate = ({
@@ -68,8 +68,8 @@ const ReceiptTemplate = ({
           <p className="text-lg"><strong>Customer:</strong> {createdOrder.customer_name}</p>
           <p className="text-lg"><strong>Type:</strong> {createdOrder.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}</p>
           <p className="text-lg"><strong>Payment:</strong> {createdOrder.payment_status}</p>
-          {createdOrder.estimated_preparation_time && (
-            <p className="text-lg"><strong>Est. Prep Time:</strong> {createdOrder.estimated_preparation_time} minutes</p>
+          {createdOrder.estimated_completion && (
+            <p className="text-lg"><strong>Est. Completion:</strong> {createdOrder.estimated_completion}</p>
           )}
         </div>
 
@@ -196,13 +196,6 @@ export default function CreateOrder() {
     return orderItems.reduce((sum, item) => sum + (item.sub_total || 0), 0);
   };
 
-  const calculateEstimatedTime = () => {
-    return orderItems.reduce((totalTime, item) => {
-      const productTime = item.product?.time_required || 0;
-      return totalTime + (productTime * item.quantity);
-    }, 0);
-  };
-
   useEffect(() => {
     const total = calculateTotalOrderAmount();
     if (serviceType === 'take_away' && (receivedAmount === 0 || receivedAmount < total)) {
@@ -246,7 +239,7 @@ export default function CreateOrder() {
           quantity: item.quantity,
           sub_total: item.sub_total || 0,
         })),
-        estimated_preparation_time: calculateEstimatedTime(),
+        estimated_completion: response.estimated_completion, // Use backend response
         status: serviceType === 'take_away' ? 'confirmed' : 'pending',
       };
 
@@ -288,7 +281,7 @@ export default function CreateOrder() {
               .header { font-size: 24px; font-weight: bold; margin-bottom: 5px; color: #f59e0b; }
               .subheader { font-size: 18px; font-weight: bold; margin: 10px 0; color: #d97706; }
               .total-row { font-weight: bold; border-top: 2px solid #000; background-color: #fefcbf; }
-              .prep-time { background-color: #fefcbf; padding: 5px; margin: 10px 0; border: 2px solid #d97706; border-radius: 5px; }
+              .completion-time { background-color: #fefcbf; padding: 5px; margin: 10px 0; border: 2px solid #d97706; border-radius: 5px; }
               hr { border: none; border-top: 2px solid #d97706; margin: 10px 0; }
             </style>
           </head>
@@ -301,10 +294,10 @@ export default function CreateOrder() {
             <p>Customer: ${createdOrder.customer_name}</p>
             <p>Type: ${createdOrder.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}</p>
             <p>Payment: ${createdOrder.payment_status}</p>
-            ${createdOrder.estimated_preparation_time ?
-        `<div class="prep-time">
-                <strong>Estimated Preparation Time:</strong><br/>
-                ${createdOrder.estimated_preparation_time} minutes
+            ${createdOrder.estimated_completion ?
+        `<div class="completion-time">
+                <strong>Estimated Completion:</strong><br/>
+                ${createdOrder.estimated_completion}
               </div>` : ''
       }
             <hr />
@@ -398,7 +391,6 @@ export default function CreateOrder() {
           orderItems={orderItems}
           setOrderItems={setOrderItems}
           calculateTotalOrderAmount={calculateTotalOrderAmount}
-          calculateEstimatedTime={calculateEstimatedTime}
           handleCreateOrder={handleCreateOrder}
           localLoading={localLoading}
         />
