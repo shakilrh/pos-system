@@ -40,6 +40,8 @@
 
     "cross-env": "^7.0.3",
 
+    "date-fns": "^4.1.0",
+
     "framer-motion": "^12.12.1",
 
     "jwt-decode": "^4.0.0",
