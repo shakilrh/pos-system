@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import OrderList from './orderList';
 import createOrder from './createOrder';
-import { getAllOrders, getPhysicalQueue } from '../../services/orderService';
+import { getAllOrders, getOrderQueue } from '../../services/orderService';
 import { Order } from './orderTypes';
 
 export default function Orders() {
@@ -19,6 +19,7 @@ export default function Orders() {
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [preparationTime, setPreparationTime] = useState<number>(30);
+  const [queueData, setQueueData] = useState<any[]>([]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -39,7 +40,7 @@ export default function Orders() {
       try {
         const [orderList, queue] = await Promise.all([
           getAllOrders(token, logout),
-          getPhysicalQueue(token, logout)
+          getOrderQueue(token, logout)
         ]);
 
         const filteredOrders = orderList.filter(order => order.order_type === 'physical');
@@ -51,6 +52,8 @@ export default function Orders() {
           items: order.items || []
         })));
         setTotalPages(Math.ceil(filteredOrders.length / itemsPerPage));
+        // Extract the correct array from the queue response
+        setQueueData(queue.data.data || []);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch orders';
         setMessage(errorMessage);
@@ -72,7 +75,6 @@ export default function Orders() {
   return (
     <div className="min-h-screen p-5">
       <div className="max-w-7xl mx-auto">
-
         <OrderList
           orders={orders}
           page={page}
@@ -94,6 +96,7 @@ export default function Orders() {
           logout={logout}
           onViewDetails={setSelectedOrder}
           setOrders={setOrders}
+          queueData={queueData} // Pass queue data to OrderList
         />
         {selectedOrder && (
           <OrderDetails
