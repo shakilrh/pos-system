@@ -64,33 +64,6 @@ export default function Settings() {
             </select>
           </div>
 
-          {/* Dark Mode Setting */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-all duration-200 hover:shadow-md">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="text-2xl">{darkMode ? '🌙' : '☀️'}</div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Dark Mode</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Reduces eye strain and saves battery life
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleDarkModeToggle}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                  darkMode ? 'bg-blue-600' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-                    darkMode ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-
           {/* Theme Setting */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-all duration-200 hover:shadow-md">
             <div className="flex items-center justify-between mb-4">
@@ -133,40 +106,6 @@ export default function Settings() {
               ))}
             </div>
           </div>
-
-          {/* Additional Settings Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-all duration-200 hover:shadow-md">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Preferences</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Additional customization options</p>
-              </div>
-              <div className="text-2xl">⚙️</div>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between py-2">
-                <span className="text-sm font-medium text-gray-900 dark:text-white">Notifications</span>
-                <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                  <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1" />
-                </button>
-              </div>
-              
-              <div className="flex items-center justify-between py-2">
-                <span className="text-sm font-medium text-gray-900 dark:text-white">Auto-save</span>
-                <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                  <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-6" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Changes are saved automatically
-          </p>
         </div>
       </div>
     </div>
