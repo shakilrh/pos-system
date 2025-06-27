@@ -107,9 +107,9 @@ export default function Header({
     <header className="fixed top-0 left-0 w-full h-16 bg-gray-100 shadow-lg z-50 p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button className="md:hidden text-gray-300 hover:text-white" onClick={onSidebarToggle}>
+          {/*<button className="md:hidden text-gray-300 hover:text-white" onClick={onSidebarToggle}>
             <Bars3Icon className="w-6 h-6" />
-          </button>
+          </button>*/}
           <div className="flex items-center gap-2">
             <img
               src={storeData.store_logo}
