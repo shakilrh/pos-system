@@ -21,7 +21,7 @@ const FallbackIcon = () => (
 
 // Active User Icon component
 const ActiveUserIcon = () => (
-  <svg className="w-3 h-3 text-green-500 ml-1" fill="currentColor" viewBox="0 0 12 12">
+  <svg className="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 12 12" style={{ color: 'var(--primary-color)' }}>
     <circle cx="6" cy="6" r="5" />
   </svg>
 );
@@ -43,7 +43,7 @@ interface SidebarProps {
 export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, profileLoading, profileError } = useAuth(); // Removed refreshUserProfile
+  const { user, profileLoading, profileError } = useAuth();
   const [theme, setTheme] = useState('default');
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
@@ -62,14 +62,13 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
   }, []);
 
   useEffect(() => {
-    // Removed refreshUserProfile call
     const timer = setTimeout(() => {
       if (profileLoading) {
         setLoadingTimeout(true);
       }
-    }, 15000); // 15 seconds
+    }, 15000);
     return () => clearTimeout(timer);
-  }, [profileLoading]); // Updated dependency
+  }, [profileLoading]);
 
   const navigate = (path: string) => {
     router.push(path);
@@ -79,24 +78,33 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
     <aside
       className={`fixed z-40 flex flex-col min-h top-16 bottom-0 shadow-16 transition-all duration-300 ease-in-out ${className} ${
         sidebarOpen ? 'w-64' : 'w-16'
-      } bg-sidebar-bg text-white overflow-y-auto`}
+      } overflow-y-auto`}
+      style={{ backgroundColor: 'var(--sidebar-bg)', color: 'white' }}
     >
-      <div className="p-4 flex items-center justify-between border-b border-gray-700">
+      <div 
+        className="p-4 flex items-center justify-between border-b" 
+        style={{ borderColor: 'var(--sidebar-bg-hover)' }}
+      >
         {sidebarOpen && (
           <div className="text-left flex items-center">
             {(profileLoading && !loadingTimeout) ? (
-              <div className="w-8 h-8 mr-2 rounded-full bg-gray-600 animate-pulse" />
+              <div 
+                className="w-8 h-8 mr-2 rounded-full animate-pulse" 
+                style={{ backgroundColor: 'var(--sidebar-bg-hover)' }} 
+              />
             ) : profileError || loadingTimeout ? (
               <img
                 src="/fallback-avatar.png"
                 alt="Default avatar"
-                className="w-8 h-8 mr-2 rounded-full object-cover border-2 border-primary-color"
+                className="w-8 h-8 mr-2 rounded-full object-cover border-2"
+                style={{ borderColor: 'var(--primary-color)' }}
               />
             ) : user?.logoUrl ? (
               <img
                 src={user.logoUrl}
                 alt={`${user.name || 'User'}'s logo`}
-                className="w-8 h-8 mr-2 rounded-full object-cover border-2 border-primary-color"
+                className="w-8 h-8 mr-2 rounded-full object-cover border-2"
+                style={{ borderColor: 'var(--primary-color)' }}
                 onError={(e) => {
                   e.currentTarget.src = '/fallback-avatar.png';
                 }}
@@ -105,13 +113,17 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
               <img
                 src="/fallback-avatar.png"
                 alt="Default avatar"
-                className="w-8 h-8 mr-2 rounded-full object-cover border-2 border-primary-color"
+                className="w-8 h-8 mr-2 rounded-full object-cover border-2"
+                style={{ borderColor: 'var(--primary-color)' }}
               />
             )}
             <div>
-              <span className="text-2xl font-bold truncate flex items-center">
+              <span className="text-2xl font-bold truncate flex items-center text-white">
                 {(profileLoading && !loadingTimeout) ? (
-                  <div className="w-20 h-6 bg-gray-600 animate-pulse rounded" />
+                  <div 
+                    className="w-20 h-6 animate-pulse rounded" 
+                    style={{ backgroundColor: 'var(--sidebar-bg-hover)' }} 
+                  />
                 ) : profileError || loadingTimeout ? (
                   <>
                     User <ActiveUserIcon />
@@ -123,13 +135,25 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
                 )}
               </span>
               {profileError && !profileLoading && (
-                <p className="text-sm text-red-400">{profileError}</p>
+                <p className="text-sm" style={{ color: 'var(--primary-color)' }}>{profileError}</p>
               )}
-              <p className="text-sm text-gray-400">Welcome to Your Dashboard</p>
+              <p className="text-sm" style={{ color: 'var(--sidebar-text)' }}>Welcome to Your Dashboard</p>
             </div>
           </div>
         )}
-        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="focus:outline-none hover:bg-sidebar-bg-hover">
+        <button 
+          onClick={() => setSidebarOpen(!sidebarOpen)} 
+          className="focus:outline-none p-2 rounded transition-colors duration-200 text-white"
+          style={{ 
+            ':hover': { backgroundColor: 'var(--sidebar-bg-hover)' }
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--sidebar-bg-hover)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
           {sidebarOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
         </button>
       </div>
@@ -140,17 +164,29 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
               key={name}
               href={href}
               onClick={() => navigate(href)}
-              className={`flex items-center p-2 rounded-lg transition-all duration-200 ${
-                pathname === href
-                  ? 'bg-sidebar-bg-hover text-white'
-                  : 'text-gray-200 hover:bg-sidebar-bg-hover hover:text-white'
-              }`}
+              className="flex items-center p-2 rounded-lg transition-all duration-200 block"
+              style={{ 
+                color: pathname === href ? 'white' : 'var(--sidebar-text)',
+                backgroundColor: pathname === href ? 'var(--sidebar-bg-hover)' : 'transparent'
+              }}
+              onMouseEnter={(e) => {
+                if (pathname !== href) {
+                  e.currentTarget.style.backgroundColor = 'var(--sidebar-bg-hover)';
+                  e.currentTarget.style.color = 'white';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (pathname !== href) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = 'var(--sidebar-text)';
+                }
+              }}
             >
               <Icon className="w-6 h-6" />
               {sidebarOpen && (
                 <div className="ml-3">
                   <span className="text-sm font-medium">{name}</span>
-                  <p className="text-xs text-gray-400">{description}</p>
+                  <p className="text-xs opacity-75">{description}</p>
                 </div>
               )}
             </Link>

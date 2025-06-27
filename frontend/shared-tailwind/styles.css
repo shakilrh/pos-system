@@ -13,6 +13,7 @@
   --text-secondary: #6b7280; /* Gray-500 */
   --sidebar-bg: #1f2937; /* Gray-800 */
   --sidebar-bg-hover: #374151; /* Gray-700 */
+  --sidebar-text: rgba(255, 255, 255, 0.85); /* Brighter white */
   --border-color: #d1d5db; /* Gray-300 */
   --border-hover: #9ca3af; /* Gray-400 */
 }
@@ -24,10 +25,11 @@
   --secondary-color: #6b7280; /* Gray-500 */
   --background-color: #eff6ff; /* Blue-50 */
   --background-secondary: #dbeafe; /* Blue-100 */
-  --text-color: #1e3a8a; /* Blue-900 */
-  --text-secondary: #3730a3; /* Blue-800 */
+  --text-color: #1f2937; /* Gray-800 - readable on light blue backgrounds */
+  --text-secondary: #4b5563; /* Gray-600 - readable secondary text */
   --sidebar-bg: #1e40af; /* Blue-800 */
   --sidebar-bg-hover: #1e3a8a; /* Blue-900 */
+  --sidebar-text: rgba(255, 255, 255, 0.85); /* Brighter white */
   --border-color: #93c5fd; /* Blue-300 */
   --border-hover: #60a5fa; /* Blue-400 */
 }
@@ -39,10 +41,11 @@
   --secondary-color: #6b7280; /* Gray-500 */
   --background-color: #ecfdf5; /* Green-50 */
   --background-secondary: #d1fae5; /* Green-100 */
-  --text-color: #064e3b; /* Green-900 */
-  --text-secondary: #065f46; /* Green-800 */
+  --text-color: #1f2937; /* Gray-800 - readable on light green backgrounds */
+  --text-secondary: #4b5563; /* Gray-600 - readable secondary text */
   --sidebar-bg: #065f46; /* Green-800 */
   --sidebar-bg-hover: #064e3b; /* Green-900 */
+  --sidebar-text: rgba(255, 255, 255, 0.85); /* Brighter white */
   --border-color: #86efac; /* Green-300 */
   --border-hover: #4ade80; /* Green-400 */
 }
