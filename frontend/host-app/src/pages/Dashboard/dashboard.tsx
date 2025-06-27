@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getAllOrders } from '../../services/orderService';
 import { getOrders } from '../../services/dashboardService';
 import { Order } from '../../services/orderService';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer, Area, AreaChart } from 'recharts';
 
 // Utility functions
 const toPKT = (date: Date): Date => {
@@ -68,79 +68,107 @@ const getOrderTypeData = (orders: Order[]) => {
 };
 
 // Components
-const StatsSection = ({ stats }: { stats: { title: string; value: string; icon: string; color: string; bgColor: string; gradient: string }[] }) => (
-  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
+const StatsSection = ({ stats }: { stats: { title: string; value: string; icon: React.ReactNode; color: string; bgColor: string; gradient: string }[] }) => (
+  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     {stats.map((stat, index) => (
-      <div key={index} className={`relative overflow-hidden rounded-lg p-3 text-white shadow-md ${stat.gradient} transform hover:scale-105 transition-transform duration-200`}>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-white/80 text-xs font-medium uppercase tracking-wide">{stat.title}</p>
-            <p className="text-lg font-bold mt-0.5">{stat.value}</p>
+      <div key={index} className={`relative overflow-hidden rounded-xl p-6 text-white shadow-lg ${stat.gradient} transform hover:scale-105 transition-all duration-300 hover:shadow-xl`}>
+        <div className="relative z-10 flex items-center justify-between h-full">
+          {/* Left side - Text and Number */}
+          <div className="flex flex-col justify-center">
+            <div className="text-3xl font-bold mb-2">{stat.value}</div>
+            <p className="text-white/90 text-sm font-semibold uppercase tracking-wide">{stat.title}</p>
+            <button className="mt-3 text-white/80 hover:text-white text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-all duration-200 flex items-center w-fit">
+              More info
+              <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
-          <div className="text-xl opacity-80">{stat.icon}</div>
+
+          {/* Right side - Large Icon */}
+          <div className="flex items-center justify-center opacity-80">
+            <div className="text-5xl text-white/80">
+              {stat.icon}
+            </div>
+          </div>
         </div>
-        <div className="absolute top-0 right-0 w-12 h-12 bg-white/10 rounded-full -mr-6 -mt-6"></div>
+
+        {/* Background decorative elements */}
+        <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+        <div className="absolute bottom-0 left-0 w-16 h-16 bg-black/10 rounded-full -ml-8 -mb-8"></div>
       </div>
     ))}
   </div>
 );
-
 const SalesOverview = ({ salesData }: { salesData: { time: string; value: number }[] }) => {
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
-      <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center">
-        <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
+      <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+        <span className="w-3 h-3 bg-blue-500 rounded-full mr-3"></span>
         Sales Trend
       </h3>
-      <div className="h-40">
+      <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={salesData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+          <AreaChart data={salesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
                 <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
               </linearGradient>
+              <linearGradient id="colorValueSecondary" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#e5e7eb" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#e5e7eb" stopOpacity={0.1}/>
+              </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
             <XAxis
               dataKey="time"
-              tick={{ fontSize: 10, fill: '#6b7280' }}
+              tick={{ fontSize: 12, fill: '#6b7280' }}
               axisLine={{ stroke: '#e5e7eb' }}
-              tickMargin={5}
+              tickMargin={8}
             />
             <YAxis
-              tick={{ fontSize: 10, fill: '#6b7280' }}
+              tick={{ fontSize: 12, fill: '#6b7280' }}
               axisLine={{ stroke: '#e5e7eb' }}
-              tickMargin={5}
+              tickMargin={8}
             />
             <Tooltip
               contentStyle={{
                 backgroundColor: '#fff',
                 border: '1px solid #e5e7eb',
-                borderRadius: '6px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                fontSize: '12px'
+                borderRadius: '8px',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                fontSize: '13px'
               }}
               formatter={(value: number) => [`PKR ${value.toLocaleString()}`, 'Sales']}
             />
-            <Line
+            {/* Secondary area for background effect */}
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke="transparent"
+              fill="url(#colorValueSecondary)"
+              fillOpacity={0.3}
+            />
+            {/* Main area */}
+            <Area
               type="monotone"
               dataKey="value"
               stroke="#3b82f6"
-              strokeWidth={2}
-              activeDot={{ r: 5, fill: '#3b82f6' }}
-              dot={{ r: 2, fill: '#3b82f6' }}
-              fillOpacity={1}
+              strokeWidth={3}
               fill="url(#colorValue)"
+              fillOpacity={1}
+              dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
+              activeDot={{ r: 6, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
       {salesData.length === 0 && (
-        <div className="flex items-center justify-center h-20">
+        <div className="flex items-center justify-center h-32">
           <div className="text-center text-gray-500">
-            <div className="text-2xl mb-1">📊</div>
-            <div className="text-xs">No sales data available</div>
+            <div className="text-3xl mb-2">📊</div>
+            <div className="text-sm">No sales data available</div>
           </div>
         </div>
       )}
@@ -421,42 +449,42 @@ const Dashboard = () => {
     {
       title: 'Total Sales',
       value: `PKR ${totalSales.toLocaleString()}`,
-      icon: '💰',
+      icon: '📊',
       color: 'text-white',
-      bgColor: 'bg-green-500',
-      gradient: 'bg-gradient-to-r from-green-500 to-emerald-600'
+      bgColor: 'bg-cyan-500',
+      gradient: 'bg-gradient-to-br from-cyan-400 to-cyan-600'
     },
     {
       title: 'Orders Done',
       value: ordersProcessed.toString(),
-      icon: '✅',
+      icon: '📋',
       color: 'text-white',
-      bgColor: 'bg-blue-500',
-      gradient: 'bg-gradient-to-r from-blue-500 to-indigo-600'
+      bgColor: 'bg-green-500',
+      gradient: 'bg-gradient-to-br from-green-400 to-green-600'
     },
     {
       title: 'Dine-In',
       value: filteredOrders.filter(o => o.service_type === 'dine_in').length.toString(),
       icon: '🍽️',
       color: 'text-white',
-      bgColor: 'bg-purple-500',
-      gradient: 'bg-gradient-to-r from-purple-500 to-violet-600'
+      bgColor: 'bg-yellow-500',
+      gradient: 'bg-gradient-to-br from-yellow-400 to-orange-500'
     },
     {
       title: 'Takeaway',
       value: filteredOrders.filter(o => o.service_type === 'take_away').length.toString(),
-      icon: '📦',
+      icon: '🥡',
       color: 'text-white',
-      bgColor: 'bg-orange-500',
-      gradient: 'bg-gradient-to-r from-orange-500 to-red-500'
+      bgColor: 'bg-red-500',
+      gradient: 'bg-gradient-to-br from-red-400 to-red-600'
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-3">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-3 border border-gray-100">
+        <div className="bg-white rounded-lg shadow-md p-4 mb-6 border border-gray-100">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
             <div className="mb-3 lg:mb-0">
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -490,13 +518,13 @@ const Dashboard = () => {
         <StatsSection stats={stats} />
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 mb-3">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
           <SalesOverview salesData={salesData} />
           <RevenueSection totalSales={totalSales} orders={filteredOrders} />
         </div>
 
         {/* Bottom Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <TopSellingItems items={topSellingItemsData} />
           <RoleList roles={roles} />
           <OrderStatusChart orders={filteredOrders} />
