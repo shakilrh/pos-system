@@ -135,7 +135,7 @@ export default function Settings() {
           </div>
 
           {/* Additional Settings Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-all duration-200 hover:shadow-md">
+          {/* <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-all duration-200 hover:shadow-md">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Preferences</h3>
@@ -159,15 +159,15 @@ export default function Settings() {
                 </button>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Footer */}
-        <div className="mt-8 text-center">
+        {/* <div className="mt-8 text-center">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Changes are saved automatically
           </p>
-        </div>
+        </div> */}
       </div>
     </div>
   );
