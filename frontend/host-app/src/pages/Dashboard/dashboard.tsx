@@ -77,12 +77,7 @@ const StatsSection = ({ stats }: { stats: { title: string; value: string; icon: 
           <div className="flex flex-col justify-center">
             <div className="text-3xl font-bold mb-2">{stat.value}</div>
             <p className="text-white/90 text-sm font-semibold uppercase tracking-wide">{stat.title}</p>
-            <button className="mt-3 text-white/80 hover:text-white text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-all duration-200 flex items-center w-fit">
-              More info
-              <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+
           </div>
 
           {/* Right side - Large Icon */}
