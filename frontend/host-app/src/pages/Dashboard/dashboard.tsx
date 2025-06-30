@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format, startOfDay, endOfDay, parseISO, eachDayOfInterval } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
-import { getAllOrders } from '../../services/orderService';
 import { getOrders } from '../../services/dashboardService';
 import { Order } from '../../services/orderService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer, Area, AreaChart } from 'recharts';
@@ -68,38 +67,33 @@ const getOrderTypeData = (orders: Order[]) => {
 };
 
 // Components
-const StatsSection = ({ stats }: { stats: { title: string; value: string; icon: React.ReactNode; color: string; bgColor: string; gradient: string }[] }) => (
+const StatsSection = ({ stats }: { stats: { title: string; value: string; icon: React.ReactNode }[] }) => (
   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     {stats.map((stat, index) => (
-      <div key={index} className={`relative overflow-hidden rounded-xl p-6 text-white shadow-lg ${stat.gradient} transform hover:scale-105 transition-all duration-300 hover:shadow-xl`}>
+      <div key={index} className="relative overflow-hidden rounded-xl p-6 bg-white shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300">
         <div className="relative z-10 flex items-center justify-between h-full">
-          {/* Left side - Text and Number */}
           <div className="flex flex-col justify-center">
-            <div className="text-3xl font-bold mb-2">{stat.value}</div>
-            <p className="text-white/90 text-sm font-semibold uppercase tracking-wide">{stat.title}</p>
-
+            <div className="text-3xl font-bold text-gray-800 mb-2">{stat.value}</div>
+            <p className="text-gray-600 text-sm font-semibold uppercase tracking-wide">{stat.title}</p>
           </div>
-
-          {/* Right side - Large Icon */}
-          <div className="flex items-center justify-center opacity-80">
-            <div className="text-5xl text-white/80">
+          <div className="flex items-center justify-center">
+            <div className="text-5xl text-gray-400">
               {stat.icon}
             </div>
           </div>
         </div>
-
-        {/* Background decorative elements */}
-        <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
-        <div className="absolute bottom-0 left-0 w-16 h-16 bg-black/10 rounded-full -ml-8 -mb-8"></div>
+        <div className="absolute top-0 right-0 w-20 h-20 bg-gray-100 rounded-full -mr-10 -mt-10"></div>
+        <div className="absolute bottom-0 left-0 w-16 h-16 bg-gray-50 rounded-full -ml-8 -mb-8"></div>
       </div>
     ))}
   </div>
 );
+
 const SalesOverview = ({ salesData }: { salesData: { time: string; value: number }[] }) => {
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
+    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow duration-300">
       <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-        <span className="w-3 h-3 bg-blue-500 rounded-full mr-3"></span>
+        <span className="w-3 h-3 bg-blue-600 rounded-full mr-3"></span>
         Sales Trend
       </h3>
       <div className="h-64">
@@ -107,23 +101,23 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
           <AreaChart data={salesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                <stop offset="5%" stopColor="#2563eb" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#2563eb" stopOpacity={0.1}/>
               </linearGradient>
               <linearGradient id="colorValueSecondary" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#e5e7eb" stopOpacity={0.8}/>
                 <stop offset="95%" stopColor="#e5e7eb" stopOpacity={0.1}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
             <XAxis
               dataKey="time"
-              tick={{ fontSize: 12, fill: '#6b7280' }}
+              tick={{ fontSize: 12, fill: '#4b5563' }}
               axisLine={{ stroke: '#e5e7eb' }}
               tickMargin={8}
             />
             <YAxis
-              tick={{ fontSize: 12, fill: '#6b7280' }}
+              tick={{ fontSize: 12, fill: '#4b5563' }}
               axisLine={{ stroke: '#e5e7eb' }}
               tickMargin={8}
             />
@@ -133,11 +127,11 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
                 border: '1px solid #e5e7eb',
                 borderRadius: '8px',
                 boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                fontSize: '13px'
+                fontSize: '13px',
+                color: '#1f2937'
               }}
               formatter={(value: number) => [`PKR ${value.toLocaleString()}`, 'Sales']}
             />
-            {/* Secondary area for background effect */}
             <Area
               type="monotone"
               dataKey="value"
@@ -145,16 +139,15 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
               fill="url(#colorValueSecondary)"
               fillOpacity={0.3}
             />
-            {/* Main area */}
             <Area
               type="monotone"
               dataKey="value"
-              stroke="#3b82f6"
+              stroke="#2563eb"
               strokeWidth={3}
               fill="url(#colorValue)"
               fillOpacity={1}
-              dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
-              activeDot={{ r: 6, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
+              dot={{ r: 4, fill: '#2563eb', strokeWidth: 2, stroke: '#fff' }}
+              activeDot={{ r: 6, fill: '#2563eb', strokeWidth: 2, stroke: '#fff' }}
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -173,12 +166,12 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
 
 const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Order[] }) => {
   const orderTypeData = getOrderTypeData(orders);
-  const COLORS = ['#10b981', '#ef4444'];
+  const COLORS = ['#16a34a', '#dc2626'];
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
+    <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200 hover:shadow-lg transition-shadow duration-300">
       <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center">
-        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+        <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
         Revenue by Order Type
       </h3>
       <div className="text-center mb-2">
@@ -208,7 +201,8 @@ const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Or
                 border: '1px solid #e5e7eb',
                 borderRadius: '6px',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                fontSize: '12px'
+                fontSize: '12px',
+                color: '#1f2937'
               }}
             />
           </PieChart>
@@ -238,13 +232,13 @@ const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Or
 };
 
 const TopSellingItems = ({ items }: { items: { name: string; orders: number; image: string }[] }) => (
-  <div className="bg-white rounded-lg shadow-md p-4 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
+  <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200 hover:shadow-lg transition-shadow duration-300">
     <div className="flex justify-between items-center mb-3">
       <h3 className="text-base font-bold text-gray-800 flex items-center">
-        <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+        <span className="w-2 h-2 bg-orange-600 rounded-full mr-2"></span>
         Top Items
       </h3>
-      <button className="text-blue-500 hover:text-blue-700 text-xs font-medium transition-colors duration-200">
+      <button className="text-blue-600 hover:text-blue-800 text-xs font-medium transition-colors duration-200">
         View All
       </button>
     </div>
@@ -257,7 +251,7 @@ const TopSellingItems = ({ items }: { items: { name: string; orders: number; ima
               alt={item.name}
               className="w-10 h-10 rounded-md object-cover shadow-sm"
             />
-            <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
+            <div className="absolute -top-1 -right-1 bg-orange-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
               {index + 1}
             </div>
           </div>
@@ -278,17 +272,17 @@ const TopSellingItems = ({ items }: { items: { name: string; orders: number; ima
 );
 
 const RoleList = ({ roles }: { roles: { _id: string; name: string; permissions: { _id: string; key: string; description: string }[] }[] }) => (
-  <div className="bg-white rounded-lg shadow-md p-4 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
+  <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200 hover:shadow-lg transition-shadow duration-300">
     <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center">
-      <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+      <span className="w-2 h-2 bg-purple-600 rounded-full mr-2"></span>
       User Roles
     </h3>
     <div className="space-y-2">
       {roles.map((role) => (
-        <div key={role._id} className="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-md border border-purple-100">
+        <div key={role._id} className="p-3 bg-gray-50 rounded-md border border-gray-100">
           <h4 className="font-semibold text-gray-800 text-sm mb-1">{role.name}</h4>
           <div className="flex items-center text-xs text-gray-600">
-            <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium text-xs">
+            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium text-xs">
               {role.permissions.length} Permissions
             </span>
           </div>
@@ -306,12 +300,12 @@ const RoleList = ({ roles }: { roles: { _id: string; name: string; permissions: 
 
 const OrderStatusChart = ({ orders }: { orders: Order[] }) => {
   const data = getOrderStatusData(orders);
-  const COLORS = ['#fbbf24', '#10b981', '#3b82f6', '#8b5cf6'];
+  const COLORS = ['#f59e0b', '#16a34a', '#2563eb', '#7c3aed'];
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
+    <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200 hover:shadow-lg transition-shadow duration-300">
       <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center">
-        <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+        <span className="w-2 h-2 bg-yellow-600 rounded-full mr-2"></span>
         Order Status
       </h3>
       <div className="h-32">
@@ -337,7 +331,8 @@ const OrderStatusChart = ({ orders }: { orders: Order[] }) => {
                 border: '1px solid #e5e7eb',
                 borderRadius: '6px',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                fontSize: '12px'
+                fontSize: '12px',
+                color: '#1f2937'
               }}
             />
           </PieChart>
@@ -413,9 +408,9 @@ const Dashboard = () => {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto mb-3"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
           <p className="text-gray-600 font-medium text-sm">Loading dashboard...</p>
         </div>
       </div>
@@ -424,9 +419,9 @@ const Dashboard = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center bg-white p-6 rounded-lg shadow-lg">
-          <div className="text-red-500 text-3xl mb-3">⚠️</div>
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <div className="text-red-600 text-3xl mb-3">⚠️</div>
           <p className="text-red-600 font-medium">{error}</p>
         </div>
       </div>
@@ -444,39 +439,27 @@ const Dashboard = () => {
     {
       title: 'Total Sales',
       value: `PKR ${totalSales.toLocaleString()}`,
-      icon: '📊',
-      color: 'text-white',
-      bgColor: 'bg-cyan-500',
-      gradient: 'bg-gradient-to-br from-cyan-400 to-cyan-600'
+      icon: '📊'
     },
     {
       title: 'Orders Done',
       value: ordersProcessed.toString(),
-      icon: '📋',
-      color: 'text-white',
-      bgColor: 'bg-green-500',
-      gradient: 'bg-gradient-to-br from-green-400 to-green-600'
+      icon: '📋'
     },
     {
       title: 'Dine-In',
       value: filteredOrders.filter(o => o.service_type === 'dine_in').length.toString(),
-      icon: '🍽️',
-      color: 'text-white',
-      bgColor: 'bg-yellow-500',
-      gradient: 'bg-gradient-to-br from-yellow-400 to-orange-500'
+      icon: '🍽️'
     },
     {
       title: 'Takeaway',
       value: filteredOrders.filter(o => o.service_type === 'take_away').length.toString(),
-      icon: '🥡',
-      color: 'text-white',
-      bgColor: 'bg-red-500',
-      gradient: 'bg-gradient-to-br from-red-400 to-red-600'
+      icon: '🥡'
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4">
+    <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6 border border-gray-100">
