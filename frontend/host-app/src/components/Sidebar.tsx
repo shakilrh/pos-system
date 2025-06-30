@@ -27,7 +27,7 @@ const ActiveUserIcon = () => (
 );
 
 const navItems = [
-  { name: 'Dashboard', icon: HomeIcon || FallbackIcon, href: 'Dashboard/dashboard', description: 'Overview of your account' },
+  { name: 'Dashboard', icon: HomeIcon || FallbackIcon, href: '/Dashboard/dashboard', description: 'Overview of your account' },
   { name: 'Menu Management', icon: ShoppingBagIcon || FallbackIcon, href: '/MenuManagement', description: 'Manage your menu items' },
   { name: 'Orders', icon: ChartBarIcon || FallbackIcon, href: '/Orders/orders', description: 'View and manage orders' },
   { name: 'Create Orders', icon: PlusCircleIcon || FallbackIcon, href: '/Orders/createOrder', description: 'Create new orders' },
@@ -71,7 +71,7 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
   }, [profileLoading]);
 
   const navigate = (path: string) => {
-    router.push(path);
+    router.push(path); // Use absolute path
   };
 
   return (
@@ -81,16 +81,16 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
       } overflow-y-auto`}
       style={{ backgroundColor: 'var(--sidebar-bg)', color: 'white' }}
     >
-      <div 
-        className="p-4 flex items-center justify-between border-b" 
+      <div
+        className="p-4 flex items-center justify-between border-b"
         style={{ borderColor: 'var(--sidebar-bg-hover)' }}
       >
         {sidebarOpen && (
           <div className="text-left flex items-center">
             {(profileLoading && !loadingTimeout) ? (
-              <div 
-                className="w-8 h-8 mr-2 rounded-full animate-pulse" 
-                style={{ backgroundColor: 'var(--sidebar-bg-hover)' }} 
+              <div
+                className="w-8 h-8 mr-2 rounded-full animate-pulse"
+                style={{ backgroundColor: 'var(--sidebar-bg-hover)' }}
               />
             ) : profileError || loadingTimeout ? (
               <img
@@ -120,9 +120,9 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
             <div>
               <span className="text-2xl font-bold truncate flex items-center text-white">
                 {(profileLoading && !loadingTimeout) ? (
-                  <div 
-                    className="w-20 h-6 animate-pulse rounded" 
-                    style={{ backgroundColor: 'var(--sidebar-bg-hover)' }} 
+                  <div
+                    className="w-20 h-6 animate-pulse rounded"
+                    style={{ backgroundColor: 'var(--sidebar-bg-hover)' }}
                   />
                 ) : profileError || loadingTimeout ? (
                   <>
@@ -141,10 +141,10 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
             </div>
           </div>
         )}
-        <button 
-          onClick={() => setSidebarOpen(!sidebarOpen)} 
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
           className="focus:outline-none p-2 rounded transition-colors duration-200 text-white"
-          style={{ 
+          style={{
             ':hover': { backgroundColor: 'var(--sidebar-bg-hover)' }
           }}
           onMouseEnter={(e) => {
@@ -165,7 +165,7 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
               href={href}
               onClick={() => navigate(href)}
               className="flex items-center p-2 rounded-lg transition-all duration-200 block"
-              style={{ 
+              style={{
                 color: pathname === href ? 'white' : 'var(--sidebar-text)',
                 backgroundColor: pathname === href ? 'var(--sidebar-bg-hover)' : 'transparent'
               }}
