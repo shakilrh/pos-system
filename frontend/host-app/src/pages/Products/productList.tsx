@@ -69,20 +69,30 @@ export default function ProductList({
         </button>
       </div>
       <div className="mb-4">
-        <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Category</label>
-        <select
-          id="categoryFilter"
-          value={filterCategory || 'all'}
-          onChange={(e) => handleFilterChange(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={isCategoryFormActive}
-        >
-          <option value="all">All Categories</option>
-          <option value="inactive">Inactive Products</option>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Category</label>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => handleFilterChange('all')}
+            className={`px-3 py-1 rounded-lg ${filterCategory === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            All Products
+          </button>
+          <button
+            onClick={() => handleFilterChange('inactive')}
+            className={`px-3 py-1 rounded-lg ${filterCategory === 'inactive' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            Inactive Products
+          </button>
           {categories.map((category) => (
-            <option key={category._id} value={category._id}>{category.name}</option>
+            <button
+              key={category._id}
+              onClick={() => handleFilterChange(category._id)}
+              className={`px-3 py-1 rounded-lg ${filterCategory === category._id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+            >
+              {category.name}
+            </button>
           ))}
-        </select>
+        </div>
       </div>
       {currentProducts.length > 0 ? (
         <div className="grid grid-cols-5 gap-2">
