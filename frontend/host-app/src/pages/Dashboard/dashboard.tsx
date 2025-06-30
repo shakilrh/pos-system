@@ -5,10 +5,12 @@ import { getAllOrders } from '../../services/orderService';
 import { getOrders } from '../../services/dashboardService';
 import { Order } from '../../services/orderService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChartLine, faClipboardList, faUtensils, faShoppingBag } from '@fortawesome/free-solid-svg-icons';
 
 // Utility functions
 const toPKT = (date: Date): Date => {
-  const pktOffset = 5 * 60 * 60 * 1000;
+  const pktOffset = 5 * 60 * 60 * 1000; // UTC+5
   return new Date(date.getTime() + pktOffset);
 };
 
@@ -73,28 +75,21 @@ const StatsSection = ({ stats }: { stats: { title: string; value: string; icon: 
     {stats.map((stat, index) => (
       <div key={index} className={`relative overflow-hidden rounded-xl p-6 text-white shadow-lg ${stat.gradient} transform hover:scale-105 transition-all duration-300 hover:shadow-xl`}>
         <div className="relative z-10 flex items-center justify-between h-full">
-          {/* Left side - Text and Number */}
           <div className="flex flex-col justify-center">
             <div className="text-3xl font-bold mb-2">{stat.value}</div>
             <p className="text-white/90 text-sm font-semibold uppercase tracking-wide">{stat.title}</p>
-
           </div>
-
-          {/* Right side - Large Icon */}
           <div className="flex items-center justify-center opacity-80">
-            <div className="text-5xl text-white/80">
-              {stat.icon}
-            </div>
+            <div className="text-5xl text-white/80">{stat.icon}</div>
           </div>
         </div>
-
-        {/* Background decorative elements */}
         <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
         <div className="absolute bottom-0 left-0 w-16 h-16 bg-black/10 rounded-full -ml-8 -mb-8"></div>
       </div>
     ))}
   </div>
 );
+
 const SalesOverview = ({ salesData }: { salesData: { time: string; value: number }[] }) => {
   return (
     <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
@@ -137,7 +132,6 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
               }}
               formatter={(value: number) => [`PKR ${value.toLocaleString()}`, 'Sales']}
             />
-            {/* Secondary area for background effect */}
             <Area
               type="monotone"
               dataKey="value"
@@ -145,7 +139,6 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
               fill="url(#colorValueSecondary)"
               fillOpacity={0.3}
             />
-            {/* Main area */}
             <Area
               type="monotone"
               dataKey="value"
@@ -394,12 +387,11 @@ const Dashboard = () => {
         ]);
         setOrders(orderData);
         setRoles(roleData);
-        setLoading(false);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
-        setError(errorMessage);
-        setLoading(false);
+        setError(err instanceof Error ? err.message : 'Failed to fetch data');
         console.error('Failed to fetch data', err);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -407,28 +399,25 @@ const Dashboard = () => {
   }, [isAuthenticated, token, logout]);
 
   useEffect(() => {
-    const timer = setInterval(() => setStartDate(prev => new Date(prev)), 1000);
+    const timer = setInterval(() => {
+      setStartDate(new Date());
+      setEndDate(new Date());
+    }, 1000);
     return () => clearInterval(timer);
   }, []);
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto mb-3"></div>
-          <p className="text-gray-600 font-medium text-sm">Loading dashboard...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center bg-white p-6 rounded-lg shadow-lg">
-          <div className="text-red-500 text-3xl mb-3">⚠️</div>
-          <p className="text-red-600 font-medium">{error}</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-red-600">{error}</div>
       </div>
     );
   }
@@ -444,7 +433,7 @@ const Dashboard = () => {
     {
       title: 'Total Sales',
       value: `PKR ${totalSales.toLocaleString()}`,
-      icon: '📊',
+      icon: <FontAwesomeIcon icon={faChartLine} />,
       color: 'text-white',
       bgColor: 'bg-cyan-500',
       gradient: 'bg-gradient-to-br from-cyan-400 to-cyan-600'
@@ -452,7 +441,7 @@ const Dashboard = () => {
     {
       title: 'Orders Done',
       value: ordersProcessed.toString(),
-      icon: '📋',
+      icon: <FontAwesomeIcon icon={faClipboardList} />,
       color: 'text-white',
       bgColor: 'bg-green-500',
       gradient: 'bg-gradient-to-br from-green-400 to-green-600'
@@ -460,7 +449,7 @@ const Dashboard = () => {
     {
       title: 'Dine-In',
       value: filteredOrders.filter(o => o.service_type === 'dine_in').length.toString(),
-      icon: '🍽️',
+      icon: <FontAwesomeIcon icon={faUtensils} />,
       color: 'text-white',
       bgColor: 'bg-yellow-500',
       gradient: 'bg-gradient-to-br from-yellow-400 to-orange-500'
@@ -468,7 +457,7 @@ const Dashboard = () => {
     {
       title: 'Takeaway',
       value: filteredOrders.filter(o => o.service_type === 'take_away').length.toString(),
-      icon: '🥡',
+      icon: <FontAwesomeIcon icon={faShoppingBag} />,
       color: 'text-white',
       bgColor: 'bg-red-500',
       gradient: 'bg-gradient-to-br from-red-400 to-red-600'
@@ -478,7 +467,6 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6 border border-gray-100">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
             <div className="mb-3 lg:mb-0">
@@ -489,7 +477,7 @@ const Dashboard = () => {
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-600 mb-2">
-                {format(toPKT(new Date()), 'PPPP')} • {format(toPKT(new Date()), 'p')}
+                {format(new Date(), 'PPPP')} • {format(new Date(), 'p')}
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <input
@@ -509,16 +497,13 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Stats Section */}
         <StatsSection stats={stats} />
 
-        {/* Charts Section */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
           <SalesOverview salesData={salesData} />
           <RevenueSection totalSales={totalSales} orders={filteredOrders} />
         </div>
 
-        {/* Bottom Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <TopSellingItems items={topSellingItemsData} />
           <RoleList roles={roles} />
