@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { usePopper } from 'react-popper';
-import { 
-  Bars3Icon, 
-  UserCircleIcon, 
+import {
+  Bars3Icon,
+  UserCircleIcon,
   BellIcon,
   UserIcon,
   Cog6ToothIcon,
@@ -34,7 +34,7 @@ export default function Header({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null);
   const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
-  
+
   const { styles, attributes, update } = usePopper(referenceElement, popperElement, {
     placement: 'bottom-end',
     modifiers: [
@@ -128,7 +128,7 @@ export default function Header({
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button 
+          <button
             className="relative p-2 rounded-lg transition-all duration-200 hover:scale-105"
             style={{
               color: 'var(--text-secondary)',
@@ -164,7 +164,7 @@ export default function Header({
               }}
             >
               <UserCircleIcon className="w-5 h-5" />
-              <span 
+              <span
                 className="hidden md:block text-sm font-medium"
                 style={{ color: 'var(--text-color)' }}
               >
@@ -176,23 +176,23 @@ export default function Header({
                 ref={setPopperElement}
                 style={styles.popper}
                 {...attributes.popper}
-                className="w-56 rounded-xl shadow-xl border py-2 z-20 bg-white"
-                css={{
+                className="w-64 rounded-xl shadow-xl border py-2 z-20 bg-white"
+                 css={{
                   backgroundColor: 'var(--background-secondary)',
                   borderColor: 'var(--border-color)'
                 }}
               >
-                <div 
+                <div
                   className="px-4 py-3 border-b"
                   style={{ borderColor: 'var(--border-color)' }}
                 >
-                  <p 
+                  <p
                     className="text-sm font-semibold"
                     style={{ color: 'var(--text-color)' }}
                   >
                     {user?.name || 'Admin User'}
                   </p>
-                  <p 
+                  <p
                     className="text-xs"
                     style={{ color: 'var(--text-secondary)' }}
                   >
@@ -231,7 +231,7 @@ export default function Header({
                   <Cog6ToothIcon className="w-4 h-4" style={{ color: 'inherit' }} />
                   Settings
                 </button>
-                <hr 
+                <hr
                   className="my-1"
                   style={{ borderColor: 'var(--border-color)' }}
                 />
