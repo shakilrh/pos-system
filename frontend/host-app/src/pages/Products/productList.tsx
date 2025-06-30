@@ -68,8 +68,15 @@ export default function ProductList({
           <span className="text-sm">Add Product</span>
         </button>
       </div>
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Category</label>
+      <div className="mb-8">
+        <label className="flex items-center text-lg font-semibold text-gray-800 mb-3">
+          <svg className="w-4 h-4 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z"></path>
+          </svg>
+          Filter by Category
+        </label>
+
         <div className="flex space-x-2">
           <button
             onClick={() => handleFilterChange('all')}
