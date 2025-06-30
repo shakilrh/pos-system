@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { format, startOfDay, endOfDay, parseISO, eachDayOfInterval } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 import { getOrders } from '../../services/dashboardService';
-import { Order } from '../../services/orderService';
+import { Order } from '../../services/dashboardService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChartLine, faClipboardList, faUtensils, faShoppingBag } from '@fortawesome/free-solid-svg-icons';
 
 // Utility functions
 const toPKT = (date: Date): Date => {
-  const pktOffset = 5 * 60 * 60 * 1000;
+  const pktOffset = 5 * 60 * 60 * 1000; // UTC+5
   return new Date(date.getTime() + pktOffset);
 };
 
@@ -30,11 +32,17 @@ const getTopSellingItems = (orders: Order[], limit: number) => {
   const itemCounts: { [key: string]: { name: string; orders: number; image: string } } = {};
   orders.forEach(order => {
     order.items.forEach(item => {
-      const productId = item.product._id;
-      if (!itemCounts[productId]) {
-        itemCounts[productId] = { name: item.product.name, orders: 0, image: item.product.pictureUrl };
+      if (item.product && item.product._id) {
+        const productId = item.product._id;
+        if (!itemCounts[productId]) {
+          itemCounts[productId] = {
+            name: item.product.name || 'Unknown',
+            orders: 0,
+            image: item.product.pictureUrl || ''
+          };
+        }
+        itemCounts[productId].orders += item.quantity;
       }
-      itemCounts[productId].orders += item.quantity;
     });
   });
   return Object.values(itemCounts)
@@ -67,23 +75,21 @@ const getOrderTypeData = (orders: Order[]) => {
 };
 
 // Components
-const StatsSection = ({ stats }: { stats: { title: string; value: string; icon: React.ReactNode }[] }) => (
+const StatsSection = ({ stats }: { stats: { title: string; value: string; icon: React.ReactNode; color: string; bgColor: string; gradient: string }[] }) => (
   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     {stats.map((stat, index) => (
-      <div key={index} className="relative overflow-hidden rounded-xl p-6 bg-white shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+      <div key={index} className={`relative overflow-hidden rounded-xl p-6 text-white shadow-lg ${stat.gradient} transform hover:scale-105 transition-all duration-300 hover:shadow-xl`}>
         <div className="relative z-10 flex items-center justify-between h-full">
           <div className="flex flex-col justify-center">
-            <div className="text-3xl font-bold text-gray-800 mb-2">{stat.value}</div>
-            <p className="text-gray-600 text-sm font-semibold uppercase tracking-wide">{stat.title}</p>
+            <div className="text-3xl font-bold mb-2">{stat.value.replace('PKR', '$')}</div>
+            <p className="text-white/90 text-sm font-semibold uppercase tracking-wide">{stat.title}</p>
           </div>
-          <div className="flex items-center justify-center">
-            <div className="text-5xl text-gray-400">
-              {stat.icon}
-            </div>
+          <div className="flex items-center justify-center opacity-80">
+            <div className="text-5xl text-white/80">{stat.icon}</div>
           </div>
         </div>
-        <div className="absolute top-0 right-0 w-20 h-20 bg-gray-100 rounded-full -mr-10 -mt-10"></div>
-        <div className="absolute bottom-0 left-0 w-16 h-16 bg-gray-50 rounded-full -ml-8 -mb-8"></div>
+        <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+        <div className="absolute bottom-0 left-0 w-16 h-16 bg-black/10 rounded-full -ml-8 -mb-8"></div>
       </div>
     ))}
   </div>
@@ -91,9 +97,9 @@ const StatsSection = ({ stats }: { stats: { title: string; value: string; icon: 
 
 const SalesOverview = ({ salesData }: { salesData: { time: string; value: number }[] }) => {
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
       <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-        <span className="w-3 h-3 bg-blue-600 rounded-full mr-3"></span>
+        <span className="w-3 h-3 bg-blue-500 rounded-full mr-3"></span>
         Sales Trend
       </h3>
       <div className="h-64">
@@ -101,23 +107,23 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
           <AreaChart data={salesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#2563eb" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#2563eb" stopOpacity={0.1}/>
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
               </linearGradient>
               <linearGradient id="colorValueSecondary" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#e5e7eb" stopOpacity={0.8}/>
                 <stop offset="95%" stopColor="#e5e7eb" stopOpacity={0.1}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
             <XAxis
               dataKey="time"
-              tick={{ fontSize: 12, fill: '#4b5563' }}
+              tick={{ fontSize: 12, fill: '#6b7280' }}
               axisLine={{ stroke: '#e5e7eb' }}
               tickMargin={8}
             />
             <YAxis
-              tick={{ fontSize: 12, fill: '#4b5563' }}
+              tick={{ fontSize: 12, fill: '#6b7280' }}
               axisLine={{ stroke: '#e5e7eb' }}
               tickMargin={8}
             />
@@ -127,10 +133,9 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
                 border: '1px solid #e5e7eb',
                 borderRadius: '8px',
                 boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                fontSize: '13px',
-                color: '#1f2937'
+                fontSize: '13px'
               }}
-              formatter={(value: number) => [`PKR ${value.toLocaleString()}`, 'Sales']}
+              formatter={(value: number) => [`$${value.toLocaleString()}`, 'Sales']}
             />
             <Area
               type="monotone"
@@ -142,12 +147,12 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
             <Area
               type="monotone"
               dataKey="value"
-              stroke="#2563eb"
+              stroke="#3b82f6"
               strokeWidth={3}
               fill="url(#colorValue)"
               fillOpacity={1}
-              dot={{ r: 4, fill: '#2563eb', strokeWidth: 2, stroke: '#fff' }}
-              activeDot={{ r: 6, fill: '#2563eb', strokeWidth: 2, stroke: '#fff' }}
+              dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
+              activeDot={{ r: 6, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -166,16 +171,16 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
 
 const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Order[] }) => {
   const orderTypeData = getOrderTypeData(orders);
-  const COLORS = ['#16a34a', '#dc2626'];
+  const COLORS = ['#10b981', '#ef4444'];
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+    <div className="bg-white rounded-lg shadow-md p-4 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
       <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center">
-        <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
+        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
         Revenue by Order Type
       </h3>
       <div className="text-center mb-2">
-        <div className="text-xl font-bold text-gray-800 mb-1">PKR {totalSales.toLocaleString()}</div>
+        <div className="text-xl font-bold text-gray-800 mb-1">${totalSales.toLocaleString()}</div>
         <div className="text-xs text-gray-500 font-medium">Total Revenue</div>
       </div>
       <div className="h-32">
@@ -195,14 +200,13 @@ const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Or
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number) => [`PKR ${value.toLocaleString()}`, 'Revenue']}
+              formatter={(value: number) => [`$${value.toLocaleString()}`, 'Revenue']}
               contentStyle={{
                 backgroundColor: '#fff',
                 border: '1px solid #e5e7eb',
                 borderRadius: '6px',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                fontSize: '12px',
-                color: '#1f2937'
+                fontSize: '12px'
               }}
             />
           </PieChart>
@@ -219,7 +223,7 @@ const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Or
               <span className="font-medium text-gray-700 text-xs">{entry.name}</span>
             </div>
             <div className="text-right">
-              <div className="font-bold text-gray-800 text-xs">PKR {entry.value.toLocaleString()}</div>
+              <div className="font-bold text-gray-800 text-xs">${entry.value.toLocaleString()}</div>
               <div className="text-xs text-gray-500">
                 {totalSales > 0 ? ((entry.value / totalSales) * 100).toFixed(1) : 0}%
               </div>
@@ -232,13 +236,13 @@ const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Or
 };
 
 const TopSellingItems = ({ items }: { items: { name: string; orders: number; image: string }[] }) => (
-  <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+  <div className="bg-white rounded-lg shadow-md p-4 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
     <div className="flex justify-between items-center mb-3">
       <h3 className="text-base font-bold text-gray-800 flex items-center">
-        <span className="w-2 h-2 bg-orange-600 rounded-full mr-2"></span>
+        <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
         Top Items
       </h3>
-      <button className="text-blue-600 hover:text-blue-800 text-xs font-medium transition-colors duration-200">
+      <button className="text-blue-500 hover:text-blue-700 text-xs font-medium transition-colors duration-200">
         View All
       </button>
     </div>
@@ -251,7 +255,7 @@ const TopSellingItems = ({ items }: { items: { name: string; orders: number; ima
               alt={item.name}
               className="w-10 h-10 rounded-md object-cover shadow-sm"
             />
-            <div className="absolute -top-1 -right-1 bg-orange-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
+            <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
               {index + 1}
             </div>
           </div>
@@ -272,17 +276,17 @@ const TopSellingItems = ({ items }: { items: { name: string; orders: number; ima
 );
 
 const RoleList = ({ roles }: { roles: { _id: string; name: string; permissions: { _id: string; key: string; description: string }[] }[] }) => (
-  <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+  <div className="bg-white rounded-lg shadow-md p-4 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
     <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center">
-      <span className="w-2 h-2 bg-purple-600 rounded-full mr-2"></span>
+      <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
       User Roles
     </h3>
     <div className="space-y-2">
       {roles.map((role) => (
-        <div key={role._id} className="p-3 bg-gray-50 rounded-md border border-gray-100">
+        <div key={role._id} className="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-md border border-purple-100">
           <h4 className="font-semibold text-gray-800 text-sm mb-1">{role.name}</h4>
           <div className="flex items-center text-xs text-gray-600">
-            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium text-xs">
+            <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium text-xs">
               {role.permissions.length} Permissions
             </span>
           </div>
@@ -300,12 +304,12 @@ const RoleList = ({ roles }: { roles: { _id: string; name: string; permissions: 
 
 const OrderStatusChart = ({ orders }: { orders: Order[] }) => {
   const data = getOrderStatusData(orders);
-  const COLORS = ['#f59e0b', '#16a34a', '#2563eb', '#7c3aed'];
+  const COLORS = ['#fbbf24', '#10b981', '#3b82f6', '#8b5cf6'];
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+    <div className="bg-white rounded-lg shadow-md p-4 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
       <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center">
-        <span className="w-2 h-2 bg-yellow-600 rounded-full mr-2"></span>
+        <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
         Order Status
       </h3>
       <div className="h-32">
@@ -331,8 +335,7 @@ const OrderStatusChart = ({ orders }: { orders: Order[] }) => {
                 border: '1px solid #e5e7eb',
                 borderRadius: '6px',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                fontSize: '12px',
-                color: '#1f2937'
+                fontSize: '12px'
               }}
             />
           </PieChart>
@@ -389,41 +392,29 @@ const Dashboard = () => {
         ]);
         setOrders(orderData);
         setRoles(roleData);
-        setLoading(false);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
-        setError(errorMessage);
-        setLoading(false);
+        setError(err instanceof Error ? err.message : 'Failed to fetch data');
         console.error('Failed to fetch data', err);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
   }, [isAuthenticated, token, logout]);
 
-  useEffect(() => {
-    const timer = setInterval(() => setStartDate(prev => new Date(prev)), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
-          <p className="text-gray-600 font-medium text-sm">Loading dashboard...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <div className="text-red-600 text-3xl mb-3">⚠️</div>
-          <p className="text-red-600 font-medium">{error}</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-red-600">{error}</div>
       </div>
     );
   }
@@ -438,30 +429,41 @@ const Dashboard = () => {
   const stats = [
     {
       title: 'Total Sales',
-      value: `PKR ${totalSales.toLocaleString()}`,
-      icon: '📊'
+      value: `$${totalSales.toLocaleString()}`,
+      icon: <FontAwesomeIcon icon={faChartLine} />,
+      color: 'text-white',
+      bgColor: 'bg-cyan-500',
+      gradient: 'bg-gradient-to-br from-cyan-400 to-cyan-600'
     },
     {
       title: 'Orders Done',
       value: ordersProcessed.toString(),
-      icon: '📋'
+      icon: <FontAwesomeIcon icon={faClipboardList} />,
+      color: 'text-white',
+      bgColor: 'bg-green-500',
+      gradient: 'bg-gradient-to-br from-green-400 to-green-600'
     },
     {
       title: 'Dine-In',
       value: filteredOrders.filter(o => o.service_type === 'dine_in').length.toString(),
-      icon: '🍽️'
+      icon: <FontAwesomeIcon icon={faUtensils} />,
+      color: 'text-white',
+      bgColor: 'bg-yellow-500',
+      gradient: 'bg-gradient-to-br from-yellow-400 to-orange-500'
     },
     {
       title: 'Takeaway',
       value: filteredOrders.filter(o => o.service_type === 'take_away').length.toString(),
-      icon: '🥡'
+      icon: <FontAwesomeIcon icon={faShoppingBag} />,
+      color: 'text-white',
+      bgColor: 'bg-red-500',
+      gradient: 'bg-gradient-to-br from-red-400 to-red-600'
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6 border border-gray-100">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
             <div className="mb-3 lg:mb-0">
@@ -472,7 +474,7 @@ const Dashboard = () => {
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-600 mb-2">
-                {format(toPKT(new Date()), 'PPPP')} • {format(toPKT(new Date()), 'p')}
+                {format(new Date(), 'PPPP')} • {format(new Date(), 'p')}
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <input
@@ -492,16 +494,13 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Stats Section */}
         <StatsSection stats={stats} />
 
-        {/* Charts Section */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
           <SalesOverview salesData={salesData} />
           <RevenueSection totalSales={totalSales} orders={filteredOrders} />
         </div>
 
-        {/* Bottom Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <TopSellingItems items={topSellingItemsData} />
           <RoleList roles={roles} />
