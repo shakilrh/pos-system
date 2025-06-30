@@ -1,6 +1,5 @@
 import React from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import ReceiptTemplate from './receiptTemplate';
 
 interface Product {
   _id: string;
@@ -55,62 +54,6 @@ const OrderDetails = ({
                       }: OrderDetailsProps) => {
   const totalAmount = calculateTotalOrderAmount();
   const showPayment = serviceType === 'take_away';
-
-  const printReceipt = () => {
-    const receiptItems = orderItems.map(item => ({
-      name: item.product?.name || `Product ${item.product_id}`,
-      quantity: item.quantity,
-      price: item.product?.price || 0
-    }));
-    const printWindow = window.open('', '', 'height=600,width=400');
-    if (printWindow) {
-      const receipt = <ReceiptTemplate
-        orderNumber="NEW_ORDER" // Replace with actual order number if available
-        customerName={customerName}
-        serviceType={serviceType}
-        date={new Date().toLocaleString()}
-        items={receiptItems}
-        totalAmount={totalAmount}
-        paymentMethod={paymentMethod}
-        receivedAmount={receivedAmount}
-      />;
-      printWindow.document.write('<!DOCTYPE html><html><head><title>Receipt</title>');
-      printWindow.document.write('<style>' + `
-        body { font-family: Arial, sans-serif; }
-        .lg\\:w-1/3 { width: 33.333333%; }
-        .w-full { width: 100%; }
-        .bg-white { background-color: #fff; }
-        .rounded-lg { border-radius: 0.5rem; }
-        .shadow-md { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-        .p-6 { padding: 1.5rem; }
-        .text-xl { font-size: 1.25rem; }
-        .font-bold { font-weight: 700; }
-        .text-gray-800 { color: #1f2937; }
-        .mb-4 { margin-bottom: 1rem; }
-        .space-y-4 > * + * { margin-top: 1rem; }
-        .block { display: block; }
-        .text-sm { font-size: 0.875rem; }
-        .font-medium { font-weight: 500; }
-        .text-gray-700 { color: #374151; }
-        .mb-1 { margin-bottom: 0.25rem; }
-        .mt-4 { margin-top: 1rem; }
-        .font-semibold { font-weight: 600; }
-        .w-full { width: 100%; }
-        .text-left { text-align: left; }
-        .border-collapse { border-collapse: collapse; }
-        .border-b { border-bottom-width: 1px; }
-        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-        .px-4 { padding-left: 1rem; padding-right: 1rem; }
-        th { font-weight: bold; }
-        td { vertical-align: top; }
-        .text-right { text-align: right; }
-      ` + '</style></head><body>');
-      printWindow.document.write(ReactDOMServer.renderToString(receipt));
-      printWindow.document.write('</body></html>');
-      printWindow.document.close();
-      printWindow.print();
-    }
-  };
 
   return (
     <div className="lg:w-1/3 w-full bg-white rounded-lg shadow-md p-6">
@@ -215,7 +158,7 @@ const OrderDetails = ({
                   </tr>
                 ))}
                 <tr className="font-bold">
-                  <td colSpan="3" className="py-2 px-4 text-right">Total</td>
+                  <td colSpan={3} className="py-2 px-4 text-right">Total</td>
                   <td className="py-2 px-4">${totalAmount.toFixed(2)}</td>
                   <td></td>
                 </tr>
@@ -226,7 +169,7 @@ const OrderDetails = ({
         </div>
 
         <button
-          onClick={() => { handleCreateOrder(); printReceipt(); }}
+          onClick={handleCreateOrder}
           disabled={localLoading}
           className={`w-full py-2 rounded-lg transition-all duration-200 ${
             localLoading
@@ -237,7 +180,8 @@ const OrderDetails = ({
           {localLoading ? 'Processing Order...' : showPayment ? 'Confirm Order & Process Payment' : 'Confirm Order'}
         </button>
       </div>
-      );
-      };
+    </div>
+  );
+};
 
-      export default OrderDetails;
+export default OrderDetails;
