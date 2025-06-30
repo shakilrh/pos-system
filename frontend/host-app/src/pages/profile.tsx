@@ -296,7 +296,7 @@ export default function Profile() {
   if (loading && !user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent mb-4"></div>
         <p className="text-gray-600">Loading profile...</p>
       </div>
     );
@@ -326,7 +326,7 @@ export default function Profile() {
                   onChange={handleLogoChange}
                 />
                 <button
-                  className="absolute -bottom-1 -right-1 bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 shadow-lg transition-colors"
+                  className="absolute -bottom-1 -right-1 bg-orange-500 hover:bg-orange-600 text-white rounded-full p-2 shadow-lg transition-colors"
                   onClick={() => fileInputRef.current?.click()}
                   title="Change photo"
                   disabled={loading}
@@ -342,7 +342,7 @@ export default function Profile() {
                 <p className="text-gray-600">{email || 'admin@rasant.com'}</p>
                 {logoFile && (
                   <button
-                    className="mt-2 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
+                    className="mt-2 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
                     onClick={handleLogoSave}
                     disabled={loading}
                   >
@@ -391,7 +391,7 @@ export default function Profile() {
                 {editingField !== 'name' && (
                   <button
                     onClick={() => setEditingField('name')}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
                   >
                     Edit
                   </button>
@@ -403,14 +403,14 @@ export default function Profile() {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Enter your name"
                   />
                   <div className="flex space-x-3">
                     <button
                       onClick={handleNameSave}
                       disabled={loading || !name.trim()}
-                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
+                      className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
                     >
                       {loading ? 'Saving...' : 'Save'}
                     </button>
@@ -444,7 +444,7 @@ export default function Profile() {
                 {editingField !== 'password' && (
                   <button
                     onClick={() => setEditingField('password')}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
                   >
                     Change
                   </button>
@@ -456,14 +456,14 @@ export default function Profile() {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Enter new password"
                   />
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Confirm new password"
                   />
                   <div className="text-xs text-gray-500 space-y-1">
@@ -484,7 +484,7 @@ export default function Profile() {
                     <button
                       onClick={handlePasswordSave}
                       disabled={loading || !password || !confirmPassword}
-                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
+                      className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
                     >
                       {loading ? 'Updating...' : 'Update Password'}
                     </button>
@@ -512,7 +512,7 @@ export default function Profile() {
                 {editingField !== 'storeName' && (
                   <button
                     onClick={() => setEditingField('storeName')}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
                   >
                     Edit
                   </button>
@@ -524,14 +524,14 @@ export default function Profile() {
                     type="text"
                     value={storeName}
                     onChange={(e) => setStoreName(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Enter store name"
                   />
                   <div className="flex space-x-3">
                     <button
                       onClick={handleStoreNameSave}
                       disabled={loading || !storeName.trim()}
-                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
+                      className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
                     >
                       {loading ? 'Saving...' : 'Save'}
                     </button>
@@ -558,7 +558,7 @@ export default function Profile() {
                 {editingField !== 'storeLogo' && (
                   <button
                     onClick={() => setEditingField('storeLogo')}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
                   >
                     Change
                   </button>
@@ -577,14 +577,14 @@ export default function Profile() {
                     ref={storeLogoInputRef}
                     type="file"
                     accept="image/*"
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
                     onChange={handleStoreLogoChange}
                   />
                   <div className="flex space-x-3">
                     <button
                       onClick={handleStoreLogoSave}
                       disabled={loading || !storeLogoFile}
-                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
+                      className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
                     >
                       {loading ? 'Saving...' : 'Save Store Logo'}
                     </button>
