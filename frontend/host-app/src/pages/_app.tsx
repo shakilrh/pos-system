@@ -28,7 +28,7 @@ const Footer = dynamic(
   { ssr: false }
 );
 
-const publicRoutes = ['/login', '/forgot-password', '/RegisterAdmin'];
+const publicRoutes = ['/login', '/forgot-password', 'Registration/registerAdmin'];
 
 function AppContent({ Component, pageProps }: AppProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -43,7 +43,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     if (!isAuthenticated && !publicRoutes.includes(pathname)) {
       router.push('/login');
     } else if (isAuthenticated && pathname === '/login') {
-      router.push('/dashboard');
+      router.push('Dashboard/dashboard');
     }
   }, [isAuthenticated, isLoading, pathname, router]);
 
