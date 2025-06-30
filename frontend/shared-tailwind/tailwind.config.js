@@ -5,52 +5,43 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: {
-          DEFAULT: 'var(--primary-color)',
-          50: 'var(--primary-50, #fff7ed)',
-          100: 'var(--primary-100, #ffedd5)',
-          500: 'var(--primary-color)',
-          600: 'var(--primary-600, #ea580c)',
-          700: 'var(--primary-700, #c2410c)',
+        // Define theme-specific colors for buttons
+        'theme-default': {
+          primary: '#f97316', // Orange-500
+          600: '#ea580c', // Orange-600
+          700: '#c2410c', // Orange-700
         },
-        // Override existing Tailwind colors to use CSS variables
-        orange: {
-          500: 'var(--primary-color)',
-          600: 'var(--secondary-color)',
+        'theme-blue': {
+          primary: '#3b82f6', // Blue-500
+          600: '#2563eb', // Blue-600
+          700: '#1d4ed8', // Blue-700
         },
-        blue: {
-          500: 'var(--primary-color)',
-          600: 'var(--secondary-color)',
-        },
-        green: {
-          500: 'var(--primary-color)',
-          600: 'var(--secondary-color)',
-        },
-        gray: {
-          100: 'var(--background-color)',
-          800: 'var(--sidebar-bg)',
-          900: 'var(--text-color)',
+        'theme-green': {
+          primary: '#059669', // Emerald-600
+          600: '#047857', // Emerald-700
+          700: '#065f46', // Emerald-800
         },
         secondary: {
-          DEFAULT: 'var(--secondary-color)',
-          400: 'var(--secondary-400, #9ca3af)',
-          500: 'var(--secondary-color)',
-          600: 'var(--secondary-600, #374151)',
+          DEFAULT: '#64748b', // Slate-500
+          400: '#9ca3af', // Slate-400
+          600: '#374151', // Slate-700
         },
         background: {
-          DEFAULT: 'var(--background-color)',
-          primary: 'var(--background-color)',
-          secondary: 'var(--background-secondary, #ffffff)',
+          DEFAULT: '#f8fafc', // Slate-50
+          secondary: '#ffffff', // White
+          surface: '#f1f5f9', // Slate-100
         },
         text: {
-          DEFAULT: 'var(--text-color)',
-          primary: 'var(--text-color)',
-          secondary: 'var(--text-secondary, #6b7280)',
+          DEFAULT: '#0f172a', // Slate-900
+          secondary: '#64748b', // Slate-500
         },
         sidebar: {
-          bg: 'var(--sidebar-bg)',
-          hover: 'var(--sidebar-bg-hover)',
-        }
+          bg: '#1e293b', // Slate-800 for default
+          hover: '#334155', // Slate-700
+        },
+        success: '#10b981', // Emerald-500
+        warning: '#f59e0b', // Amber-500
+        error: '#ef4444', // Red-500
       },
       transitionProperty: {
         'height': 'height',
@@ -58,7 +49,6 @@ module.exports = {
         'theme': 'background-color, color, border-color',
       },
       fontFamily: {
-        /*sans: ['Roboto', 'sans-serif'],*/
         sans: ['Nuntio', 'sans-serif'],
       },
     },

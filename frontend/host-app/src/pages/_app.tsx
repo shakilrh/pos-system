@@ -4,7 +4,6 @@ import { AppProps } from 'next/app';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import 'shared-tailwind/styles';
-/*import '@fontsource/roboto';*/
 import '@fontsource/nunito';
 import Link from 'next/link';
 
@@ -33,7 +32,6 @@ const publicRoutes = ['/login', '/forgot-password', '/RegisterAdmin'];
 
 function AppContent({ Component, pageProps }: AppProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(false);
   const { isAuthenticated, isLoading, logout, token, user } = useAuth();
   const router = useRouter();
@@ -70,30 +68,6 @@ function AppContent({ Component, pageProps }: AppProps) {
     };
   }, [pathname]);
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    setDarkMode(savedTheme === 'dark');
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode);
-    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
-  }, [darkMode]);
-
-  useEffect(() => {
-    const handleThemeChange = (e: CustomEvent) => {
-      const { theme: newTheme } = e.detail;
-      document.documentElement.setAttribute('data-theme', newTheme);
-    };
-
-    window.addEventListener('themeChange', handleThemeChange as EventListener);
-    return () => {
-      window.removeEventListener('themeChange', handleThemeChange as EventListener);
-    };
-  }, []);
-
-  const toggleDarkMode = () => setDarkMode(!darkMode);
-
   const handleLogout = async () => {
     try {
       await logout();
@@ -127,15 +101,13 @@ function AppContent({ Component, pageProps }: AppProps) {
   }
 
   return (
-    <div className={`flex flex-col min-h-screen ${darkMode ? 'dark' : ''}`}>
+    <div className="flex flex-col min-h-screen">
       <Header
         onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
-        darkMode={darkMode}
-        onDarkModeToggle={toggleDarkMode}
         onLogout={handleLogout}
         onNavigate={(path: string) => router.push(path)}
-        token={token} // Pass token as prop
-        user={user} // Pass user as prop
+        token={token}
+        user={user}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
@@ -147,7 +119,7 @@ function AppContent({ Component, pageProps }: AppProps) {
           {isPageLoading ? (
             <div className="flex items-center justify-center min-h-screen">
               <div className="flex flex-col items-center">
-                <div className="w-16 h-16 border-t-4 border-b-4 border-blue-500 rounded-full animate-spin"></div>
+                <div className="w-16 h-16 border-t-4 border-b-4 border-orange-500 rounded-full animate-spin"></div>
                 <p className="mt-4 text-lg font-semibold text-gray-700">Loading...</p>
               </div>
             </div>

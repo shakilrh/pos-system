@@ -74,12 +74,12 @@ export default function Settings() {
               <div className="text-2xl">🎨</div>
             </div>
             
-            {/* Theme Options as Cards */}
-            <div className="grid grid-cols-3 gap-3">
+            {/* Theme Options as Buttons */}
+            <div className="flex space-x-2">
               {[
-                { value: 'default', label: 'Default', color: 'bg-gray-500' },
-                { value: 'blue', label: 'Blue', color: 'bg-blue-500' },
-                { value: 'green', label: 'Green', color: 'bg-green-500' }
+                { value: 'default', label: 'Default', color: 'bg-theme-default-primary' },
+                { value: 'blue', label: 'Blue', color: 'bg-theme-blue-primary' },
+                { value: 'green', label: 'Green', color: 'bg-theme-green-primary' }
               ].map((themeOption) => (
                 <button
                   key={themeOption.value}
@@ -87,21 +87,16 @@ export default function Settings() {
                     setTheme(themeOption.value);
                     applyTheme(themeOption.value);
                   }}
-                  className={`relative p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${
+                  className={`relative flex-1 h-10 rounded-lg border border-gray-300 dark:border-gray-600 p-2 text-center items-center justify-center text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-all ${
                     theme === themeOption.value
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500'
+                      : ''
                   }`}
                 >
-                  <div className={`w-6 h-6 rounded-full ${themeOption.color} mx-auto mb-2`}></div>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {themeOption.label}
-                  </span>
                   {theme === themeOption.value && (
-                    <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
-                    </div>
+                    <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-blue-500 text-xs">✓</span>
                   )}
+                  <span className="flex-1 text-center">{themeOption.label}</span>
                 </button>
               ))}
             </div>
