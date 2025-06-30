@@ -28,7 +28,7 @@ const Footer = dynamic(
   { ssr: false }
 );
 
-const publicRoutes = ['/login', '/forgot-password', 'Registration/registerAdmin'];
+const publicRoutes = ['/login', '/forgot-password', '/Registration/registerAdmin'];
 
 function AppContent({ Component, pageProps }: AppProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
