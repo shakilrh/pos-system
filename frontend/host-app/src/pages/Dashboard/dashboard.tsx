@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { format, startOfDay, endOfDay, parseISO, eachDayOfInterval } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
-import { getAllOrders } from '../../services/orderService';
 import { getOrders } from '../../services/dashboardService';
-import { Order } from '../../services/orderService';
+import { Order } from '../../services/dashboardService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChartLine, faClipboardList, faUtensils, faShoppingBag } from '@fortawesome/free-solid-svg-icons';
@@ -33,11 +32,17 @@ const getTopSellingItems = (orders: Order[], limit: number) => {
   const itemCounts: { [key: string]: { name: string; orders: number; image: string } } = {};
   orders.forEach(order => {
     order.items.forEach(item => {
-      const productId = item.product._id;
-      if (!itemCounts[productId]) {
-        itemCounts[productId] = { name: item.product.name, orders: 0, image: item.product.pictureUrl };
+      if (item.product && item.product._id) {
+        const productId = item.product._id;
+        if (!itemCounts[productId]) {
+          itemCounts[productId] = {
+            name: item.product.name || 'Unknown',
+            orders: 0,
+            image: item.product.pictureUrl || ''
+          };
+        }
+        itemCounts[productId].orders += item.quantity;
       }
-      itemCounts[productId].orders += item.quantity;
     });
   });
   return Object.values(itemCounts)
@@ -76,7 +81,7 @@ const StatsSection = ({ stats }: { stats: { title: string; value: string; icon: 
       <div key={index} className={`relative overflow-hidden rounded-xl p-6 text-white shadow-lg ${stat.gradient} transform hover:scale-105 transition-all duration-300 hover:shadow-xl`}>
         <div className="relative z-10 flex items-center justify-between h-full">
           <div className="flex flex-col justify-center">
-            <div className="text-3xl font-bold mb-2">{stat.value}</div>
+            <div className="text-3xl font-bold mb-2">{stat.value.replace('PKR', '$')}</div>
             <p className="text-white/90 text-sm font-semibold uppercase tracking-wide">{stat.title}</p>
           </div>
           <div className="flex items-center justify-center opacity-80">
@@ -130,7 +135,7 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
                 boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                 fontSize: '13px'
               }}
-              formatter={(value: number) => [`PKR ${value.toLocaleString()}`, 'Sales']}
+              formatter={(value: number) => [`$${value.toLocaleString()}`, 'Sales']}
             />
             <Area
               type="monotone"
@@ -175,7 +180,7 @@ const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Or
         Revenue by Order Type
       </h3>
       <div className="text-center mb-2">
-        <div className="text-xl font-bold text-gray-800 mb-1">PKR {totalSales.toLocaleString()}</div>
+        <div className="text-xl font-bold text-gray-800 mb-1">${totalSales.toLocaleString()}</div>
         <div className="text-xs text-gray-500 font-medium">Total Revenue</div>
       </div>
       <div className="h-32">
@@ -195,7 +200,7 @@ const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Or
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number) => [`PKR ${value.toLocaleString()}`, 'Revenue']}
+              formatter={(value: number) => [`$${value.toLocaleString()}`, 'Revenue']}
               contentStyle={{
                 backgroundColor: '#fff',
                 border: '1px solid #e5e7eb',
@@ -218,7 +223,7 @@ const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Or
               <span className="font-medium text-gray-700 text-xs">{entry.name}</span>
             </div>
             <div className="text-right">
-              <div className="font-bold text-gray-800 text-xs">PKR {entry.value.toLocaleString()}</div>
+              <div className="font-bold text-gray-800 text-xs">${entry.value.toLocaleString()}</div>
               <div className="text-xs text-gray-500">
                 {totalSales > 0 ? ((entry.value / totalSales) * 100).toFixed(1) : 0}%
               </div>
@@ -398,14 +403,6 @@ const Dashboard = () => {
     fetchData();
   }, [isAuthenticated, token, logout]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setStartDate(new Date());
-      setEndDate(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -432,7 +429,7 @@ const Dashboard = () => {
   const stats = [
     {
       title: 'Total Sales',
-      value: `PKR ${totalSales.toLocaleString()}`,
+      value: `$${totalSales.toLocaleString()}`,
       icon: <FontAwesomeIcon icon={faChartLine} />,
       color: 'text-white',
       bgColor: 'bg-cyan-500',
