@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Order } from './orderTypes';
 import { processPayment, markOrderAsPicked } from '../../services/orderService';
+import ReceiptTemplate from './receiptTemplate';
 
 interface OrderSearchProps {
   orders: Order[];
@@ -122,6 +123,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ order, token, logout, onClo
       );
       setCurrentStep('confirm');
       setMessage(`Payment processed for #${order.order_number}`);
+      printReceipt();
     } catch (error) {
       setMessage(`Failed to process payment`);
     } finally {
@@ -152,6 +154,75 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ order, token, logout, onClo
   const calculateChange = () => {
     const amount = parseFloat(receivedAmount);
     return isNaN(amount) ? 0 : Math.max(0, amount - order.total_amount);
+  };
+
+  const printReceipt = () => {
+    const receiptItems = order.items?.map(item => ({
+      name: item.product?.name || 'Unknown',
+      quantity: item.quantity,
+      price: item.product?.price || 0
+    })) || [];
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Receipt</title>
+            <style>
+              body { font-family: Arial, sans-serif; text-align: center; max-width: 300px; margin: 0 auto; padding: 10px; font-size: 14px; }
+              table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+              th, td { padding: 4px 2px; text-align: left; border-bottom: 1px solid #ddd; font-size: 12px; }
+              .header { font-size: 24px; font-weight: bold; margin-bottom: 5px; color: #f59e0b; }
+              .subheader { font-size: 18px; font-weight: bold; margin: 10px 0; color: #d97706; }
+              .total-row { font-weight: bold; border-top: 2px solid #000; background-color: #fefcbf; }
+              .completion-time { background-color: #fefcbf; padding: 5px; margin: 10px 0; border: 2px solid #d97706; border-radius: 5px; }
+              hr { border: none; border-top: 2px solid #d97706; margin: 10px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="header">Rasnat Restaurant</div>
+            <p>123 Main Street, City<br/>Phone: (123) 456-7890</p>
+            <hr />
+            <p class="subheader">Order #: ${order.order_number}</p>
+            <p>Date: ${new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Karachi' })}</p>
+            <p>Customer: ${order.customer_name || 'Guest'}</p>
+            <p>Type: ${order.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}</p>
+            <p>Payment: Paid</p>
+            <hr />
+            <table>
+              <thead>
+                <tr>
+                  <th style="color: #d97706;">Item</th>
+                  <th style="color: #d97706;">Qty</th>
+                  <th style="color: #d97706;">Price</th>
+                  <th style="color: #d97706;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${receiptItems.map(item => `
+                  <tr>
+                    <td>${item.name}</td>
+                    <td>${item.quantity}</td>
+                    <td>$${item.price.toFixed(2)}</td>
+                    <td>$${item.price * item.quantity}</td>
+                  </tr>
+                `).join('')}
+                <tr class="total-row">
+                  <td colspan="3"><strong>Total</strong></td>
+                  <td><strong>$${order.total_amount.toFixed(2)}</strong></td>
+                </tr>
+                ${calculateChange() > 0 ? `<tr><td colspan="3">Change</td><td>$${calculateChange().toFixed(2)}</td></tr>` : ''}
+              </tbody>
+            </table>
+            <hr />
+            <p><strong>Thank you for dining with us!</strong></p>
+            <p>Please visit again</p>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
   };
 
   return (
