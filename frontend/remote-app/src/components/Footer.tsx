@@ -20,16 +20,16 @@ export default function Footer() {
           </span>
         </div>
         <div className="flex gap-4">
-          <a href="/about" className="hover:text-white transition-colors">
+          <a href="/about" className="hover:text-[var(--primary-600)] transition-colors">
             About
           </a>
-          <a href="/privacy" className="hover:text-white transition-colors">
+          <a href="/privacy" className="hover:text-[var(--primary-600)] transition-colors">
             Privacy Policy
           </a>
-          <a href="/terms" className="hover:text-white transition-colors">
+          <a href="/terms" className="hover:text-[var(--primary-600)] transition-colors">
             Terms of Service
           </a>
-          <a href="/contact" className="hover:text-white transition-colors">
+          <a href="/contact" className="hover:text-[var(--primary-600)] transition-colors">
             Contact
           </a>
         </div>
