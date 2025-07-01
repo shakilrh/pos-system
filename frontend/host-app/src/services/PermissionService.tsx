@@ -27,7 +27,7 @@ const handleApiError = (response: ApiResponse, logout: () => void): string => {
     switch (response.error) {
       case 'DATA_NOT_FOUND': return 'Not Found';
       case 'BAD_REQUEST': return response.message || 'Invalid input provided';
-      case 'ALREADY_EXISTS': return response.message || 'Permission already exists';
+      case 'ALREADY_EXISTS': return response.message || 'Permissions already exists';
       case 'CONFLICT': return response.message || 'Please try again';
       case 'FORBIDDEN': return 'Access Denied';
       case 'UNAUTHORIZED':
@@ -98,6 +98,42 @@ export const createPermission = async (
     throw new Error('Invalid response format');
   } catch (err) {
     throw new Error(err instanceof Error ? err.message : 'Failed to create permission');
+  }
+};
+
+export const updatePermission = async (
+  token: string,
+  logout: () => void,
+  permission_id: string,
+  key: string,
+  description?: string
+): Promise<Permission> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/rolepermission/api/v1/permissions/update`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ permission_id, key: key.trim(), description: description?.trim() || undefined }),
+    });
+    const data: ApiResponse = await response.json();
+
+    if (response.status === 401) {
+      logout();
+      throw new Error('Unauthorized');
+    }
+
+    if (!response.ok || !data.success) {
+      throw new Error(handleApiError(data, logout));
+    }
+
+    if (data.success && data.type === 1 && data.data) {
+      return data.data as Permission;
+    }
+    throw new Error('Invalid response format');
+  } catch (err) {
+    throw new Error(err instanceof Error ? err.message : 'Failed to update permission');
   }
 };
 
