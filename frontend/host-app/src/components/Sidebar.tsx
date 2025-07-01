@@ -99,7 +99,6 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
     >
       {/* --- Header / Profile Section --- */}
       <div
-        // FIX 1: Conditionally center the content of the header
         className={`flex items-center p-4 border-b ${
           sidebarOpen ? 'justify-between' : 'justify-center'
         }`}
@@ -110,8 +109,7 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
           onClick={() => setSidebarOpen(!sidebarOpen)}
           aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
           aria-expanded={sidebarOpen}
-          // FIX 2: Standardize padding and rounding to match nav links
-          className="p-3 rounded-lg text-white hover:bg-[var(--sidebar-bg-hover)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+          className="p-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
         >
           {sidebarOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
         </button>
@@ -119,7 +117,6 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
 
       {/* --- Navigation Links --- */}
       <nav
-        // FIX 3: Make nav a flex container and conditionally center its items
         className={`flex-1 flex flex-col overflow-y-auto py-4 space-y-2 ${
           sidebarOpen ? 'px-2' : 'items-center'
         }`}
@@ -136,8 +133,8 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
                   : 'text-[var(--sidebar-text)] hover:bg-[var(--sidebar-bg-hover)] hover:text-white'
               } ${
                 !sidebarOpen
-                  ? 'w-12 h-12 justify-center p-3' // Keep consistent size and padding
-                  : 'p-3' // Use same padding when open
+                  ? 'w-12 h-12 justify-center p-3'
+                  : 'p-3'
               }`}
             >
               <Icon className="w-6 h-6" />
