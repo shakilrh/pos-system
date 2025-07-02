@@ -226,8 +226,24 @@ export default function Categories({ token, isAuthenticated, logout, categories,
               setFormMode('add');
               onFormActive(true);
             }}
-            className="product-crud-button hover:text-white flex items-center px-3 py-1 rounded-lg text-sm"
+            className="product-crud-button flex items-center px-3 py-1 rounded-lg text-sm transition-all duration-200"
+            style={{
+              background: "var(--primary-color)",
+              color: "white",
+            }}
             disabled={isProductFormActive}
+            onMouseEnter={e => {
+              if (!isProductFormActive) {
+                (e.currentTarget as HTMLButtonElement).style.background = "var(--primary-600)";
+                (e.currentTarget as HTMLButtonElement).style.color = "var(--accent-color)";
+              }
+            }}
+            onMouseLeave={e => {
+              if (!isProductFormActive) {
+                (e.currentTarget as HTMLButtonElement).style.background = "var(--primary-color)";
+                (e.currentTarget as HTMLButtonElement).style.color = "white";
+              }
+            }}
           >
             <PlusCircleIcon className="w-4 h-4 mr-1" />
             <span>Add</span>
@@ -236,40 +252,39 @@ export default function Categories({ token, isAuthenticated, logout, categories,
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-            <tr className="bg-surface text-text-secondary uppercase text-xs">
-              <th className="py-3 px-4">Name</th>
-              <th className="py-3 px-4">Actions</th>
-            </tr>
+              <tr className="bg-surface text-text-secondary uppercase text-xs">
+                <th className="py-3 px-4">Name</th>
+                <th className="py-3 px-4">Actions</th>
+              </tr>
             </thead>
             <tbody>
-            {currentCategories.map((category, idx) => (
-              <tr
-                key={category._id}
-                className={`border-b border-border hover:bg-slate-200/50 ${
-                  idx % 2 === 0 ? 'bg-surface' : 'bg-background-secondary'
-                }`}
-              >
-                <td className="py-3 px-4 text-text font-semibold">{category.name}</td>
-                <td className="py-3 px-4 flex space-x-2">
-                  <button
-                    onClick={() => handleEditCategory(category)}
-                    className="text-blue-500 hover:text-blue-600 p-1 rounded-full hover:bg-blue-500/10"
-                    title="Edit"
-                    disabled={isProductFormActive}
-                  >
-                    <PencilIcon className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteCategory(category._id, category.name)}
-                    className="text-red-500 hover:text-red-600 p-1 rounded-full hover:bg-red-500/10"
-                    title="Delete"
-                    disabled={isProductFormActive}
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
+              {currentCategories.map((category, idx) => (
+                <tr
+                  key={category._id}
+                  className={`border-b border-border hover:bg-slate-200/50 ${idx % 2 === 0 ? 'bg-surface' : 'bg-background-secondary'
+                    }`}
+                >
+                  <td className="py-3 px-4 text-text font-semibold">{category.name}</td>
+                  <td className="py-3 px-4 flex space-x-2">
+                    <button
+                      onClick={() => handleEditCategory(category)}
+                      className="text-blue-500 hover:text-blue-600 p-1 rounded-full hover:bg-blue-500/10"
+                      title="Edit"
+                      disabled={isProductFormActive}
+                    >
+                      <PencilIcon className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCategory(category._id, category.name)}
+                      className="text-red-500 hover:text-red-600 p-1 rounded-full hover:bg-red-500/10"
+                      title="Delete"
+                      disabled={isProductFormActive}
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -278,9 +293,8 @@ export default function Categories({ token, isAuthenticated, logout, categories,
             <button
               onClick={() => setCurrentCategoryPage(Math.max(currentCategoryPage - 1, 1))}
               disabled={currentCategoryPage === 1 || isProductFormActive}
-              className={`flex items-center px-3 py-1 rounded-lg ${
-                currentCategoryPage === 1 || isProductFormActive ? 'text-text-secondary cursor-not-allowed' : 'text-blue-500 hover:bg-surface'
-              }`}
+              className={`flex items-center px-3 py-1 rounded-lg ${currentCategoryPage === 1 || isProductFormActive ? 'text-text-secondary cursor-not-allowed' : 'text-blue-500 hover:bg-surface'
+                }`}
             >
               <ArrowLeftIcon className="w-4 h-4 mr-1" />
               Prev
@@ -291,9 +305,8 @@ export default function Categories({ token, isAuthenticated, logout, categories,
             <button
               onClick={() => setCurrentCategoryPage(Math.min(currentCategoryPage + 1, totalCategoryPages))}
               disabled={currentCategoryPage === totalCategoryPages || isProductFormActive}
-              className={`flex items-center px-3 py-1 rounded-lg ${
-                currentCategoryPage === totalCategoryPages || isProductFormActive ? 'text-text-secondary cursor-not-allowed' : 'text-blue-500 hover:bg-surface'
-              }`}
+              className={`flex items-center px-3 py-1 rounded-lg ${currentCategoryPage === totalCategoryPages || isProductFormActive ? 'text-text-secondary cursor-not-allowed' : 'text-blue-500 hover:bg-surface'
+                }`}
             >
               Next
               <ArrowRightIcon className="w-4 h-4 ml-1" />

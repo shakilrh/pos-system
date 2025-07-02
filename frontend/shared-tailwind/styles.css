@@ -90,7 +90,7 @@ aside {
 }
 
 [data-theme="green"] {
-  --accent-color: #8b5cf6; /* Violet-500 - Complementary to green */
+  --accent-color: #c1f3de; /* Violet-500 - Complementary to green */
   --success-color: #059669; /* Emerald-600 - Match primary */
   --warning-color: #f59e0b; /* Amber-500 */
   --error-color: #ef4444; /* Red-500 */

@@ -20,21 +20,21 @@ interface ProductListProps {
 }
 
 export default function ProductList({
-                                      token,
-                                      isAuthenticated,
-                                      logout,
-                                      categories,
-                                      filterCategory,
-                                      handleFilterChange,
-                                      products,
-                                      setProducts,
-                                      isCategoryFormActive,
-                                      onAdd,
-                                      onEdit,
-                                      onDelete,
-                                      onViewDetails,
-                                      onToggleActive,
-                                    }: ProductListProps) {
+  token,
+  isAuthenticated,
+  logout,
+  categories,
+  filterCategory,
+  handleFilterChange,
+  products,
+  setProducts,
+  isCategoryFormActive,
+  onAdd,
+  onEdit,
+  onDelete,
+  onViewDetails,
+  onToggleActive,
+}: ProductListProps) {
   const [currentProductPage, setCurrentProductPage] = React.useState(1);
   const itemsPerPage = 10;
 
@@ -62,14 +62,45 @@ export default function ProductList({
   return (
     <div className="relative z-0" style={{ opacity: isCategoryFormActive ? 0.5 : 1, pointerEvents: isCategoryFormActive ? 'none' : 'auto' }}>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
-          <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 p-2 rounded-lg mr-2">Products</span>
-          <span className="text-sm text-gray-500 dark:text-gray-400">{filteredProducts.length} items</span>
+        <h2 className="text-xl font-semibold flex items-center" style={{ color: "var(--primary-color)", background: "none" }}>
+          <span
+            className="p-2 rounded-lg mr-2"
+            style={{
+              background: "var(--surface-color)",
+              color: "var(--primary-color)",
+            }}
+          >
+            Products
+          </span>
+          <span
+            className="text-sm"
+            style={{
+              color: "var(--text-secondary)",
+            }}
+          >
+            {filteredProducts.length} items
+          </span>
         </h2>
         <button
           onClick={onAdd}
-          className="flex items-center px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="flex items-center px-3 py-1 rounded-lg transition-all duration-200"
+          style={{
+            background: "var(--primary-color)",
+            color: "white",
+          }}
           disabled={isCategoryFormActive}
+          onMouseEnter={e => {
+            if (!isCategoryFormActive) {
+              (e.currentTarget as HTMLButtonElement).style.background = "var(--primary-600)";
+              (e.currentTarget as HTMLButtonElement).style.color = "var(--accent-color)";
+            }
+          }}
+          onMouseLeave={e => {
+            if (!isCategoryFormActive) {
+              (e.currentTarget as HTMLButtonElement).style.background = "var(--primary-color)";
+              (e.currentTarget as HTMLButtonElement).style.color = "white";
+            }
+          }}
         >
           <PlusCircleIcon className="w-4 h-4 mr-1" />
           <span className="text-sm">Add Product</span>
@@ -80,21 +111,65 @@ export default function ProductList({
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleFilterChange('all')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filterCategory === 'all' || filterCategory === null
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+              }`}
+            style={
               filterCategory === 'all' || filterCategory === null
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
+                ? {
+                  background: 'var(--primary-color)',
+                  color: 'white',
+                }
+                : {
+                  background: 'var(--surface-color)',
+                  color: 'var(--primary-color)',
+                }
+            }
+            onMouseEnter={e => {
+              if (!(filterCategory === 'all' || filterCategory === null)) {
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--primary-600)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent-color)';
+              }
+            }}
+            onMouseLeave={e => {
+              if (!(filterCategory === 'all' || filterCategory === null)) {
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-color)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--primary-color)';
+              }
+            }}
           >
             All Products
           </button>
           <button
             onClick={() => handleFilterChange('inactive')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filterCategory === 'inactive'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+              }`}
+            style={
               filterCategory === 'inactive'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
+                ? {
+                  background: 'var(--primary-color)',
+                  color: 'white',
+                }
+                : {
+                  background: 'var(--surface-color)',
+                  color: 'var(--primary-color)',
+                }
+            }
+            onMouseEnter={e => {
+              if (filterCategory !== 'inactive') {
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--primary-600)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent-color)';
+              }
+            }}
+            onMouseLeave={e => {
+              if (filterCategory !== 'inactive') {
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-color)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--primary-color)';
+              }
+            }}
           >
             Inactive Products
           </button>
@@ -102,11 +177,33 @@ export default function ProductList({
             <button
               key={category._id}
               onClick={() => handleFilterChange(category._id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                filterCategory === category._id
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filterCategory === category._id
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              style={
+                filterCategory === category._id
+                  ? {
+                    background: 'var(--primary-color)',
+                    color: 'white',
+                  }
+                  : {
+                    background: 'var(--surface-color)',
+                    color: 'var(--primary-color)',
+                  }
+              }
+              onMouseEnter={e => {
+                if (filterCategory !== category._id) {
+                  (e.currentTarget as HTMLButtonElement).style.background = 'var(--primary-600)';
+                  (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent-color)';
+                }
+              }}
+              onMouseLeave={e => {
+                if (filterCategory !== category._id) {
+                  (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-color)';
+                  (e.currentTarget as HTMLButtonElement).style.color = 'var(--primary-color)';
+                }
+              }}
             >
               {category.name}
             </button>
