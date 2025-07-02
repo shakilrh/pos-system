@@ -178,7 +178,6 @@ export default function Profile() {
     try {
       const formData = new FormData();
       formData.append('name', name.trim());
-      formData.append('_id', user._id);
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
         method: 'PUT',
         headers: {
@@ -209,7 +208,6 @@ export default function Profile() {
     try {
       const formData = new FormData();
       formData.append('store_name', storeName.trim());
-      formData.append('_id', user._id);
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
         method: 'PUT',
         headers: {
@@ -265,7 +263,6 @@ export default function Profile() {
     try {
       const formData = new FormData();
       formData.append('password', password);
-      formData.append('_id', user._id);
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
         method: 'PUT',
         headers: {
