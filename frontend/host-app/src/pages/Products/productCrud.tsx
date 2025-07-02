@@ -43,9 +43,19 @@ export default function ProductCrud({
   const [newProductPicturePreview, setNewProductPicturePreview] = useState<string | undefined>(product?.pictureUrl || undefined);
   const [newProductTimeRequired, setNewProductTimeRequired] = useState(product?.time_required?.toString() || '');
   const [flashMessage, setFlashMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [errors, setErrors] = useState<{
+    name?: string[];
+    price?: string[];
+    category?: string[];
+    description?: string[];
+    picture?: string[];
+    timeRequired?: string[];
+  }>({});
+  const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+
+  const DEFAULT_IMAGE_URL = 'https://clothing.theinnovativepackaging.com/wp-content/uploads/woocommerce-placeholder.png';
 
   useEffect(() => {
-    // Reset state when product changes
     setNewProductName(product?.name || '');
     setNewProductPrice(product?.price.toString() || '');
     setNewProductCategory(product?.category_id || '');
@@ -53,26 +63,196 @@ export default function ProductCrud({
     setNewProductPicture(null);
     setNewProductPicturePreview(product?.pictureUrl || undefined);
     setNewProductTimeRequired(product?.time_required?.toString() || '');
+    setErrors({});
+    setTouchedFields(new Set());
   }, [product]);
 
   useEffect(() => {
     return () => {
-      if (newProductPicturePreview) URL.revokeObjectURL(newProductPicturePreview);
+      if (newProductPicturePreview && newProductPicturePreview !== DEFAULT_IMAGE_URL) {
+        URL.revokeObjectURL(newProductPicturePreview);
+      }
     };
   }, [newProductPicturePreview]);
 
+  // Validation functions
+  const validateName = (name: string): string[] => {
+    const errors: string[] = [];
+    if (!name.trim()) {
+      errors.push('Product name is required');
+    } else {
+      if (name.length < 2) errors.push('Product name must be at least 2 characters long');
+      if (name.length > 100) errors.push('Product name must be less than 100 characters');
+      if (!/^[A-Za-z0-9\s&'-.,()]+$/.test(name)) {
+        errors.push('Product name can only contain letters, numbers, spaces, and common punctuation');
+      }
+      if (/^\s|\s$/.test(name)) errors.push('Product name cannot start or end with spaces');
+      if (/\s{2,}/.test(name)) errors.push('Product name cannot contain multiple consecutive spaces');
+    }
+    return errors;
+  };
+
+  const validatePrice = (price: string): string[] => {
+    const errors: string[] = [];
+    if (!price.trim()) {
+      errors.push('Price is required');
+    } else {
+      const priceNum = parseFloat(price);
+      if (isNaN(priceNum)) errors.push('Price must be a valid number');
+      if (priceNum < 0) errors.push('Price cannot be negative');
+      if (priceNum > 10000) errors.push('Price cannot exceed 10000');
+      if (!/^\d+(\.\d{1,2})?$/.test(price)) errors.push('Price must have at most 2 decimal places');
+    }
+    return errors;
+  };
+
+  const validateCategory = (category: string): string[] => {
+    const errors: string[] = [];
+    if (!category.trim()) errors.push('Category is required');
+    return errors;
+  };
+
+  const validateDescription = (description: string): string[] => {
+    const errors: string[] = [];
+    if (!description.trim()) {
+      errors.push('Description is required');
+    } else if (description.length > 500) {
+      errors.push('Description must be less than 500 characters');
+    }
+    return errors;
+  };
+
+  const validatePicture = (file: File | null): string[] => {
+    if (!file) return [];
+    const errors: string[] = [];
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      errors.push('Image must be JPEG, PNG, or WebP');
+    }
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) errors.push('Image size must be less than 5MB');
+    const minSize = 1024; // 1KB minimum
+    if (file.size < minSize) errors.push('Image file is too small (minimum 1KB)');
+    return errors;
+  };
+
+  const validateTimeRequired = (time: string): string[] => {
+    const errors: string[] = [];
+    if (!time.trim()) {
+      errors.push('Preparation time is required');
+    } else {
+      const timeNum = parseInt(time);
+      if (isNaN(timeNum)) errors.push('Preparation time must be a valid number');
+      if (timeNum < 0) errors.push('Preparation time cannot be negative');
+      if (timeNum > 1440) errors.push('Preparation time cannot exceed 1440 minutes (24 hours)');
+    }
+    return errors;
+  };
+
+  const getFieldErrors = (fieldName: string): string[] => {
+    switch (fieldName) {
+      case 'name': return validateName(newProductName);
+      case 'price': return validatePrice(newProductPrice);
+      case 'category': return validateCategory(newProductCategory);
+      case 'description': return validateDescription(newProductDesc);
+      case 'picture': return validatePicture(newProductPicture);
+      case 'timeRequired': return validateTimeRequired(newProductTimeRequired);
+      default: return [];
+    }
+  };
+
+  const isFormValid = (): boolean => {
+    const requiredFields = ['name', 'price', 'category', 'description', 'timeRequired'];
+    const requiredFieldsValid = requiredFields.every(field => getFieldErrors(field).length === 0);
+    const optionalFieldsValid = ['picture'].every(field => getFieldErrors(field).length === 0);
+    return requiredFieldsValid && optionalFieldsValid;
+  };
+
+  const handleInputChange = (fieldName: string, value: string) => {
+    if (fieldName === 'name') setNewProductName(value);
+    if (fieldName === 'price') setNewProductPrice(value);
+    if (fieldName === 'category') setNewProductCategory(value);
+    if (fieldName === 'description') setNewProductDesc(value);
+    if (fieldName === 'timeRequired') setNewProductTimeRequired(value);
+
+    if (touchedFields.has(fieldName)) {
+      setErrors(prev => ({
+        ...prev,
+        [fieldName]: getFieldErrors(fieldName)
+      }));
+    }
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0] || null;
+    setNewProductPicture(file);
     if (file) {
       const previewUrl = URL.createObjectURL(file);
-      if (newProductPicturePreview) URL.revokeObjectURL(newProductPicturePreview);
-      setNewProductPicture(file);
+      if (newProductPicturePreview && newProductPicturePreview !== DEFAULT_IMAGE_URL) {
+        URL.revokeObjectURL(newProductPicturePreview);
+      }
       setNewProductPicturePreview(previewUrl);
+    } else {
+      setNewProductPicturePreview(DEFAULT_IMAGE_URL);
     }
+
+    const pictureErrors = validatePicture(file);
+    setErrors(prev => ({ ...prev, picture: pictureErrors }));
+    if (pictureErrors.length > 0) {
+      setFlashMessage({ message: pictureErrors[0], type: 'error' });
+    } else if (flashMessage?.type === 'error' && flashMessage.message.includes('Image')) {
+      setFlashMessage(null);
+    }
+  };
+
+  const handleFocus = (fieldName: string) => {
+    setTouchedFields(prev => new Set(prev).add(fieldName));
+    setErrors(prev => ({
+      ...prev,
+      [fieldName]: getFieldErrors(fieldName)
+    }));
+  };
+
+  const handleBlur = (fieldName: string) => {
+    if (touchedFields.has(fieldName)) {
+      setErrors(prev => ({
+        ...prev,
+        [fieldName]: getFieldErrors(fieldName)
+      }));
+    }
+  };
+
+  const renderFieldErrors = (fieldName: string) => {
+    const fieldErrors = errors[fieldName as keyof typeof errors] || [];
+    if (fieldErrors.length === 0) return null;
+    return (
+      <div className="mt-1 space-y-1">
+        {fieldErrors.map((error, index) => (
+          <p key={index} className="text-red-500 text-xs flex items-start">
+            <svg className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            {error}
+          </p>
+        ))}
+      </div>
+    );
   };
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const allFields = ['name', 'price', 'category', 'description', 'picture', 'timeRequired'];
+    setTouchedFields(new Set(allFields));
+    const allErrors: any = {};
+    allFields.forEach(field => {
+      allErrors[field] = getFieldErrors(field);
+    });
+    setErrors(allErrors);
+    if (Object.values(allErrors).some((fieldErrors: any) => fieldErrors.length > 0)) {
+      setFlashMessage({ message: 'Please fix all errors before submitting', type: 'error' });
+      return;
+    }
+
     if (!token) {
       const errorMessage = { message: 'Please log in to add a product', type: 'error' };
       setFlashMessage(errorMessage);
@@ -86,7 +266,11 @@ export default function ProductCrud({
       if (newProductPrice) formData.append('price', newProductPrice);
       if (newProductCategory) formData.append('category_id', newProductCategory);
       if (newProductDesc) formData.append('description', newProductDesc);
-      if (newProductPicture) formData.append('picture', newProductPicture);
+      if (newProductPicture) {
+        formData.append('picture', newProductPicture);
+      } else {
+        formData.append('pictureUrl', DEFAULT_IMAGE_URL);
+      }
       if (newProductTimeRequired) formData.append('time_required', newProductTimeRequired);
 
       const newProduct = await addProduct(token, logout, categories, formData);
@@ -103,6 +287,18 @@ export default function ProductCrud({
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const allFields = ['name', 'price', 'category', 'description', 'picture', 'timeRequired'];
+    setTouchedFields(new Set(allFields));
+    const allErrors: any = {};
+    allFields.forEach(field => {
+      allErrors[field] = getFieldErrors(field);
+    });
+    setErrors(allErrors);
+    if (Object.values(allErrors).some((fieldErrors: any) => fieldErrors.length > 0)) {
+      setFlashMessage({ message: 'Please fix all errors before submitting', type: 'error' });
+      return;
+    }
+
     if (!token || !editingProductId) {
       const errorMessage = { message: 'Please log in to update a product', type: 'error' };
       setFlashMessage(errorMessage);
@@ -117,7 +313,11 @@ export default function ProductCrud({
       if (newProductPrice) formData.append('price', newProductPrice);
       if (newProductCategory) formData.append('category_id', newProductCategory);
       if (newProductDesc) formData.append('description', newProductDesc);
-      if (newProductPicture) formData.append('picture', newProductPicture);
+      if (newProductPicture) {
+        formData.append('picture', newProductPicture);
+      } else if (!newProductPicturePreview) {
+        formData.append('pictureUrl', DEFAULT_IMAGE_URL);
+      }
       if (newProductTimeRequired) formData.append('time_required', newProductTimeRequired);
 
       const updatedProduct = await updateProduct(token, logout, categories, formData);
@@ -174,73 +374,94 @@ export default function ProductCrud({
         </div>
         <form onSubmit={handleAddSubmit} className="space-y-4">
           <div>
-            <label htmlFor="productName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Product Name</label>
+            <label htmlFor="productName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Product Name *</label>
             <input
               id="productName"
               type="text"
               value={newProductName}
-              onChange={(e) => setNewProductName(e.target.value)}
+              onChange={(e) => handleInputChange('name', e.target.value)}
+              onFocus={() => handleFocus('name')}
+              onBlur={() => handleBlur('name')}
               placeholder="Enter product name"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
+              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
+                errors.name && errors.name.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
+              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
             />
+            {renderFieldErrors('name')}
           </div>
           <div>
-            <label htmlFor="productPrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price</label>
+            <label htmlFor="productPrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price *</label>
             <input
               id="productPrice"
               type="number"
               value={newProductPrice}
-              onChange={(e) => setNewProductPrice(e.target.value)}
+              onChange={(e) => handleInputChange('price', e.target.value)}
+              onFocus={() => handleFocus('price')}
+              onBlur={() => handleBlur('price')}
               placeholder="Price"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
+                errors.price && errors.price.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
+              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
               step="0.01"
-              required
             />
+            {renderFieldErrors('price')}
           </div>
           <div>
-            <label htmlFor="productTimeRequired" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preparation Time (minutes)</label>
+            <label htmlFor="productTimeRequired" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preparation Time (minutes) *</label>
             <input
               id="productTimeRequired"
               type="number"
               value={newProductTimeRequired}
-              onChange={(e) => setNewProductTimeRequired(e.target.value)}
+              onChange={(e) => handleInputChange('timeRequired', e.target.value)}
+              onFocus={() => handleFocus('timeRequired')}
+              onBlur={() => handleBlur(' personally')}
               placeholder="Time required in minutes"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
+                errors.timeRequired && errors.timeRequired.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
+              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
               step="1"
               min="0"
-              required
             />
+            {renderFieldErrors('timeRequired')}
           </div>
           <div>
-            <label htmlFor="productCategory" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+            <label htmlFor="productCategory" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category *</label>
             <select
               id="productCategory"
               value={newProductCategory}
-              onChange={(e) => setNewProductCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onChange={(e) => handleInputChange('category', e.target.value)}
+              onFocus={() => handleFocus('category')}
+              onBlur={() => handleBlur('category')}
+              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
+                errors.category && errors.category.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
+              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
               disabled={isCategoryFormActive}
-              required
             >
               <option value="">Select a category</option>
               {categories.map((category) => (
                 <option key={category._id} value={category._id}>{category.name}</option>
               ))}
             </select>
+            {renderFieldErrors('category')}
           </div>
           <div>
-            <label htmlFor="productDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+            <label htmlFor="productDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description *</label>
             <textarea
               id="productDescription"
               value={newProductDesc}
-              onChange={(e) => setNewProductDesc(e.target.value)}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              onFocus={() => handleFocus('description')}
+              onBlur={() => handleBlur('description')}
               placeholder="Product description"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
+                errors.description && errors.description.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
+              } focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all duration-200`}
               rows={3}
             />
+            {renderFieldErrors('description')}
           </div>
           <div>
-            <label htmlFor="imageUpload" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload Image</label>
+            <label htmlFor="imageUpload" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload Image (Optional)</label>
             <div className="flex items-center gap-2">
               <input
                 type="file"
@@ -252,8 +473,9 @@ export default function ProductCrud({
               />
               <label
                 htmlFor="imageUpload"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer flex items-center gap-1"
-                style={{ pointerEvents: isCategoryFormActive ? 'none' : 'auto', opacity: isCategoryFormActive ? 0.5 : 1 }}
+                className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer flex items-center gap-1 ${
+                  isCategoryFormActive ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 <PlusCircleIcon className="w-4 h-4" />
                 <span>Upload</span>
@@ -264,6 +486,15 @@ export default function ProductCrud({
                 <span className="text-sm text-gray-600 dark:text-gray-300">No image selected</span>
               )}
             </div>
+            {renderFieldErrors('picture')}
+            {newProductPicture && (!errors.picture || errors.picture.length === 0) && (
+              <p className="mt-1 text-xs text-green-600 dark:text-green-400 flex items-center">
+                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                {newProductPicture.name} ({(newProductPicture.size / 1024).toFixed(1)} KB)
+              </p>
+            )}
           </div>
           <div className="flex justify-end gap-x-3">
             <button
@@ -275,8 +506,10 @@ export default function ProductCrud({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center"
-              disabled={isCategoryFormActive}
+              className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center ${
+                isCategoryFormActive || !isFormValid() ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+              disabled={isCategoryFormActive || !isFormValid()}
             >
               Add Product
             </button>
@@ -304,48 +537,67 @@ export default function ProductCrud({
         </div>
         <form onSubmit={handleEditSubmit} className="space-y-4">
           <div>
-            <label htmlFor="productName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Product Name</label>
+            <label htmlFor="productName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Product Name *</label>
             <input
               id="productName"
               type="text"
               value={newProductName}
-              onChange={(e) => setNewProductName(e.target.value)}
+              onChange={(e) => handleInputChange('name', e.target.value)}
+              onFocus={() => handleFocus('name')}
+              onBlur={() => handleBlur('name')}
               placeholder="Enter product name"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
+                errors.name && errors.name.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
+              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
             />
+            {renderFieldErrors('name')}
           </div>
           <div>
-            <label htmlFor="productPrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price</label>
+            <label htmlFor="productPrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price *</label>
             <input
               id="productPrice"
               type="number"
               value={newProductPrice}
-              onChange={(e) => setNewProductPrice(e.target.value)}
+              onChange={(e) => handleInputChange('price', e.target.value)}
+              onFocus={() => handleFocus('price')}
+              onBlur={() => handleBlur('price')}
               placeholder="Price"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
+                errors.price && errors.price.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
+              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
               step="0.01"
             />
+            {renderFieldErrors('price')}
           </div>
           <div>
-            <label htmlFor="productTimeRequired" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preparation Time (minutes)</label>
+            <label htmlFor="productTimeRequired" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preparation Time (minutes) *</label>
             <input
               id="productTimeRequired"
               type="number"
               value={newProductTimeRequired}
-              onChange={(e) => setNewProductTimeRequired(e.target.value)}
+              onChange={(e) => handleInputChange('timeRequired', e.target.value)}
+              onFocus={() => handleFocus('timeRequired')}
+              onBlur={() => handleBlur('timeRequired')}
               placeholder="Time required in minutes"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
+                errors.timeRequired && errors.timeRequired.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
+              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
               step="1"
               min="0"
             />
+            {renderFieldErrors('timeRequired')}
           </div>
           <div>
-            <label htmlFor="productCategory" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+            <label htmlFor="productCategory" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category *</label>
             <select
               id="productCategory"
               value={newProductCategory}
-              onChange={(e) => setNewProductCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onChange={(e) => handleInputChange('category', e.target.value)}
+              onFocus={() => handleFocus('category')}
+              onBlur={() => handleBlur('category')}
+              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
+                errors.category && errors.category.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
+              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
               disabled={isCategoryFormActive}
             >
               <option value="">Select a category</option>
@@ -353,20 +605,26 @@ export default function ProductCrud({
                 <option key={category._id} value={category._id}>{category.name}</option>
               ))}
             </select>
+            {renderFieldErrors('category')}
           </div>
           <div>
-            <label htmlFor="productDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+            <label htmlFor="productDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description *</label>
             <textarea
               id="productDescription"
               value={newProductDesc}
-              onChange={(e) => setNewProductDesc(e.target.value)}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              onFocus={() => handleFocus('description')}
+              onBlur={() => handleBlur('description')}
               placeholder="Product description"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
+                errors.description && errors.description.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
+              } focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all duration-200`}
               rows={3}
             />
+            {renderFieldErrors('description')}
           </div>
           <div>
-            <label htmlFor="imageUpload" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload Image</label>
+            <label htmlFor="imageUpload" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload Image (Optional)</label>
             <div className="flex items-center gap-2">
               <input
                 type="file"
@@ -378,8 +636,9 @@ export default function ProductCrud({
               />
               <label
                 htmlFor="imageUpload"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer flex items-center gap-1"
-                style={{ pointerEvents: isCategoryFormActive ? 'none' : 'auto', opacity: isCategoryFormActive ? 0.5 : 1 }}
+                className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer flex items-center gap-1 ${
+                  isCategoryFormActive ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 <PlusCircleIcon className="w-4 h-4" />
                 <span>Upload</span>
@@ -390,6 +649,15 @@ export default function ProductCrud({
                 <span className="text-sm text-gray-600 dark:text-gray-300">No image selected</span>
               )}
             </div>
+            {renderFieldErrors('picture')}
+            {newProductPicture && (!errors.picture || errors.picture.length === 0) && (
+              <p className="mt-1 text-xs text-green-600 dark:text-green-400 flex items-center">
+                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                {newProductPicture.name} ({(newProductPicture.size / 1024).toFixed(1)} KB)
+              </p>
+            )}
           </div>
           <div className="flex justify-end gap-x-3">
             <button
@@ -401,8 +669,10 @@ export default function ProductCrud({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center"
-              disabled={isCategoryFormActive}
+              className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center ${
+                isCategoryFormActive || !isFormValid() ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+              disabled={isCategoryFormActive || !isFormValid()}
             >
               Save Changes
             </button>
