@@ -49,13 +49,13 @@ const mapStatusToTab = (status: string): string => {
 const getNotificationMessage = (status: string, timestamp: Date): string => {
   const timeStr = timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
   const messages: Record<string, string> = {
-    'pending': `${timeStr} - Order received`,
-    'processing': `${timeStr} - Order prepared`,
-    'ready': `${timeStr} - Order ready`,
-    'cancelled': `${timeStr} - Order cancelled`,
-    'picked': `${timeStr} - Order completed`
+    'pending': `Order received`,
+    'processing': `Order prepared`,
+    'ready': `Order ready`,
+    'cancelled': `Order cancelled`,
+    'picked': `Order completed`
   };
-  return messages[status] || `${timeStr} - Order updated`;
+  return `${messages[status] || 'Order updated'} <span class="text-xs text-gray-500">${timeStr}</span>`;
 };
 
 const getStatusIcon = (status: string): string => {
@@ -109,10 +109,11 @@ export default function OrderNotifications({
       if (token) {
         try {
           const queueData = await getOrderQueue(token, logout);
-          setQueueOrders(queueData.data.data || []); // Extract the array from the response
+          setQueueOrders(Array.isArray(queueData) ? queueData : []);
         } catch (error) {
           console.error('Failed to fetch queue orders:', error);
           setMessage('Failed to load queue data');
+          setQueueOrders([]);
         }
       }
     };
@@ -128,8 +129,9 @@ export default function OrderNotifications({
       const tabOrders = groupedOrders[tab] || [];
       tabOrders.forEach(order => {
         const currentStatus = order.status.toLowerCase();
-        const existing = notifications.find(n => n.orderId === order._id);
-        if (!existing || existing.status !== currentStatus) {
+
+        // Only show unread notifications (notification_status === 0)
+        if (order.notification_status === 0) {
           const timestamp = new Date(order.createdAt || new Date());
           newNotifications.push({
             id: `${order._id}-${Date.now()}`,
@@ -138,17 +140,16 @@ export default function OrderNotifications({
             customerName: order.customer_name || 'Guest',
             message: getNotificationMessage(currentStatus, timestamp),
             timestamp,
-            isRead: order.notification_status === 1,
+            isRead: false,
             status: currentStatus,
             tab: mapStatusToTab(currentStatus)
           });
         }
       });
     });
-    if (newNotifications.length > 0) {
-      setNotifications(prev => [...newNotifications.filter(n => !prev.some(p => p.orderId === n.orderId)), ...prev].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
-    }
-  }, [orders, groupedOrders, notifications, queueOrders]);
+
+    setNotifications(newNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
+  }, [orders, groupedOrders, queueOrders]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -182,19 +183,19 @@ export default function OrderNotifications({
 
   const renderOrderDetails = (orderId: string) => {
     const order = orders.find(o => o._id === orderId);
-    const queueOrder = queueOrders.find(q => q.order_id === orderId);
+    const queueOrder = Array.isArray(queueOrders) ? queueOrders.find(q => q.order_id === orderId) : null;
 
     if (!order) return null;
 
     const orderItems = queueOrder?.items || order.items || [];
 
     return (
-      <div className="p-4 bg-gray-50 rounded-lg mt-4">
+      <div className="p-4 bg-gray-50 rounded-lg mt-2">
         <h3 className="text-lg font-bold mb-2">Order #{order.order_number} Details</h3>
-        <div className="space-y-4">
+        <div className="space-y-3">
           <p><strong>Customer:</strong> {order.customer_name || 'Guest'}</p>
           <h4 className="font-semibold mt-2">Items:</h4>
-          <ul className="list-disc pl-5 space-y-2">
+          <ul className="list-disc pl-5 space-y-1">
             {orderItems.length > 0 ? (
               orderItems.map((item, index) => {
                 const productName = item.product?.name || item.product_name || 'Unknown';
@@ -204,23 +205,23 @@ export default function OrderNotifications({
                 return (
                   <li key={index} className="flex items-center space-x-2">
                     {pictureUrl ? (
-                      <img src={pictureUrl} alt={productName} className="w-8 h-8 object-cover rounded-md" />
+                      <img src={pictureUrl} alt={productName} className="w-6 h-6 object-cover rounded-md" />
                     ) : (
-                      <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 text-xs">📦</div>
+                      <div className="w-6 h-6 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 text-xs">📦</div>
                     )}
-                    <span>{productName} x{quantity}</span>
+                    <span className="text-sm">{productName} x{quantity}</span>
                   </li>
                 );
               })
             ) : (
-              <li className="text-gray-500">No items available</li>
+              <li className="text-gray-500 text-sm">No items available</li>
             )}
           </ul>
           <button
             onClick={() => setSelectedOrderId(null)}
-            className="mt-4 flex items-center px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="mt-3 flex items-center px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
             </svg>
             Back
@@ -230,31 +231,74 @@ export default function OrderNotifications({
     );
   };
 
+  const clearNotifications = async () => {
+    if (!token) {
+      setMessage('Please log in to clear notifications.');
+      return;
+    }
+
+    try {
+      // Get all unread orders in the current tab
+      const tabOrders = groupedOrders[activeTab] || [];
+      const unreadOrders = tabOrders.filter(order => order.notification_status === 0);
+
+      // Mark all unread orders in current tab as read
+      const promises = unreadOrders.map(order =>
+        markNotificationAsRead(token, logout, order.order_number)
+      );
+
+      const responses = await Promise.all(promises);
+
+      // Update the orders state
+      setOrders(prevOrders => {
+        return prevOrders.map(order => {
+          const updatedOrder = responses.find(r => r._id === order._id);
+          return updatedOrder ? { ...updatedOrder, items: order.items } : order;
+        });
+      });
+
+      // Clear notifications from local state
+      setNotifications(prev => prev.filter(n => n.tab !== activeTab));
+
+      setMessage(`✅ All notifications cleared for ${tabs.find(t => t.key === activeTab)?.label}`);
+    } catch (error) {
+      setMessage(`❌ Failed to clear notifications: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ display: showModal ? 'flex' : 'none' }}>
-      <div className="bg-white rounded-xl p-6 w-96 max-h-[50vh] flex flex-col">
-        <h2 className="text-xl font-bold mb-4">{tabs.find(t => t.key === activeTab)?.label} Notifications</h2>
-        <div className="flex-1 overflow-y-auto pr-2" style={{ maxHeight: '40vh' }}>
+      <div className="bg-white rounded-lg p-3 w-72 max-h-[50vh] flex flex-col">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-md font-bold">{tabs.find(t => t.key === activeTab)?.label} Notifications</h2>
+          <div>
+            <button onClick={clearNotifications} className="mr-2 text-red-500 hover:text-red-700 text-xs">Clear All</button>
+            <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-700 text-lg">×</button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto pr-1" style={{ maxHeight: '40vh' }}>
           {!selectedOrderId && notifications
             .filter(n => n.tab === activeTab)
             .map(notification => (
               <div
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
-                className={`p-3 rounded border mb-2 cursor-pointer ${notification.isRead ? 'bg-gray-50 text-gray-700' : 'bg-white font-bold text-black'} ${getStatusColor(notification.status)}`}
+                className={`p-2 rounded border mb-1 cursor-pointer ${notification.isRead ? 'bg-gray-50 text-gray-700' : 'bg-white font-bold text-black'} ${getStatusColor(notification.status)}`}
               >
                 <div className="flex items-start">
-                  <span className="mr-2 mt-0.5">{getStatusIcon(notification.status)}</span>
-                  <span>{notification.message}</span>
+                  <span className="mr-1 mt-0.5">{getStatusIcon(notification.status)}</span>
+                  <div>
+                    <span className="text-sm font-semibold">#{notification.orderNumber}</span>
+                    <div className="text-xs" dangerouslySetInnerHTML={{ __html: notification.message }}></div>
+                  </div>
                 </div>
               </div>
             ))}
           {selectedOrderId && renderOrderDetails(selectedOrderId)}
           {!selectedOrderId && notifications.filter(n => n.tab === activeTab).length === 0 && (
-            <div className="text-center py-8 text-gray-500">No notifications yet</div>
+            <div className="text-center py-3 text-gray-500 text-xs">No notifications yet</div>
           )}
         </div>
-        <button onClick={() => setShowModal(false)} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 w-full">Close</button>
       </div>
     </div>
   );
