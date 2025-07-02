@@ -414,7 +414,7 @@ export default function ProductCrud({
               value={newProductTimeRequired}
               onChange={(e) => handleInputChange('timeRequired', e.target.value)}
               onFocus={() => handleFocus('timeRequired')}
-              onBlur={() => handleBlur(' personally')}
+              onBlur={() => handleBlur(' timeRequired')}
               placeholder="Time required in minutes"
               className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
                 errors.timeRequired && errors.timeRequired.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
