@@ -315,7 +315,6 @@ export const getAllOrders = async (token: string, logout: () => void): Promise<O
   }
 };
 
-// Queue API - Updated function
 export const getOrderQueue = async (token: string, logout: () => void): Promise<QueueOrder[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/orders/api/v1/queue`, {
@@ -331,7 +330,8 @@ export const getOrderQueue = async (token: string, logout: () => void): Promise<
       throw new Error(data.message || handleApiError(data, logout));
     }
 
-    return data.data.data || [];
+    // Safely handle the response data structure
+    return data.data?.data ?? [];
   } catch (err) {
     console.error('Error in getOrderQueue:', err);
     throw new Error(err instanceof Error ? err.message : 'Failed to fetch order queue');
