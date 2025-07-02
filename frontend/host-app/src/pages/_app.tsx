@@ -28,7 +28,7 @@ const Footer = dynamic(
   { ssr: false }
 );
 
-const publicRoutes = ['/login', '/forgot-password', '/Registration/registerAdmin'];
+const publicRoutes = ['/Registration/login', '/forgot-password', '/Registration/registerAdmin'];
 
 function AppContent({ Component, pageProps }: AppProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -41,9 +41,9 @@ function AppContent({ Component, pageProps }: AppProps) {
     if (isLoading) return;
 
     if (!isAuthenticated && !publicRoutes.includes(pathname)) {
-      router.push('/login');
-    } else if (isAuthenticated && pathname === '/login') {
-      router.push('Dashboard/dashboard');
+      router.push('/Registration/login');
+    } else if (isAuthenticated && pathname === '/Registration/login') {
+      router.push('/Dashboard/dashboard');
     }
   }, [isAuthenticated, isLoading, pathname, router]);
 
@@ -72,10 +72,10 @@ function AppContent({ Component, pageProps }: AppProps) {
     try {
       await logout();
       setSidebarOpen(false);
-      await router.push('/login');
+      await router.push('/Registration/login');
     } catch (error) {
       console.error('Error during logout:', error);
-      window.location.href = '/login';
+      window.location.href = '/Registration/login';
     }
   };
 

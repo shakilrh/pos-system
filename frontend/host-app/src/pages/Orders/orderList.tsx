@@ -112,7 +112,7 @@ export default function OrderList({
                                     logout,
                                     onViewDetails,
                                     setOrders,
-                                    queueData, // Use queueData prop instead of fetching internally
+                                    queueData,
                                   }: OrderListProps) {
   const [outerActiveTab, setOuterActiveTab] = useState('physical');
   const [activeTab, setActiveTab] = useState('to_be_prepared');
@@ -261,14 +261,11 @@ export default function OrderList({
   };
 
   const getTabUnreadCount = (tabKey: string): number => {
-    return orders.filter((order) => {
-      const orderTab = mapStatusToTab(order.status.toLowerCase());
-      return orderTab === tabKey && order.notification_status === 0;
-    }).length;
+    const currentTabOrders = groupedOrders[tabKey] || [];
+    return currentTabOrders.filter((order) => order.notification_status === 0).length;
   };
 
   const getQueueTimeLeft = (orderNumber: string) => {
-    // Type guard to ensure queueData is an array
     if (!Array.isArray(queueData)) return null;
     const queueOrder = queueData.find((q: QueueOrder) => q.order_number === orderNumber);
     const countdown = queueCountdowns[orderNumber];
