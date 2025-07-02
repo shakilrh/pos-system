@@ -183,7 +183,7 @@ export default function Categories({ token, isAuthenticated, logout, categories,
               value={formMode === 'edit' ? editCategoryName : newCategoryName}
               onChange={(e) => (formMode === 'edit' ? setEditCategoryName(e.target.value) : setNewCategoryName(e.target.value))}
               placeholder="Enter category name"
-              className="product-crud-input w-full p-2 rounded-lg"
+              className={`product-crud-input w-full p-2 rounded-lg border border-transparent ${newCategoryName.length > 0 ? 'border-border' : ''}`}
             />
           </div>
           <div>
@@ -192,7 +192,7 @@ export default function Categories({ token, isAuthenticated, logout, categories,
               value={formMode === 'edit' ? editCategoryDesc : newCategoryDesc}
               onChange={(e) => (formMode === 'edit' ? setEditCategoryDesc(e.target.value) : setNewCategoryDesc(e.target.value))}
               placeholder="Enter category description"
-              className="product-crud-input w-full p-2 rounded-lg"
+              className={`product-crud-input w-full p-2 rounded-lg border border-transparent ${newCategoryDesc.length > 0 ? 'border-border' : ''}`}
               rows={3}
             />
           </div>
