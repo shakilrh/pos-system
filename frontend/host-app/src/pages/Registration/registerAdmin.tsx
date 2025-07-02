@@ -99,7 +99,9 @@ export default function RegisterAdmin() {
   };
 
   const validateLogo = (file: File | null): string[] => {
-    if (!file) return []; // Logo is optional
+    // Logo is completely optional - return empty array if no file
+    if (!file) return [];
+
     const errors: string[] = [];
 
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
@@ -136,11 +138,12 @@ export default function RegisterAdmin() {
     }
   };
 
-  // Check if form is valid
+  // Check if form is valid - logo errors should not block submission since it's optional
   const isFormValid = (): boolean => {
-    const allFields = ['name', 'email', 'password', 'confirmPassword', 'storeName'];
-    return allFields.every(field => getFieldErrors(field).length === 0) &&
-      validateLogo(logo).length === 0;
+    const requiredFields = ['name', 'email', 'password', 'confirmPassword', 'storeName'];
+    const requiredFieldsValid = requiredFields.every(field => getFieldErrors(field).length === 0);
+    const logoValid = validateLogo(logo).length === 0;
+    return requiredFieldsValid && logoValid;
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -171,11 +174,25 @@ export default function RegisterAdmin() {
     const file = e.target.files?.[0] || null;
     setLogo(file);
 
-    const logoErrors = validateLogo(file);
-    setErrors(prev => ({ ...prev, logo: logoErrors }));
+    // Only validate if a file is selected
+    if (file) {
+      const logoErrors = validateLogo(file);
+      setErrors(prev => ({ ...prev, logo: logoErrors }));
 
-    if (logoErrors.length > 0) {
-      setFlashMessage({ message: logoErrors[0], type: 'error' });
+      if (logoErrors.length > 0) {
+        setFlashMessage({ message: logoErrors[0], type: 'error' });
+      } else {
+        // Clear any previous logo error messages
+        if (flashMessage?.type === 'error' && flashMessage.message.includes('Image')) {
+          setFlashMessage(null);
+        }
+      }
+    } else {
+      // Clear logo errors when no file is selected
+      setErrors(prev => ({ ...prev, logo: [] }));
+      if (flashMessage?.type === 'error' && flashMessage.message.includes('Image')) {
+        setFlashMessage(null);
+      }
     }
   };
 
@@ -209,6 +226,7 @@ export default function RegisterAdmin() {
     allFields.forEach(field => {
       allErrors[field] = getFieldErrors(field);
     });
+    // Only add logo errors if there's actually a logo to validate
     allErrors.logo = validateLogo(logo);
 
     setErrors(allErrors);
@@ -227,7 +245,7 @@ export default function RegisterAdmin() {
         formData.name.trim(),
         formData.email.trim(),
         formData.password,
-        logo as File,
+        logo, // This can be null now
         formData.storeName.trim(),
       );
 
