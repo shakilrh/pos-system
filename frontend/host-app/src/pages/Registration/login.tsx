@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../context/AuthContext';
-import { adminAuthService } from '../services/adminAuthService';
-import FlashMessage from './FlashMessage';
+import { useAuth } from '../../context/AuthContext';
+import { adminAuthService } from '../../services/adminAuthService';
+import FlashMessage from '../FlashMessage';
 
 export default function Login() {
   const { login, isAuthenticated, logout } = useAuth();
