@@ -60,7 +60,7 @@ const OrderMenu = ({
         <button
           onClick={() => setSelectedCategory('')}
           className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-            selectedCategory === '' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+            selectedCategory === '' ? 'bg-[var(--primary-color)] text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
           }`}
         >
           All Products
@@ -71,7 +71,7 @@ const OrderMenu = ({
             onClick={() => setSelectedCategory(category._id)}
             className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
               selectedCategory === category._id
-                ? 'bg-indigo-500 text-white'
+                ? 'bg-[var(--primary-color)] text-white'
                 : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
             }`}
           >

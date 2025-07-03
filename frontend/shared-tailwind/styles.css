@@ -216,14 +216,6 @@ header, footer, aside {
   color: var(--text-color);
 }
 
-button, a {
-  color: var(--primary-color);
-}
-
-button:hover, a:hover {
-  color: var(--primary-600);
-}
-
 /* Enhanced Tailwind class overrides */
 .bg-gray-50, .bg-slate-50 { background-color: var(--background-color) !important; }
 .bg-gray-100, .bg-slate-100 { background-color: var(--surface-color) !important; }

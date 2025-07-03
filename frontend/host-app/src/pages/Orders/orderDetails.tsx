@@ -38,20 +38,20 @@ export interface OrderDetailsProps {
 }
 
 const OrderDetails = ({
-                        customerName,
-                        setCustomerName,
-                        serviceType,
-                        setServiceType,
-                        receivedAmount,
-                        setReceivedAmount,
-                        paymentMethod,
-                        setPaymentMethod,
-                        orderItems,
-                        setOrderItems,
-                        calculateTotalOrderAmount,
-                        handleCreateOrder,
-                        localLoading,
-                      }: OrderDetailsProps) => {
+  customerName,
+  setCustomerName,
+  serviceType,
+  setServiceType,
+  receivedAmount,
+  setReceivedAmount,
+  paymentMethod,
+  setPaymentMethod,
+  orderItems,
+  setOrderItems,
+  calculateTotalOrderAmount,
+  handleCreateOrder,
+  localLoading,
+}: OrderDetailsProps) => {
   const totalAmount = calculateTotalOrderAmount();
   const showPayment = serviceType === 'take_away';
 
@@ -75,7 +75,12 @@ const OrderDetails = ({
           <select
             value={serviceType}
             onChange={(e) => setServiceType(e.target.value as 'dine_in' | 'take_away')}
-            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
+            className="w-full p-2 border rounded-lg focus:ring-2 transition-all duration-200 product-crud-input focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)]"
+            style={{
+              backgroundColor: 'var(--background-secondary)',
+              color: 'var(--text-color)',
+              borderColor: 'var(--border-color)',
+            }}
           >
             <option value="dine_in">Dine-In</option>
             <option value="take_away">Takeaway</option>
@@ -134,34 +139,34 @@ const OrderDetails = ({
             <>
               <table className="w-full text-left border-collapse">
                 <thead>
-                <tr className="border-b">
-                  <th className="py-2 px-4">Item</th>
-                  <th className="py-2 px-4">Qty</th>
-                  <th className="py-2 px-4">Price</th>
-                  <th className="py-2 px-4">Total</th>
-                  <th className="py-2 px-4">Action</th>
-                </tr>
+                  <tr className="border-b">
+                    <th className="py-2 px-4">Item</th>
+                    <th className="py-2 px-4">Qty</th>
+                    <th className="py-2 px-4">Price</th>
+                    <th className="py-2 px-4">Total</th>
+                    <th className="py-2 px-4">Action</th>
+                  </tr>
                 </thead>
                 <tbody>
-                {orderItems.map((item, index) => (
-                  <tr key={item.product_id} className="border-b">
-                    <td className="py-2 px-4">{item.product?.name || `Product ${item.product_id}`}</td>
-                    <td className="py-2 px-4">{item.quantity}</td>
-                    <td className="py-2 px-4">${(item.product?.price || 0).toFixed(2)}</td>
-                    <td className="py-2 px-4">${(item.sub_total || 0).toFixed(2)}</td>
-                    <td className="py-2 px-4">
-                      <XMarkIcon
-                        onClick={() => setOrderItems(orderItems.filter((_, i) => i !== index))}
-                        className="h-5 w-5 text-red-500 cursor-pointer hover:text-red-700"
-                      />
-                    </td>
+                  {orderItems.map((item, index) => (
+                    <tr key={item.product_id} className="border-b">
+                      <td className="py-2 px-4">{item.product?.name || `Product ${item.product_id}`}</td>
+                      <td className="py-2 px-4">{item.quantity}</td>
+                      <td className="py-2 px-4">${(item.product?.price || 0).toFixed(2)}</td>
+                      <td className="py-2 px-4">${(item.sub_total || 0).toFixed(2)}</td>
+                      <td className="py-2 px-4">
+                        <XMarkIcon
+                          onClick={() => setOrderItems(orderItems.filter((_, i) => i !== index))}
+                          className="h-5 w-5 text-red-500 cursor-pointer hover:text-red-700"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="font-bold">
+                    <td colSpan={3} className="py-2 px-4 text-right">Total</td>
+                    <td className="py-2 px-4">${totalAmount.toFixed(2)}</td>
+                    <td></td>
                   </tr>
-                ))}
-                <tr className="font-bold">
-                  <td colSpan={3} className="py-2 px-4 text-right">Total</td>
-                  <td className="py-2 px-4">${totalAmount.toFixed(2)}</td>
-                  <td></td>
-                </tr>
                 </tbody>
               </table>
             </>
@@ -171,11 +176,10 @@ const OrderDetails = ({
         <button
           onClick={handleCreateOrder}
           disabled={localLoading}
-          className={`w-full py-2 rounded-lg transition-all duration-200 ${
-            localLoading
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-indigo-500 text-white hover:bg-indigo-600'
-          }`}
+          className={`w-full py-2 rounded-lg transition-all duration-200 ${localLoading
+            ? 'bg-[var(--background-secondary)] text-[var(--text-secondary)] cursor-not-allowed'
+            : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:text-white'
+            }`}
         >
           {localLoading ? 'Processing Order...' : showPayment ? 'Confirm Order & Process Payment' : 'Confirm Order'}
         </button>
