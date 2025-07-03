@@ -79,7 +79,7 @@ const StatsSection = ({ stats }: { stats: { title: string; value: string; icon: 
     {stats.map((stat, index) => (
       <div
         key={index}
-        className={`card relative overflow-hidden rounded-xl p-6 text-[var(--sidebar-text)] shadow-lg bg-[var(--primary-color)] hover:bg-[var(--primary-600)] transform scale-100 hover:scale-105 transition-all duration-300 hover:shadow-xl opacity-100`} // Added scale-100 and opacity-100
+        className={`card relative overflow-hidden rounded-xl p-6 text-[var(--sidebar-text)] shadow-lg bg-gray-500 hover:bg-gray-400 transform scale-100 hover:scale-105 transition-all duration-300 hover:shadow-xl opacity-100`} // Added scale-100 and opacity-100
         style={{ minHeight: '120px' }} // Ensure minimum height for visibility
       >
         <div className="relative z-10 flex items-center justify-between h-full">
@@ -473,8 +473,7 @@ const Dashboard = () => {
         <div className="bg-[var(--background-secondary)] rounded-lg shadow-md p-4 mb-6 border border-[var(--border-color)]">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
             <div className="mb-3 lg:mb-0">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-[var(--primary-color)] to-[var(--primary-600)] bg-clip-text text-transparent">
-                POS Dashboard
+              <h1 className="text-2xl font-bold text-gray-800">POS Dashboard
               </h1>
               <p className="text-[var(--text-secondary)] mt-1 text-sm">Welcome back! Here's what's happening today.</p>
             </div>

@@ -64,11 +64,7 @@ export default function ProductList({
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold flex items-center" style={{ color: "var(--primary-color)", background: "none" }}>
           <span
-            className="p-2 rounded-lg mr-2"
-            style={{
-              background: "var(--surface-color)",
-              color: "var(--primary-color)",
-            }}
+            className="font-bold text-gray-800 p-2 mr-2"
           >
             Products
           </span>

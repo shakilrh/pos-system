@@ -216,7 +216,7 @@ export default function Categories({ token, isAuthenticated, logout, categories,
       <div className="relative z-0" style={{ opacity: formMode ? 0.5 : 1, pointerEvents: formMode ? 'none' : 'auto' }}>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-text flex items-center">
-            <span className="bg-blue-500/10 text-blue-500 p-2 rounded-lg mr-2">
+            <span className="font-bold text-gray-800 p-2 mr-2">
               Categories
             </span>
             <span className="text-sm text-text-secondary">{categories.length} total</span>
