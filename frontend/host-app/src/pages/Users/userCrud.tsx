@@ -1,6 +1,5 @@
 import React from 'react';
 import { XMarkIcon, PlusIcon, UserIcon } from '@heroicons/react/24/outline';
-import { fetchUsers, createUser, updateUser, deleteUser } from '../../services/UserService';
 import { User, Role, FormData, FormErrors } from './userTypes';
 
 interface UserCrudProps {
@@ -18,8 +17,10 @@ interface UserCrudProps {
   setOriginalUser: (user: User | null) => void;
   setMessage: (msg: string | null) => void;
   setIsSuccess: (success: boolean) => void;
-  isLoading: { create: boolean; update: boolean; delete: string };
-  setIsLoading: React.Dispatch<React.SetStateAction<{ create: boolean; update: boolean; delete: string }>>;
+  isLoading: { create: boolean; update: boolean; delete: boolean };
+  setIsLoading: React.Dispatch<React.SetStateAction<{ create: boolean; update: boolean; delete: boolean }>>;
+  onCreateUser: (userData: Partial<User>) => Promise<void>;
+  onUpdateUser: (userData: Partial<User>) => Promise<void>;
 }
 
 const UserCrud: React.FC<UserCrudProps> = ({
@@ -39,13 +40,15 @@ const UserCrud: React.FC<UserCrudProps> = ({
                                              setIsSuccess,
                                              isLoading,
                                              setIsLoading,
+                                             onCreateUser,
+                                             onUpdateUser,
                                            }) => {
   const [newUser, setNewUser] = React.useState<FormData>({
     name: '',
     email: '',
     password: '',
     user_type: 'worker',
-    role_id: '',
+    role_id: null,
     phone_number: '',
     job_title: '',
     shift_time: '',
@@ -122,7 +125,7 @@ const UserCrud: React.FC<UserCrudProps> = ({
   };
 
   const resetForm = () => {
-    setNewUser({ name: '', email: '', password: '', user_type: 'worker', role_id: '', phone_number: '', job_title: '', shift_time: '', salary: '' });
+    setNewUser({ name: '', email: '', password: '', user_type: 'worker', role_id: null, phone_number: '', job_title: '', shift_time: '', salary: '' });
     setEditUser(null);
     setOriginalUser(null);
     setFormErrors({});
@@ -138,20 +141,16 @@ const UserCrud: React.FC<UserCrudProps> = ({
       const userData: Partial<User> = {
         name: newUser.name.trim(),
         email: newUser.email.trim(),
-        password: newUser.password?.trim(),
+        password: newUser.password?.trim() || undefined,
         user_type: newUser.user_type,
         phone_number: newUser.phone_number?.trim() || undefined,
         job_title: newUser.job_title?.trim() || undefined,
         shift_time: newUser.shift_time?.trim() || undefined,
         salary: newUser.salary ? parseFloat(newUser.salary) : undefined,
-        role_id: newUser.role_id || undefined,
+        role_id: newUser.role_id === '' || newUser.role_id === undefined ? null : newUser.role_id,
       };
-      const createdUser = await createUser(token!, logout, userData);
-      setUsers((prev) => [...prev, createdUser]);
-      setFilteredUsers((prev) => [...prev, createdUser]);
+      await onCreateUser(userData);
       resetForm();
-      setMessage('User created successfully!');
-      setIsSuccess(true);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to create user');
       setIsSuccess(false);
@@ -171,18 +170,14 @@ const UserCrud: React.FC<UserCrudProps> = ({
       if (editUser.email !== originalUser?.email) userData.email = editUser.email.trim();
       if (editUser.password) userData.password = editUser.password.trim();
       if (editUser.user_type !== originalUser?.user_type) userData.user_type = editUser.user_type;
-      if (editUser.role_id !== originalUser?.role_id) userData.role_id = editUser.role_id || undefined;
+      if (editUser.role_id !== originalUser?.role_id) userData.role_id = editUser.role_id === '' || editUser.role_id === undefined ? null : editUser.role_id;
       if (editUser.phone_number !== originalUser?.phone_number) userData.phone_number = editUser.phone_number?.trim() || undefined;
       if (editUser.job_title !== originalUser?.job_title) userData.job_title = editUser.job_title?.trim() || undefined;
       if (editUser.shift_time !== originalUser?.shift_time) userData.shift_time = editUser.shift_time?.trim() || undefined;
       if (editUser.salary !== originalUser?.salary) userData.salary = editUser.salary ? parseFloat(editUser.salary.toString()) : undefined;
 
-      const updatedUser = await updateUser(token!, logout, userData);
-      setUsers((prev) => prev.map((u) => (u._id === editUser._id ? updatedUser : u)));
-      setFilteredUsers((prev) => prev.map((u) => (u._id === editUser._id ? updatedUser : u)));
+      await onUpdateUser(userData);
       resetForm();
-      setMessage('User updated successfully!');
-      setIsSuccess(true);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to update user');
       setIsSuccess(false);
@@ -196,20 +191,20 @@ const UserCrud: React.FC<UserCrudProps> = ({
     const isSubmitting = isEdit ? isLoading.update : isLoading.create;
 
     return (
-      <div className="bg-gray-50 dark:bg-gray-700 rounded-md p-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 mb-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {isEdit ? 'Edit User' : 'Create New User'}
           </h3>
           <button
             onClick={resetForm}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
-            <XMarkIcon className="w-5 h-5" />
+            <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
 
-        <form onSubmit={isEdit ? handleEditUser : handleCreateUser} className="space-y-3">
+        <form onSubmit={isEdit ? handleEditUser : handleCreateUser} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
               { label: 'Name *', field: 'name', type: 'text', value: data?.name || '', required: true },
@@ -228,13 +223,13 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 </label>
                 {field.type === 'select' ? (
                   <select
-                    value={field.value}
+                    value={field.value || ''}
                     onChange={(e) => handleInputChange(field.field as keyof FormData, e.target.value, isEdit)}
-                    className={`w-full p-2 text-sm rounded-md border ${
+                    className={`w-full p-2.5 text-sm rounded-lg border ${
                       formErrors[field.field as keyof FormErrors]
                         ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
-                    } text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500`}
+                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+                    } text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200`}
                     disabled={field.disabled}
                   >
                     <option value="">Select Role</option>
@@ -247,11 +242,11 @@ const UserCrud: React.FC<UserCrudProps> = ({
                     type={field.type}
                     value={field.value}
                     onChange={(e) => handleInputChange(field.field as keyof FormData, e.target.value, isEdit)}
-                    className={`w-full p-2 text-sm rounded-md border ${
+                    className={`w-full p-2.5 text-sm rounded-lg border ${
                       formErrors[field.field as keyof FormErrors]
                         ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
-                    } text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500`}
+                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+                    } text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200`}
                     disabled={field.disabled}
                     required={field.required}
                     maxLength={field.field === 'name' || field.field === 'job_title' || field.field === 'shift_time' ? 100 : field.field === 'email' ? 255 : undefined}
@@ -269,11 +264,11 @@ const UserCrud: React.FC<UserCrudProps> = ({
               </div>
             ))}
           </div>
-          <div className="flex space-x-2 pt-2">
+          <div className="flex space-x-3 pt-4">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white px-3 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200"
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center">
@@ -290,7 +285,7 @@ const UserCrud: React.FC<UserCrudProps> = ({
             <button
               type="button"
               onClick={resetForm}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-200"
             >
               Cancel
             </button>
@@ -301,19 +296,19 @@ const UserCrud: React.FC<UserCrudProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-md shadow-md border border-gray-200 dark:border-gray-700">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 mt-6">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <UserIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">User Management</h2>
+            <UserIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">User Management</h2>
           </div>
           {!showCreateForm && !editUser && (
             <button
               onClick={() => setShowCreateForm(true)}
-              className="flex items-center space-x-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex items-center space-x-1 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200"
             >
-              <PlusIcon className="w-4 h-4" />
+              <PlusIcon className="w-5 h-5" />
               <span>Add User</span>
             </button>
           )}

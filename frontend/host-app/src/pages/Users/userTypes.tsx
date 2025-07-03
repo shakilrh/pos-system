@@ -3,12 +3,21 @@ interface User {
   name: string;
   email: string;
   password?: string;
-  user_type: 'worker';
+  user_type: string;
   role_id: string | null;
   phone_number?: string;
   job_title?: string;
   shift_time?: string;
   salary?: number;
+  address?: string;
+  created_by?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  store_name?: string | null;
+  logoUrl?: string | null;
+  store_logo?: string | null;
 }
 
 interface Role {
@@ -26,22 +35,20 @@ interface FormData {
   name: string;
   email: string;
   password?: string;
-  user_type: 'worker';
-  role_id?: string;
+  user_type: string;
+  role_id?: string | null;
   phone_number?: string;
   job_title?: string;
   shift_time?: string;
-  salary?: string;
+  salary?: number;
+  address?: string;
 }
 
 interface FormErrors {
   name?: string;
   email?: string;
   password?: string;
-  phone_number?: string;
-  job_title?: string;
-  shift_time?: string;
-  salary?: string;
+  user_type?: string;
 }
 
 export type { User, Role, UsersTemplateProps, FormData, FormErrors };

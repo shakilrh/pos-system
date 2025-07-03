@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { UserIcon } from '@heroicons/react/24/outline';
 import { assignRole } from '../../services/UserService';
 import { User, Role } from './userTypes';
@@ -28,7 +28,7 @@ const UserRole: React.FC<UserRoleProps> = ({
                                              isLoading,
                                              setIsLoading,
                                            }) => {
-  const [assignRoleData, setAssignRoleData] = React.useState({ user_id: '', role_id: '' });
+  const [assignRoleData, setAssignRoleData] = useState({ user_id: '', role_id: '' });
 
   const handleAssignRole = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +72,7 @@ const UserRole: React.FC<UserRoleProps> = ({
                 className="w-full p-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500"
                 required
               >
-                <option value="">Select User</option>
+                <option value="" disabled>Select User</option>
                 {users.map((user) => (
                   <option key={user._id} value={user._id}>
                     {user.name} ({user.email})
@@ -88,7 +88,7 @@ const UserRole: React.FC<UserRoleProps> = ({
                 className="w-full p-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500"
                 required
               >
-                <option value="">Select Role</option>
+                <option value="" disabled>Select Role</option>
                 {roles.map((role) => (
                   <option key={role._id} value={role._id}>{role.name}</option>
                 ))}
