@@ -43,6 +43,7 @@ aside {
   --warning-color: #f59e0b; /* Amber-500 */
   --error-color: #dc2626; /* Red-600 */
   --surface-color: #ffffff; /* White */
+  --error-color-hover: #b91c1c;
 }
 
 [data-theme="blue"] {
@@ -64,6 +65,7 @@ aside {
   --warning-color: #f59e0b; /* Amber-500 */
   --error-color: #dc2626; /* Red-600 */
   --surface-color: #ffffff; /* White */
+  --error-color-hover: #b91c1c;
 }
 
 [data-theme="green"] {
@@ -85,6 +87,7 @@ aside {
   --warning-color: #f59e0b; /* Amber-500 */
   --error-color: #dc2626; /* Red-600 */
   --surface-color: #ffffff; /* White */
+  --error-color-hover: #b91c1c;
 }
 
 /* Default No2 - Professional blue tones for a clean look */
@@ -107,6 +110,7 @@ aside {
   --warning-color: #ea580c;
   --error-color: #dc2626;
   --surface-color: #ffffff;
+  --error-color-hover: #b91c1c;
 }
 
 /* Clean Professional - High contrast for quick scanning */
@@ -129,6 +133,7 @@ aside {
   --warning-color: #d97706;
   --error-color: #dc2626;
   --surface-color: #ffffff;
+  --error-color-hover: #b91c1c;
 }
 
 /* Modern Blue - Calming yet energetic for busy environments */
@@ -151,6 +156,7 @@ aside {
   --warning-color: #f59e0b;
   --error-color: #ef4444;
   --surface-color: #ffffff;
+  --error-color-hover: #b91c1c;
 }
 
 /* Warm Minimal - Reduces eye strain for extended use */
@@ -173,6 +179,7 @@ aside {
   --warning-color: #ca8a04;
   --error-color: #dc2626;
   --surface-color: #ffffff;
+  --error-color-hover: #b91c1c;
 }
 
 /* Dark Mode - For low-light environments and night shifts */
@@ -195,6 +202,7 @@ aside {
   --warning-color: #fbbf24;
   --error-color: #f87171;
   --surface-color: #1f2937;
+  --error-color-hover: #b91c1c;
 }
 
 :root {
