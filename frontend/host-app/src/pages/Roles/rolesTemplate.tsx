@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import { fetchRoles, deleteRole } from '../../services/RoleService';
 import FlashMessage from '../FlashMessage';
 import RoleList from './roleList';
@@ -9,22 +9,18 @@ import { Role, RolesTemplateProps } from './roleTypes';
 const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [editRole, setEditRole] = useState<Role | null>(null);
-  const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState({
     fetch: false,
     create: false,
     update: false,
-    delete: '',
+    delete: false,
   });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (token) {
-      loadRoles();
-    }
-  }, [token]);
+  const [activeSection, setActiveSection] = useState<'add' | 'list'>('list');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   const loadRoles = async () => {
     setIsLoading((prev) => ({ ...prev, fetch: true }));
@@ -42,24 +38,33 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
     }
   };
 
+  useEffect(() => {
+    if (token) {
+      loadRoles();
+    }
+  }, [token]);
+
   const handleDeleteRole = async (roleId: string) => {
-    setIsLoading((prev) => ({ ...prev, delete: roleId }));
+    setIsLoading((prev) => ({ ...prev, delete: true }));
     try {
       await deleteRole(token!, logout, roleId);
       setRoles((prev) => prev.filter((role) => role._id !== roleId));
       setDeleteConfirm(null);
       setMessage('Role deleted successfully!');
       setIsSuccess(true);
+      if (roles.length <= (currentPage - 1) * 6 && currentPage > 1) {
+        setCurrentPage((prev) => prev - 1);
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to delete role');
       setIsSuccess(false);
     } finally {
-      setIsLoading((prev) => ({ ...prev, delete: '' }));
+      setIsLoading((prev) => ({ ...prev, delete: false }));
     }
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {message && (
         <FlashMessage
           message={message}
@@ -67,54 +72,110 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
           onClose={() => setMessage(null)}
         />
       )}
-      <RoleCrud
-        token={token}
-        logout={logout}
-        roles={roles}
-        setRoles={setRoles}
-        editRole={editRole}
-        setEditRole={setEditRole}
-        showCreateForm={showCreateForm}
-        setShowCreateForm={setShowCreateForm}
-        setMessage={setMessage}
-        setIsSuccess={setIsSuccess}
-        isLoading={isLoading}
-        setIsLoading={setIsLoading}
-      />
-      <RoleList
-        roles={roles}
-        setEditRole={setEditRole}
-        handleDeleteRole={handleDeleteRole}
-        isLoading={isLoading}
-        setDeleteConfirm={setDeleteConfirm}
-      />
+      <div className="flex flex-col sm:flex-row sm:gap-4 border-b border-gray-200 dark:border-gray-700">
+        <button
+          className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
+            activeSection === 'list'
+              ? 'bg-indigo-600 text-white border-b-2 border-indigo-600'
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700'
+          }`}
+          onClick={() => {
+            setActiveSection('list');
+            setEditRole(null);
+          }}
+        >
+          <UserGroupIcon className="w-5 h-5" />
+          <span>Role List</span>
+        </button>
+        <button
+          className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
+            activeSection === 'add'
+              ? 'bg-indigo-600 text-white border-b-2 border-indigo-600'
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700'
+          }`}
+          onClick={() => {
+            setActiveSection('add');
+            setEditRole(null);
+          }}
+        >
+          <UserGroupIcon className="w-5 h-5" />
+          <span>Add Role</span>
+        </button>
+      </div>
+      {activeSection === 'add' && (
+        <RoleCrud
+          token={token}
+          logout={logout}
+          roles={roles}
+          setRoles={setRoles}
+          editRole={editRole}
+          setEditRole={setEditRole}
+          showCreateForm={activeSection === 'add'}
+          setShowCreateForm={(show: boolean) => setActiveSection(show ? 'add' : 'list')}
+          setMessage={setMessage}
+          setIsSuccess={setIsSuccess}
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
+          loadRoles={loadRoles}
+        />
+      )}
+      {activeSection === 'list' && (
+        <RoleList
+          roles={roles}
+          setEditRole={setEditRole}
+          handleDeleteRole={handleDeleteRole}
+          isLoading={isLoading}
+          setDeleteConfirm={setDeleteConfirm}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+        />
+      )}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-md p-4 w-full max-w-sm mx-4">
-            <div className="flex items-center space-x-2 mb-3">
-              <ExclamationCircleIcon className="w-5 h-5 text-red-600" />
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white">Confirm Delete</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+            <div className="flex items-center space-x-2 mb-4">
+              <ExclamationCircleIcon className="w-6 h-6 text-red-600" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Confirm Delete</h3>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
               Are you sure you want to delete this role? This action cannot be undone.
             </p>
-            <div className="flex space-x-2">
+            <div className="flex space-x-3">
               <button
                 onClick={() => handleDeleteRole(deleteConfirm)}
-                disabled={isLoading.delete === deleteConfirm}
-                className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-3 py-1.5 rounded-md text-sm font-medium"
+                disabled={isLoading.delete}
+                className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
               >
-                {isLoading.delete === deleteConfirm ? 'Deleting...' : 'Delete'}
+                {isLoading.delete ? 'Deleting...' : 'Delete'}
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600"
+                className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
               >
                 Cancel
               </button>
             </div>
           </div>
         </div>
+      )}
+      {editRole && activeSection === 'list' && (
+        <RoleCrud
+          token={token}
+          logout={logout}
+          roles={roles}
+          setRoles={setRoles}
+          editRole={editRole}
+          setEditRole={setEditRole}
+          showCreateForm={false}
+          setShowCreateForm={() => {}}
+          setMessage={setMessage}
+          setIsSuccess={setIsSuccess}
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
+          loadRoles={loadRoles}
+        />
       )}
     </div>
   );
