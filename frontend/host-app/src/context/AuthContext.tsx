@@ -87,25 +87,29 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   };
 
   useEffect(() => {
-    const initializeAuth = async () => {
+    const initializeAuth = () => {
       const storedToken = localStorage.getItem('authToken');
       const storedUser = localStorage.getItem('authUser');
 
       if (storedToken && storedUser) {
         try {
-          setToken(storedToken);
           const parsedUser = JSON.parse(storedUser);
-          setUser({
+          const normalizedUser = {
             ...parsedUser,
             _id: parsedUser._id || parsedUser.id || '',
             name: parsedUser.name || 'User',
+            email: parsedUser.email || '',
+            user_type: parsedUser.user_type || 'worker',
+            role_id: parsedUser.role_id || null,
             logoUrl: parsedUser.logoUrl || '',
             store_name: parsedUser.store_name || '',
             store_logo: parsedUser.store_logo || '',
-          });
+          };
+          setToken(storedToken);
+          setUser(normalizedUser);
           setIsAuthenticated(true);
           console.log('Token loaded from localStorage:', storedToken);
-          await refreshUserProfile(storedToken); // Single call on init
+          console.log('User loaded from localStorage:', normalizedUser);
         } catch (error) {
           console.error('Error parsing user data:', error);
           logout();
@@ -116,6 +120,12 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
     initializeAuth();
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      refreshUserProfile(token);
+    }
+  }, [isAuthenticated, token]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -157,8 +167,6 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       setUser(normalizedUser);
       setIsAuthenticated(true);
       console.log('Auth state updated, token stored:', token);
-
-      await refreshUserProfile(token); // Single call after login
     } catch (error) {
       console.error('Login error:', error);
       setProfileError(error.message || 'Login failed');
