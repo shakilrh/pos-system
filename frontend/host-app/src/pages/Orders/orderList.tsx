@@ -92,35 +92,35 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
 };
 
 export default function OrderList({
-                                    orders,
-                                    page,
-                                    itemsPerPage,
-                                    totalPages,
-                                    setPage,
-                                    setItemsPerPage,
-                                    searchTerm,
-                                    setSearchTerm,
-                                    statusFilter,
-                                    setStatusFilter,
-                                    sortConfig,
-                                    setSortConfig,
-                                    preparationTime,
-                                    setPreparationTime,
-                                    message,
-                                    setMessage,
-                                    token,
-                                    logout,
-                                    onViewDetails,
-                                    setOrders,
-                                    queueData,
-                                  }: OrderListProps) {
+  orders,
+  page,
+  itemsPerPage,
+  totalPages,
+  setPage,
+  setItemsPerPage,
+  searchTerm,
+  setSearchTerm,
+  statusFilter,
+  setStatusFilter,
+  sortConfig,
+  setSortConfig,
+  preparationTime,
+  setPreparationTime,
+  message,
+  setMessage,
+  token,
+  logout,
+  onViewDetails,
+  setOrders,
+  queueData,
+}: OrderListProps) {
   const [outerActiveTab, setOuterActiveTab] = useState('physical');
   const [activeTab, setActiveTab] = useState('to_be_prepared');
   const [showModal, setShowModal] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [messageTimeout, setMessageTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [timeLeft, setTimeLeft] = useState<{ [key: string]: number }>({}); // Fixed destructuring
+  const [timeLeft, setTimeLeft] = useState<{ [key: string]: number }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [queueCountdowns, setQueueCountdowns] = useState<{ [key: string]: number }>({});
   const [blink, setBlink] = useState(false);
@@ -135,10 +135,38 @@ export default function OrderList({
   ];
 
   const tabs = [
-    { key: 'to_be_prepared', label: 'To Be Prepared', color: 'bg-green-500', lightColor: 'bg-green-100', textColor: 'text-green-700', borderColor: 'border-green-300' },
-    { key: 'ready', label: 'Ready', color: 'bg-blue-500', lightColor: 'bg-blue-100', textColor: 'text-blue-700', borderColor: 'border-blue-300' },
-    { key: 'cancelled', label: 'Cancelled', color: 'bg-red-500', lightColor: 'bg-red-100', textColor: 'text-red-700', borderColor: 'border-red-300' },
-    { key: 'completed', label: 'Completed', color: 'bg-orange-500', lightColor: 'bg-orange-100', textColor: 'text-orange-700', borderColor: 'border-orange-300' },
+    {
+      key: 'to_be_prepared',
+      label: 'To Be Prepared',
+      color: 'bg-[var(--success-color)]',
+      lightColor: 'bg-[var(--background-secondary)]',
+      textColor: 'text-[var(--text-secondary)]',
+      borderColor: 'border-[var(--border-color)]'
+    },
+    {
+      key: 'ready',
+      label: 'Ready',
+      color: 'bg-[var(--primary-color)]',
+      lightColor: 'bg-[var(--background-secondary)]',
+      textColor: 'text-[var(--text-secondary)]',
+      borderColor: 'border-[var(--border-color)]'
+    },
+    {
+      key: ' cancelled',
+      label: 'Cancelled',
+      color: 'bg-[var(--error-color)]',
+      lightColor: 'bg-[var(--background-secondary)]',
+      textColor: 'text-[var(--text-secondary)]',
+      borderColor: 'border-[var(--border-color)]'
+    },
+    {
+      key: 'completed',
+      label: 'Completed',
+      color: 'bg-[var(--accent-color)]',
+      lightColor: 'bg-[var(--background-secondary)]',
+      textColor: 'text-[var(--text-secondary)]',
+      borderColor: 'border-[var(--border-color)]'
+    },
   ];
 
   useEffect(() => {
@@ -305,13 +333,12 @@ export default function OrderList({
     if (timeLeft && order.status.toLowerCase() === 'processing') {
       return (
         <div
-          className={`flex items-center space-x-1 px-2 py-1 rounded-full border text-xs ${
-            timeLeft.isOverdue
+          className={`flex items-center space-x-1 px-2 py-1 rounded-full border text-xs ${timeLeft.isOverdue
               ? 'bg-red-100 border-red-300 text-red-800'
               : timeLeft.isUrgent
                 ? 'bg-yellow-100 border-yellow-300 text-yellow-800'
                 : 'bg-blue-100 border-blue-300 text-blue-700'
-          }`}
+            }`}
         >
           <span className="font-medium">
             {timeLeft.isOverdue ? '⏰ OVERDUE' : timeLeft.isUrgent ? '⚠️' : '⏰'} {timeLeft.formattedTime}
@@ -340,11 +367,10 @@ export default function OrderList({
       <div className="h-10 mb-4">
         {message && (
           <div
-            className={`p-2 bg-red-100 rounded-lg shadow-sm border-l-4 ${
-              blink && activeTab === 'to_be_prepared'
+            className={`p-2 bg-red-100 rounded-lg shadow-sm border-l-4 ${blink && activeTab === 'to_be_prepared'
                 ? 'border-yellow-500 bg-yellow-100 text-yellow-700'
                 : 'border-red-500 text-red-700'
-            } h-full flex items-center text-sm`}
+              } h-full flex items-center text-sm`}
           >
             {message}
           </div>
@@ -363,11 +389,11 @@ export default function OrderList({
                     setActiveTab(tab.key);
                     setPage(1);
                   }}
-                  className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    activeTab === tab.key
-                      ? `${tab.color} text-white shadow-md transform scale-105`
-                      : `${tab.lightColor} ${tab.textColor} hover:scale-102`
-                  } text-sm`}
+                  className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm border
+                    ${activeTab === tab.key
+                      ? `${tab.color} text-white shadow-md transform scale-105 border-[var(--primary-600)] border-2`
+                      : `${tab.lightColor} ${tab.textColor} border-[var(--border-color)] hover:bg-[var(--border-hover)]`
+                    }`}
                 >
                   <div className="flex justify-between items-center">
                     <div className="flex items-center">
@@ -462,9 +488,8 @@ export default function OrderList({
             paginatedOrders.map((order) => (
               <div
                 key={order._id}
-                className={`bg-white rounded-lg shadow-sm border-l-4 ${currentTab?.borderColor} hover:shadow-md transition-shadow duration-200 ${
-                  order.notification_status === 0 ? 'ring-2 ring-blue-200' : ''
-                } p-3`}
+                className={`bg-white rounded-lg shadow-sm border-l-4 ${currentTab?.borderColor} hover:shadow-md transition-shadow duration-200 ${order.notification_status === 0 ? 'ring-2 ring-blue-200' : ''
+                  } p-3`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -509,11 +534,10 @@ export default function OrderList({
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                     </span>
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        order.payment_status === 'paid'
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${order.payment_status === 'paid'
                           ? 'bg-green-100 text-green-700 border-green-300'
                           : 'bg-gray-100 text-gray-700 border-gray-300'
-                      }`}
+                        }`}
                     >
                       {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
                     </span>
@@ -653,11 +677,10 @@ export default function OrderList({
                     <button
                       key={pageNumber}
                       onClick={() => setPage(pageNumber)}
-                      className={`px-3 py-2 border rounded-md text-sm transition-colors ${
-                        pageNumber === page
+                      className={`px-3 py-2 border rounded-md text-sm transition-colors ${pageNumber === page
                           ? `${currentTab?.color} text-white border-transparent`
                           : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       {pageNumber}
                     </button>

@@ -5,6 +5,7 @@ import OrderList from './orderList';
 import createOrder from './createOrder';
 import { getAllOrders, getOrderQueue } from '../../services/orderService';
 import { Order } from './orderTypes';
+import OrderDetails from './OrderDetails';
 
 export default function Orders() {
   const { isAuthenticated, isLoading, token, logout } = useAuth();
