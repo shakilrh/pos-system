@@ -67,11 +67,11 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen }: Side
         <div className="w-10 h-10 mr-3 rounded-full animate-pulse" style={{ backgroundColor: 'var(--sidebar-bg-hover)' }} />
       ) : (
         <img
-          src={user?.logoUrl || '/fallback-avatar.png'}
+          src={user.user?.logoUrl || '/fallback-avatar.png'}
           alt="User avatar"
           className="w-10 h-10 mr-3 rounded-full object-cover border-2"
           style={{ borderColor: 'var(--primary-color)' }}
-          onError={(e) => { e.currentTarget.src = '/fallback-avatar.png'; }}
+          onError={(e) => { e.currentTarget.src = './file.svg'; }}
         />
       )}
       <div className="overflow-hidden">

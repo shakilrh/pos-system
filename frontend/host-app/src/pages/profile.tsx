@@ -20,16 +20,18 @@ export default function Profile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const storeLogoInputRef = useRef<HTMLInputElement>(null);
 
+  console.log('Profile component rendered with user:', user.user);
+
   useEffect(() => {
     if (token) fetchProfile();
   }, [token]);
 
   useEffect(() => {
-    setName(user?.name || '');
-    setEmail(user?.email || '');
-    setLogo(user?.logoUrl || '');
-    setStoreName(user?.store_name || '');
-    setStoreLogo(user?.store_logo || '');
+    setName(user.user?.name || '');
+    setEmail(user.user?.email || '');
+    setLogo(user.user?.logoUrl || '');
+    setStoreName(user.user?.store_name || '');
+    setStoreLogo(user.user?.store_logo || '');
   }, [user]);
 
   const fetchProfile = async (retryCount = 1) => {
@@ -42,6 +44,7 @@ export default function Profile() {
     setError(null);
     try {
       const userData = await fetchUserProfile(token, logout);
+      console.log('Fetched user profile:', userData);
       setUser(userData);
       setName(userData.name || '');
       setEmail(userData.email || '');
@@ -112,7 +115,7 @@ export default function Profile() {
   };
 
   const handleLogoSave = async () => {
-    if (!token || !logoFile || !user?._id) return;
+    if (!token || !logoFile ) return;
     setLoading(true);
     setError(null);
     try {
@@ -142,11 +145,12 @@ export default function Profile() {
   };
 
   const handleStoreLogoSave = async () => {
-    if (!token || !storeLogoFile || !user?._id) return;
+    if (!token || !storeLogoFile ) return;
     setLoading(true);
     setError(null);
     try {
       const formData = new FormData();
+      console.log('Form data before appending store logo:', formData);
       formData.append('store_logo', storeLogoFile);
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
         method: 'PUT',
@@ -172,7 +176,7 @@ export default function Profile() {
   };
 
   const handleNameSave = async () => {
-    if (!token || !name.trim() || !user?._id) return;
+    if (!token || !name.trim() ) return;
     setLoading(true);
     setError(null);
     try {
@@ -202,7 +206,7 @@ export default function Profile() {
   };
 
   const handleStoreNameSave = async () => {
-    if (!token || !storeName.trim() || !user?._id) return;
+    if (!token || !storeName.trim() ) return;
     setLoading(true);
     setError(null);
     try {
@@ -239,7 +243,7 @@ export default function Profile() {
   };
 
   const handlePasswordSave = async () => {
-    if (!token || !password || !user?._id) return;
+    if (!token || !password ) return;
 
     const validation = validatePassword(password);
     if (!validation.minLength) {
