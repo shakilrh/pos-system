@@ -30,7 +30,7 @@ interface OrderListProps {
   logout: () => void;
   onViewDetails: (order: Order) => void;
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
-  queueData: QueueOrder[] | any; // Allow any type as a fallback
+  queueData: QueueOrder[] | any;
 }
 
 const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessage, activeTab }: any) => {
@@ -92,28 +92,28 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
 };
 
 export default function OrderList({
-  orders,
-  page,
-  itemsPerPage,
-  totalPages,
-  setPage,
-  setItemsPerPage,
-  searchTerm,
-  setSearchTerm,
-  statusFilter,
-  setStatusFilter,
-  sortConfig,
-  setSortConfig,
-  preparationTime,
-  setPreparationTime,
-  message,
-  setMessage,
-  token,
-  logout,
-  onViewDetails,
-  setOrders,
-  queueData,
-}: OrderListProps) {
+                                    orders,
+                                    page,
+                                    itemsPerPage,
+                                    totalPages,
+                                    setPage,
+                                    setItemsPerPage,
+                                    searchTerm,
+                                    setSearchTerm,
+                                    statusFilter,
+                                    setStatusFilter,
+                                    sortConfig,
+                                    setSortConfig,
+                                    preparationTime,
+                                    setPreparationTime,
+                                    message,
+                                    setMessage,
+                                    token,
+                                    logout,
+                                    onViewDetails,
+                                    setOrders,
+                                    queueData,
+                                  }: OrderListProps) {
   const [outerActiveTab, setOuterActiveTab] = useState('physical');
   const [activeTab, setActiveTab] = useState('to_be_prepared');
   const [showModal, setShowModal] = useState(false);
@@ -132,45 +132,27 @@ export default function OrderList({
 
   const outerTabs = [
     { key: 'physical', label: 'Physical Orders', color: 'bg-blue-600', lightColor: 'bg-blue-100', textColor: 'text-blue-700' },
+    { key: 'online', label: 'Online Orders', color: 'bg-purple-600', lightColor: 'bg-purple-100', textColor: 'text-purple-700' },
   ];
 
-  const tabs = [
-    {
-      key: 'to_be_prepared',
-      label: 'To Be Prepared',
-      color: 'bg-[var(--success-color)]',
-      lightColor: 'bg-[var(--background-secondary)]',
-      textColor: 'text-[var(--text-secondary)]',
-      borderColor: 'border-[var(--border-color)]'
-    },
-    {
-      key: 'ready',
-      label: 'Ready',
-      color: 'bg-[var(--primary-color)]',
-      lightColor: 'bg-[var(--background-secondary)]',
-      textColor: 'text-[var(--text-secondary)]',
-      borderColor: 'border-[var(--border-color)]'
-    },
-    {
-      key: ' cancelled',
-      label: 'Cancelled',
-      color: 'bg-[var(--error-color)]',
-      lightColor: 'bg-[var(--background-secondary)]',
-      textColor: 'text-[var(--text-secondary)]',
-      borderColor: 'border-[var(--border-color)]'
-    },
-    {
-      key: 'completed',
-      label: 'Completed',
-      color: 'bg-[var(--accent-color)]',
-      lightColor: 'bg-[var(--background-secondary)]',
-      textColor: 'text-[var(--text-secondary)]',
-      borderColor: 'border-[var(--border-color)]'
-    },
+  const physicalTabs = [
+    { key: 'to_be_prepared', label: 'To Be Prepared', color: 'bg-green-500', lightColor: 'bg-green-100', textColor: 'text-green-700', borderColor: 'border-green-300' },
+    { key: 'ready', label: 'Ready', color: 'bg-blue-500', lightColor: 'bg-blue-100', textColor: 'text-blue-700', borderColor: 'border-blue-300' },
+    { key: 'cancelled', label: 'Cancelled', color: 'bg-red-500', lightColor: 'bg-red-100', textColor: 'text-red-700', borderColor: 'border-red-300' },
+    { key: 'completed', label: 'Completed', color: 'bg-orange-500', lightColor: 'bg-orange-100', textColor: 'text-orange-700', borderColor: 'border-orange-300' },
   ];
+
+  const onlineTabs = [
+    { key: 'pending', label: 'Pending', color: 'bg-yellow-500', lightColor: 'bg-yellow-100', textColor: 'text-yellow-700', borderColor: 'border-yellow-300' },
+    { key: 'to_be_prepared', label: 'To Be Prepared', color: 'bg-green-500', lightColor: 'bg-green-100', textColor: 'text-green-700', borderColor: 'border-green-300' },
+    { key: 'ready', label: 'Ready', color: 'bg-blue-500', lightColor: 'bg-blue-100', textColor: 'text-blue-700', borderColor: 'border-blue-300' },
+    { key: 'cancelled', label: 'Cancelled', color: 'bg-red-500', lightColor: 'bg-red-100', textColor: 'text-red-700', borderColor: 'border-red-300' },
+    { key: 'completed', label: 'Completed', color: 'bg-orange-500', lightColor: 'bg-orange-100', textColor: 'text-orange-700', borderColor: 'border-orange-300' },
+  ];
+
+  const tabs = outerActiveTab === 'physical' ? physicalTabs : onlineTabs;
 
   useEffect(() => {
-    // Initialize countdowns from queueData
     if (Array.isArray(queueData)) {
       const countdowns: { [key: string]: number } = {};
       queueData.forEach((item: QueueOrder) => {
@@ -218,8 +200,8 @@ export default function OrderList({
   }, [message, setMessage]);
 
   const filteredOrdersByType = React.useMemo(
-    () => orders.filter((order) => order.order_type === 'physical' || !order.order_type),
-    [orders]
+    () => orders.filter((order) => order.order_type === outerActiveTab || !order.order_type),
+    [orders, outerActiveTab]
   );
 
   const handlePaymentOrderSelect = (order: Order) => {
@@ -234,6 +216,7 @@ export default function OrderList({
 
   const groupedOrders = React.useMemo(() => {
     const groups: Record<string, Order[]> = {
+      pending: [],
       to_be_prepared: [],
       ready: [],
       cancelled: [],
@@ -242,7 +225,8 @@ export default function OrderList({
 
     filteredOrdersByType.forEach((order) => {
       const status = order.status.toLowerCase();
-      if (status === 'processing') groups.to_be_prepared.push(order);
+      if (status === 'pending' && outerActiveTab === 'online') groups.pending.push(order);
+      else if (status === 'processing') groups.to_be_prepared.push(order);
       else if (status === 'ready') groups.ready.push(order);
       else if (status === 'cancelled') groups.cancelled.push(order);
       else if (status === 'picked') groups.completed.push(order);
@@ -253,12 +237,12 @@ export default function OrderList({
     );
 
     return groups;
-  }, [filteredOrdersByType]);
+  }, [filteredOrdersByType, outerActiveTab]);
 
   const filteredOrders = React.useMemo(() => {
     const ordersInActiveTab = groupedOrders[activeTab] || [];
     let filtered = ordersInActiveTab;
-    if (activeTab === 'to_be_prepared') {
+    if (activeTab === 'to_be_prepared' || activeTab === 'pending') {
       filtered = ordersInActiveTab.filter(
         (order) =>
           order.customer_name?.toLowerCase().includes(preparationSearchTerm.toLowerCase()) ||
@@ -280,6 +264,7 @@ export default function OrderList({
 
   const mapStatusToTab = (status: string): string => {
     const statusMap: Record<string, string> = {
+      pending: 'pending',
       processing: 'to_be_prepared',
       ready: 'ready',
       cancelled: 'cancelled',
@@ -291,6 +276,29 @@ export default function OrderList({
   const getTabUnreadCount = (tabKey: string): number => {
     const currentTabOrders = groupedOrders[tabKey] || [];
     return currentTabOrders.filter((order) => order.notification_status === 0).length;
+  };
+
+  const getTimeDisplay = (order: Order) => {
+    const timeLeft = getQueueTimeLeft(order.order_number);
+    if (timeLeft && order.status.toLowerCase() === 'processing') {
+      return (
+        <div
+          className={`flex items-center space-x-1 px-2 py-1 rounded-full border text-xs ${
+            timeLeft.isOverdue
+              ? 'bg-red-100 border-red-300 text-red-800'
+              : timeLeft.isUrgent
+                ? 'bg-yellow-100 border-yellow-300 text-yellow-800'
+                : 'bg-blue-100 border-blue-300 text-blue-700'
+          }`}
+        >
+          <span className="font-medium">
+            {timeLeft.isOverdue ? '⏰ OVERDUE' : timeLeft.isUrgent ? '⚠️' : '⏰'} {timeLeft.formattedTime}
+          </span>
+          <span className="text-xs opacity-75">| {timeLeft.estimatedTime}</span>
+        </div>
+      );
+    }
+    return null;
   };
 
   const getQueueTimeLeft = (orderNumber: string) => {
@@ -322,39 +330,29 @@ export default function OrderList({
 
   const getStatusBadge = (status: string) =>
     ({
+      pending: 'bg-yellow-100 text-yellow-700 border-yellow-300',
       processing: 'bg-blue-100 text-blue-700 border-blue-300',
       ready: 'bg-blue-100 text-blue-700 border-blue-300',
       cancelled: 'bg-red-100 text-red-700 border-red-300',
       picked: 'bg-orange-100 text-orange-700 border-orange-300',
     })[status.toLowerCase()] || 'bg-gray-100 text-gray-700 border-gray-300';
 
-  const getTimeDisplay = (order: Order) => {
-    const timeLeft = getQueueTimeLeft(order.order_number);
-    if (timeLeft && order.status.toLowerCase() === 'processing') {
-      return (
-        <div
-          className={`flex items-center space-x-1 px-2 py-1 rounded-full border text-xs ${timeLeft.isOverdue
-              ? 'bg-red-100 border-red-300 text-red-800'
-              : timeLeft.isUrgent
-                ? 'bg-yellow-100 border-yellow-300 text-yellow-800'
-                : 'bg-blue-100 border-blue-300 text-blue-700'
-            }`}
-        >
-          <span className="font-medium">
-            {timeLeft.isOverdue ? '⏰ OVERDUE' : timeLeft.isUrgent ? '⚠️' : '⏰'} {timeLeft.formattedTime}
-          </span>
-          <span className="text-xs opacity-75">| {timeLeft.estimatedTime}</span>
-        </div>
-      );
-    }
-    return null;
-  };
-
   const currentTab = tabs.find((tab) => tab.key === activeTab);
 
   const handleNotificationClick = (tabKey: string) => {
     setSelectedNotificationTab(tabKey);
     setShowModal(true);
+  };
+
+  const getMessageStyles = (message: string) => {
+    if (message.includes('Failed') || message.includes('Please log in')) {
+      return 'border-red-500 bg-red-100 text-red-700';
+    } else if (message.includes('Order #') && (message.includes('ready') || message.includes('picked'))) {
+      return 'border-green-500 bg-green-100 text-green-700';
+    } else if (message.includes('Overdue') || message.includes('needs to be ready')) {
+      return 'border-yellow-500 bg-yellow-100 text-yellow-700';
+    }
+    return 'border-gray-500 bg-gray-100 text-gray-700';
   };
 
   return (
@@ -364,13 +362,34 @@ export default function OrderList({
         <div className="text-sm text-gray-500">Total Orders: {filteredOrders.length}</div>
       </div>
 
+      <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
+        <div className="flex flex-wrap gap-2 mb-4">
+          {outerTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => {
+                setOuterActiveTab(tab.key);
+                setActiveTab(tab.key === 'physical' ? 'to_be_prepared' : 'pending');
+                setPage(1);
+              }}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                outerActiveTab === tab.key
+                  ? `${tab.color} text-white shadow-md transform scale-105`
+                  : `${tab.lightColor} ${tab.textColor} hover:scale-102`
+              } text-sm`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="h-10 mb-4">
         {message && (
           <div
-            className={`p-2 bg-red-100 rounded-lg shadow-sm border-l-4 ${blink && activeTab === 'to_be_prepared'
-                ? 'border-yellow-500 bg-yellow-100 text-yellow-700'
-                : 'border-red-500 text-red-700'
-              } h-full flex items-center text-sm`}
+            className={`p-2 rounded-lg shadow-sm border-l-4 ${getMessageStyles(
+              message
+            )} h-full flex items-center text-sm ${blink && activeTab === 'to_be_prepared' ? 'animate-pulse' : ''}`}
           >
             {message}
           </div>
@@ -389,11 +408,11 @@ export default function OrderList({
                     setActiveTab(tab.key);
                     setPage(1);
                   }}
-                  className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm border
-                    ${activeTab === tab.key
-                      ? `${tab.color} text-white shadow-md transform scale-105 border-[var(--primary-600)] border-2`
-                      : `${tab.lightColor} ${tab.textColor} border-[var(--border-color)] hover:bg-[var(--border-hover)]`
-                    }`}
+                  className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    activeTab === tab.key
+                      ? `${tab.color} text-white shadow-md transform scale-105`
+                      : `${tab.lightColor} ${tab.textColor} hover:scale-102`
+                  } text-sm`}
                 >
                   <div className="flex justify-between items-center">
                     <div className="flex items-center">
@@ -430,6 +449,18 @@ export default function OrderList({
             searchTerm={preparationSearchTerm}
             setSearchTerm={setPreparationSearchTerm}
             statusFilter="processing"
+          />
+        </div>
+      )}
+
+      {(activeTab === 'pending' && outerActiveTab === 'online') && (
+        <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
+          <OrderSearch
+            orders={orders}
+            onOrderSelect={handlePreparationOrderSelect}
+            searchTerm={preparationSearchTerm}
+            setSearchTerm={setPreparationSearchTerm}
+            statusFilter="pending"
           />
         </div>
       )}
@@ -488,8 +519,9 @@ export default function OrderList({
             paginatedOrders.map((order) => (
               <div
                 key={order._id}
-                className={`bg-white rounded-lg shadow-sm border-l-4 ${currentTab?.borderColor} hover:shadow-md transition-shadow duration-200 ${order.notification_status === 0 ? 'ring-2 ring-blue-200' : ''
-                  } p-3`}
+                className={`bg-white rounded-lg shadow-sm border-l-4 ${currentTab?.borderColor} hover:shadow-md transition-shadow duration-200 ${
+                  order.notification_status === 0 ? 'ring-2 ring-blue-200' : ''
+                } p-3`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -534,10 +566,11 @@ export default function OrderList({
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                     </span>
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${order.payment_status === 'paid'
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        order.payment_status === 'paid'
                           ? 'bg-green-100 text-green-700 border-green-300'
                           : 'bg-gray-100 text-gray-700 border-gray-300'
-                        }`}
+                      }`}
                     >
                       {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
                     </span>
@@ -648,7 +681,7 @@ export default function OrderList({
         />
       )}
 
-      {outerActiveTab === 'physical' && filteredOrders.length > 8 && (
+      {outerActiveTab === 'physical' && filteredOrders.length > 0 && (
         <div className="mt-6 bg-white rounded-lg shadow-sm p-3">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
             <div className="text-sm text-gray-500">
@@ -658,10 +691,15 @@ export default function OrderList({
             <div className="flex items-center space-x-3">
               <select
                 value={itemsPerPage}
-                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setPage(1);
+                }}
                 className="p-2 border border-gray-300 rounded-md bg-white text-gray-800 text-sm focus:ring-2 focus:ring-blue-500"
               >
-                <option value={8}>8 per page</option>
+                <option value={10}>10 per page</option>
+                <option value={50}>50 per page</option>
+                <option value={80}>80 per page</option>
               </select>
               <div className="flex space-x-1">
                 <button
@@ -677,10 +715,11 @@ export default function OrderList({
                     <button
                       key={pageNumber}
                       onClick={() => setPage(pageNumber)}
-                      className={`px-3 py-2 border rounded-md text-sm transition-colors ${pageNumber === page
+                      className={`px-3 py-2 border rounded-md text-sm transition-colors ${
+                        pageNumber === page
                           ? `${currentTab?.color} text-white border-transparent`
                           : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'
-                        }`}
+                      }`}
                     >
                       {pageNumber}
                     </button>

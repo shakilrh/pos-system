@@ -5,7 +5,6 @@ import OrderList from './orderList';
 import createOrder from './createOrder';
 import { getAllOrders, getOrderQueue } from '../../services/orderService';
 import { Order } from './orderTypes';
-import OrderDetails from './OrderDetails';
 
 export default function Orders() {
   const { isAuthenticated, isLoading, token, logout } = useAuth();
@@ -53,12 +52,30 @@ export default function Orders() {
           items: order.items || []
         })));
         setTotalPages(Math.ceil(filteredOrders.length / itemsPerPage));
-        // Extract the correct array from the queue response
-        setQueueData(queue.data.data || []);
+
+        // Safe access to queue data with multiple fallbacks
+        let queueArray = [];
+        if (queue && typeof queue === 'object') {
+          // Handle different possible response structures
+          if (Array.isArray(queue)) {
+            queueArray = queue;
+          } else if (queue.data && Array.isArray(queue.data.data)) {
+            queueArray = queue.data.data;
+          } else if (queue.data && Array.isArray(queue.data)) {
+            queueArray = queue.data;
+          } else if (Array.isArray(queue.data)) {
+            queueArray = queue.data;
+          }
+        }
+
+        setQueueData(queueArray);
+        console.log('Queue data set:', queueArray);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch orders';
         setMessage(errorMessage);
         console.error('Failed to fetch orders', error);
+        // Set empty queue data on error to prevent further errors
+        setQueueData([]);
       }
     };
 
