@@ -54,22 +54,28 @@ const UserRole: React.FC<UserRoleProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-md shadow-md border border-gray-200 dark:border-gray-700">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+    <div className="rounded-md shadow-md border" style={{ backgroundColor: 'var(--surface-color)', borderColor: 'var(--border-color)' }}>
+      <div className="p-4 border-b" style={{ borderColor: 'var(--border-color)' }}>
         <div className="flex items-center space-x-2">
-          <UserIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Assign Role to User</h3>
+          <UserIcon className="w-5 h-5" style={{ color: 'var(--accent-color)' }} />
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Assign Role to User</h3>
         </div>
       </div>
       <div className="p-4">
         <form onSubmit={handleAssignRole} className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select User *</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Select User *</label>
               <select
                 value={assignRoleData.user_id}
                 onChange={(e) => setAssignRoleData({ ...assignRoleData, user_id: e.target.value })}
-                className="w-full p-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500"
+                className="w-full p-2 text-sm rounded-md border focus:ring-2"
+                style={{
+                  borderColor: 'var(--border-color)',
+                  backgroundColor: 'var(--background-color)',
+                  color: 'var(--text-color)',
+                  outlineColor: 'var(--focus-ring)'
+                }}
                 required
               >
                 <option value="" disabled>Select User</option>
@@ -81,11 +87,17 @@ const UserRole: React.FC<UserRoleProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Role *</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Select Role *</label>
               <select
                 value={assignRoleData.role_id}
                 onChange={(e) => setAssignRoleData({ ...assignRoleData, role_id: e.target.value })}
-                className="w-full p-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500"
+                className="w-full p-2 text-sm rounded-md border focus:ring-2"
+                style={{
+                  borderColor: 'var(--border-color)',
+                  backgroundColor: 'var(--background-color)',
+                  color: 'var(--text-color)',
+                  outlineColor: 'var(--focus-ring)'
+                }}
                 required
               >
                 <option value="" disabled>Select Role</option>
@@ -99,11 +111,17 @@ const UserRole: React.FC<UserRoleProps> = ({
             <button
               type="submit"
               disabled={isLoading.assign}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white px-3 py-1.5 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="px-3 py-1.5 rounded-md text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200"
+              style={{
+                backgroundColor: isLoading.assign ? 'var(--primary-600)' : 'var(--primary-color)',
+                color: 'var(--text-on-primary)',
+                cursor: isLoading.assign ? 'not-allowed' : 'pointer',
+                '--tw-ring-color': 'var(--focus-ring)'
+              } as React.CSSProperties}
             >
               {isLoading.assign ? (
                 <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style={{color: 'var(--text-on-primary)'}}>
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>

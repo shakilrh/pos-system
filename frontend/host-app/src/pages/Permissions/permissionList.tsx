@@ -130,32 +130,32 @@ const PermissionList: React.FC<PermissionListProps> = ({
   };
 
   return (
-    <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+    <div className="p-6 bg-[--background-color] text-[--text-color] rounded-lg shadow-lg border border-[--border-color]">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="relative w-full sm:w-72">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search Permissions</label>
+          <label className="block text-sm font-medium text-[--text-secondary] mb-2">Search Permissions</label>
           <div className="relative">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full p-2.5 pl-10 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors duration-200"
+              className="w-full p-2.5 pl-10 text-sm rounded-lg border border-[--border-color] bg-[--background-color] text-[--text-color] focus:ring-2 focus:ring-[--focus-ring] transition-colors duration-200"
               placeholder="Search by key or description..."
             />
-            <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+            <MagnifyingGlassIcon className="w-5 h-5 text-[--text-secondary] absolute left-3 top-1/2 transform -translate-y-1/2" />
           </div>
         </div>
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setExpandedGroups(new Set(filteredPermissions.map(group => group.id)))}
-            className="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
+            className="text-sm text-[--info-color] hover:opacity-80"
           >
             Expand All
           </button>
-          <span className="text-gray-300">|</span>
+          <span className="text-[--border-color]">|</span>
           <button
             onClick={() => setExpandedGroups(new Set())}
-            className="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
+            className="text-sm text-[--info-color] hover:opacity-80"
           >
             Collapse All
           </button>
@@ -165,23 +165,23 @@ const PermissionList: React.FC<PermissionListProps> = ({
       {isLoading.fetch ? (
         <div className="space-y-3">
           {Array(4).fill(0).map((_, idx) => (
-            <div key={idx} className="animate-pulse h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+            <div key={idx} className="animate-pulse h-12 bg-[--background-secondary] rounded-lg"></div>
           ))}
         </div>
       ) : filteredPermissions.length === 0 ? (
         <div className="text-center py-10">
-          <KeyIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">No permissions found</p>
+          <KeyIcon className="w-12 h-12 text-[--text-secondary] mx-auto mb-4" />
+          <p className="text-sm text-[--text-secondary]">No permissions found</p>
         </div>
       ) : (
         <div className="space-y-3">
           {currentGroups.map(group => (
-            <div key={group.id} className="border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
-              <div className="p-3 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 flex items-center justify-between">
+            <div key={group.id} className="border border-[--border-color] rounded-lg bg-[--surface-color]">
+              <div className="p-3 border-b border-[--border-color] bg-[--background-secondary] flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => toggleGroup(group.id)}
-                    className="flex items-center space-x-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200"
+                    className="flex items-center space-x-2 text-sm font-medium text-[--primary-color] hover:opacity-80"
                   >
                     {expandedGroups.has(group.id) ? (
                       <ChevronDownIcon className="w-4 h-4" />
@@ -191,14 +191,14 @@ const PermissionList: React.FC<PermissionListProps> = ({
                     <span>{group.key}</span>
                   </button>
                   {group.isMainPage && (
-                    <span className="text-xs text-indigo-500 dark:text-indigo-300">(Main Access)</span>
+                    <span className="text-xs text-[--info-color]">(Main Access)</span>
                   )}
                 </div>
                 {group.isMainPage && (
                   <div className="flex space-x-4">
                     <button
                       onClick={() => setEditPermission({ _id: group.id, key: group.key, description: group.description })}
-                      className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
+                      className="text-[--primary-color] hover:opacity-80"
                       title="Edit permission"
                     >
                       <PencilIcon className="w-5 h-5" />
@@ -206,7 +206,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
                     <button
                       onClick={() => setDeleteConfirm(group.id)}
                       disabled={isLoading.delete === group.id}
-                      className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
+                      className="text-[--error-color] hover:text-[--error-color-hover] disabled:opacity-50"
                       title="Delete permission"
                     >
                       {isLoading.delete === group.id ? (
@@ -226,15 +226,15 @@ const PermissionList: React.FC<PermissionListProps> = ({
                   {group.subPermissions.map(permission => (
                     <div
                       key={permission._id}
-                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-md ml-4 border-l-2 border-gray-300 dark:border-gray-600"
+                      className="flex items-center justify-between p-2 bg-[--surface-secondary] rounded-md ml-4 border-l-2 border-[--border-color]"
                     >
                       <div
-                        className="text-sm text-gray-600 dark:text-gray-400 cursor-pointer hover:underline"
+                        className="text-sm text-[--text-color] cursor-pointer hover:underline"
                         onClick={() => handlePermissionClick(permission)}
                       >
                         {permission.key || 'N/A'}
                         {permission.description && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          <p className="text-xs text-[--text-secondary] mt-1">
                             {permission.description}
                           </p>
                         )}
@@ -242,7 +242,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
                       <div className="flex space-x-4">
                         <button
                           onClick={() => setEditPermission(permission)}
-                          className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
+                          className="text-[--primary-color] hover:opacity-80"
                           title="Edit permission"
                         >
                           <PencilIcon className="w-5 h-5" />
@@ -250,7 +250,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
                         <button
                           onClick={() => setDeleteConfirm(permission._id)}
                           disabled={isLoading.delete === permission._id}
-                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
+                          className="text-[--error-color] hover:text-[--error-color-hover] disabled:opacity-50"
                           title="Delete permission"
                         >
                           {isLoading.delete === permission._id ? (
@@ -277,7 +277,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
           <button
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 text-sm rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-50 transition-colors duration-200"
+            className="px-4 py-2 text-sm rounded-lg bg-[--background-secondary] text-[--text-color] hover:bg-[--border-hover] disabled:opacity-50 transition-colors duration-200"
           >
             Previous
           </button>
@@ -287,8 +287,8 @@ const PermissionList: React.FC<PermissionListProps> = ({
               onClick={() => setCurrentPage(page)}
               className={`px-4 py-2 text-sm rounded-lg ${
                 currentPage === page
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500'
+                  ? 'bg-[--primary-color] text-white'
+                  : 'bg-[--background-secondary] text-[--text-color] hover:bg-[--border-hover]'
               } transition-colors duration-200`}
             >
               {page}
@@ -297,7 +297,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
           <button
             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
             disabled={currentPage === totalPages}
-            className="px-4 py-2 text-sm rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-50 transition-colors duration-200"
+            className="px-4 py-2 text-sm rounded-lg bg-[--background-secondary] text-[--text-color] hover:bg-[--border-hover] disabled:opacity-50 transition-colors duration-200"
           >
             Next
           </button>
@@ -306,27 +306,27 @@ const PermissionList: React.FC<PermissionListProps> = ({
 
       {selectedPermission && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between items-center mb-5 border-b border-gray-200 dark:border-gray-600 pb-3">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Permission Details</h3>
-              <button onClick={closeModal} className="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400">
+          <div className="bg-[--background-color] rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl border border-[--border-color]">
+            <div className="flex justify-between items-center mb-5 border-b border-[--border-color] pb-3">
+              <h3 className="text-xl font-bold text-[--text-color]">Permission Details</h3>
+              <button onClick={closeModal} className="text-[--text-secondary] hover:text-[--error-color]">
                 <XMarkIcon className="w-6 h-6" />
               </button>
             </div>
             <div className="space-y-4 text-sm">
               <div className="flex justify-between">
-                <span className="font-medium text-gray-700 dark:text-gray-300">Key:</span>
-                <span className="text-gray-900 dark:text-gray-100">{selectedPermission.key || 'N/A'}</span>
+                <span className="font-medium text-[--text-secondary]">Key:</span>
+                <span className="text-[--text-color]">{selectedPermission.key || 'N/A'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-medium text-gray-700 dark:text-gray-300">Description:</span>
-                <span className="text-gray-900 dark:text-gray-100">{selectedPermission.description || 'N/A'}</span>
+                <span className="font-medium text-[--text-secondary]">Description:</span>
+                <span className="text-[--text-color]">{selectedPermission.description || 'N/A'}</span>
               </div>
             </div>
             <div className="mt-6 flex justify-end">
               <button
                 onClick={closeModal}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200"
+                className="px-4 py-2 bg-[--primary-color] text-white rounded-lg hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-[--focus-ring] transition-colors duration-200"
               >
                 Close
               </button>

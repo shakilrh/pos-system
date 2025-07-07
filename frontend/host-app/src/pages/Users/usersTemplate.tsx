@@ -132,7 +132,13 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
   };
 
   return (
-    <div className="space-y-6 p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div
+      className="space-y-6 p-6 min-h-screen"
+      style={{
+        backgroundColor: 'var(--surface-color)',
+        color: 'var(--text-color)',
+      }}
+    >
       {message && (
         <FlashMessage
           message={message}
@@ -140,13 +146,19 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
           onClose={() => setMessage(null)}
         />
       )}
-      <div className="flex flex-col sm:flex-row sm:gap-4 border-b border-gray-200 dark:border-gray-700">
+      <div
+        className="flex flex-col sm:flex-row sm:gap-4 border-b"
+        style={{
+          borderColor: 'var(--border-color)',
+        }}
+      >
         <button
-          className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
-            activeSection === 'list'
-              ? 'bg-indigo-600 text-white border-b-2 border-indigo-600'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700'
-          }`}
+          style={{
+            background: activeSection === 'list' ? 'var(--primary-color)' : 'var(--surface-color)',
+            color: activeSection === 'list' ? 'var(--surface-color)' : 'var(--text-secondary)',
+            borderBottom: activeSection === 'list' ? '2px solid var(--primary-color)' : '2px solid transparent',
+          }}
+          className="flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
           onClick={() => {
             setActiveSection('list');
             setEditUser(null);
@@ -157,11 +169,12 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
           <span>User List</span>
         </button>
         <button
-          className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
-            activeSection === 'add'
-              ? 'bg-indigo-600 text-white border-b-2 border-indigo-600'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700'
-          }`}
+          style={{
+            background: activeSection === 'add' ? 'var(--primary-color)' : 'var(--surface-color)',
+            color: activeSection === 'add' ? 'var(--surface-color)' : 'var(--text-secondary)',
+            borderBottom: activeSection === 'add' ? '2px solid var(--primary-color)' : '2px solid transparent',
+          }}
+          className="flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
           onClick={() => {
             setActiveSection('add');
             setEditUser(null);
@@ -172,11 +185,12 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
           <span>Add User</span>
         </button>
         <button
-          className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
-            activeSection === 'role'
-              ? 'bg-indigo-600 text-white border-b-2 border-indigo-600'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700'
-          }`}
+          style={{
+            background: activeSection === 'role' ? 'var(--primary-color)' : 'var(--surface-color)',
+            color: activeSection === 'role' ? 'var(--surface-color)' : 'var(--text-secondary)',
+            borderBottom: activeSection === 'role' ? '2px solid var(--primary-color)' : '2px solid transparent',
+          }}
+          className="flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
           onClick={() => {
             setActiveSection('role');
             setEditUser(null);
@@ -187,6 +201,7 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
           <span>Assign Role</span>
         </button>
       </div>
+      {/* ...rest of the code remains unchanged... */}
       {activeSection === 'add' && (
         <UserCrud
           token={token}
@@ -240,25 +255,42 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
       )}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+          <div
+            className="rounded-lg p-6 w-full max-w-md mx-4 shadow-xl"
+            style={{
+              backgroundColor: 'var(--surface-color)',
+              color: 'var(--text-color)',
+            }}
+          >
             <div className="flex items-center space-x-2 mb-4">
-              <ExclamationCircleIcon className="w-6 h-6 text-red-600" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Confirm Delete</h3>
+              <ExclamationCircleIcon className="w-6 h-6" style={{ color: 'var(--error-color)' }} />
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>
+                Confirm Delete
+              </h3>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
               Are you sure you want to delete this user? This action cannot be undone.
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={() => handleDeleteUser(deleteConfirm)}
                 disabled={isLoading.delete}
-                className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                style={{
+                  backgroundColor: 'var(--error-color)',
+                  color: 'var(--surface-color)',
+                }}
+                className="flex-1 hover:opacity-90 disabled:opacity-60 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
               >
                 {isLoading.delete ? 'Deleting...' : 'Delete'}
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+                style={{
+                  borderColor: 'var(--border-color)',
+                  color: 'var(--text-secondary)',
+                  backgroundColor: 'var(--surface-color)',
+                }}
+                className="flex-1 border px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-colors duration-200"
               >
                 Cancel
               </button>
@@ -275,7 +307,7 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
           setUsers={setUsers}
           setFilteredUsers={setFilteredUsers}
           showCreateForm={false}
-          setShowCreateForm={() => {}}
+          setShowCreateForm={() => { }}
           editUser={editUser}
           setEditUser={setEditUser}
           originalUser={originalUser}
@@ -290,6 +322,7 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
       )}
     </div>
   );
+
 };
 
 export default UsersTemplate;
