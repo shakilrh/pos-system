@@ -88,53 +88,55 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({
           <style>
             body {
               font-family: Arial, sans-serif;
-              margin: 20px;
+              margin: 15px;
               background: white;
+              font-size: 14px;
             }
             .receipt-container {
-              max-width: 400px;
+              max-width: 320px;
               margin: 0 auto;
               background: white;
-              padding: 20px;
+              padding: 15px;
               border: 2px solid #f59e0b;
               border-radius: 8px;
             }
             .receipt-header {
               text-align: center;
-              margin-bottom: 20px;
+              margin-bottom: 15px;
               color: #d97706;
-              font-size: 24px;
+              font-size: 20px;
               font-weight: bold;
             }
             .receipt-details {
               border-bottom: 2px solid #f59e0b;
-              padding-bottom: 15px;
-              margin-bottom: 15px;
+              padding-bottom: 10px;
+              margin-bottom: 10px;
             }
             .receipt-details p {
-              margin: 5px 0;
-              font-size: 16px;
+              margin: 3px 0;
+              font-size: 14px;
             }
             .items-title {
-              font-size: 18px;
+              font-size: 16px;
               font-weight: bold;
               color: #b45309;
-              margin-bottom: 10px;
+              margin-bottom: 8px;
             }
             .items-table {
               width: 100%;
               border-collapse: collapse;
-              margin-bottom: 15px;
+              margin-bottom: 10px;
+              font-size: 13px;
             }
             .items-table th {
               background-color: #fef3c7;
-              padding: 8px;
+              padding: 5px;
               text-align: left;
               border-bottom: 2px solid #f59e0b;
               color: #92400e;
             }
             .items-table td {
-              padding: 8px;
+              padding: 5px;
               border-bottom: 1px solid #fde68a;
             }
             .items-table th:nth-child(2), .items-table td:nth-child(2) {
@@ -145,22 +147,22 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({
               text-align: right;
             }
             .receipt-total {
-              margin-top: 15px;
-              padding-top: 15px;
+              margin-top: 10px;
+              padding-top: 10px;
               border-top: 2px solid #f59e0b;
             }
             .total-amount {
-              font-size: 20px;
+              font-size: 18px;
               font-weight: bold;
               text-align: right;
               color: #b45309;
             }
             .change-amount {
-              font-size: 18px;
+              font-size: 16px;
               font-weight: bold;
               text-align: right;
               color: #059669;
-              margin-top: 5px;
+              margin-top: 3px;
             }
             @media print {
               body { margin: 0; }
@@ -228,87 +230,100 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-h-[90vh] overflow-y-auto border-4 border-yellow-400">
-        <div ref={printRef}>
-          <h2 className="text-2xl font-bold mb-4 text-center text-yellow-600">{title}</h2>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="bg-white rounded-lg shadow-2xl w-80 max-h-[90vh] overflow-y-auto border-2 border-amber-400 transform transition-all duration-300 scale-105">
+          <div ref={printRef}>
+            {/* Header with gradient background */}
+            <div className="bg-gradient-to-r from-amber-400 to-orange-400 text-white p-3 rounded-t-lg">
+              <h2 className="text-lg font-bold text-center">{title}</h2>
+            </div>
 
-          <div className="border-b-2 border-yellow-400 pb-4 mb-4">
-            <p className="text-lg"><strong>Order #:</strong> {order.order_number}</p>
-            <p className="text-lg"><strong>Customer:</strong> {order.customer_name}</p>
-            <p className="text-lg"><strong>Type:</strong> {order.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}</p>
-            <p className="text-lg"><strong>Payment:</strong> {order.payment_status}</p>
-            {shouldShowPaymentMethod && (
-              <p className="text-lg"><strong>Method:</strong> {paymentMethod.toUpperCase()}</p>
-            )}
-            {order.estimated_completion && (
-              <p className="text-lg"><strong>Est. Completion:</strong> {order.estimated_completion}</p>
-            )}
-          </div>
-
-          <div className="mb-4">
-            <h3 className="text-xl font-semibold mb-2 text-yellow-700">Items:</h3>
-            <table className="w-full text-sm">
-              <thead>
-              <tr className="bg-yellow-100 border-b-2 border-yellow-400">
-                <th className="text-left py-2 text-yellow-800">Item</th>
-                <th className="text-center py-2 text-yellow-800">Qty</th>
-                <th className="text-right py-2 text-yellow-800">Price</th>
-                <th className="text-right py-2 text-yellow-800">Total</th>
-              </tr>
-              </thead>
-              <tbody>
-              {order.items.map((item) => (
-                <tr key={item.product_id} className="border-b border-yellow-200 hover:bg-yellow-50">
-                  <td className="py-2 text-gray-800">{item.product?.name || 'Unknown Item'}</td>
-                  <td className="text-center py-2 text-gray-800">{item.quantity}</td>
-                  <td className="text-right py-2 text-gray-800">${(item.product?.price || 0).toFixed(2)}</td>
-                  <td className="text-right py-2 text-gray-800">${(item.sub_total || 0).toFixed(2)}</td>
-                </tr>
-              ))}
-              </tbody>
-            </table>
-
-            <div className="mt-2 pt-2 border-t-2 border-yellow-400">
-              <p className="text-xl font-bold text-right text-yellow-700">
-                Total: ${order.total_amount.toFixed(2)}
-              </p>
-              {changeAmount > 0 && isPaymentProcessed && (
-                <p className="text-xl text-right text-green-600 font-bold">
-                  Change: ${changeAmount.toFixed(2)}
-                </p>
+            {/* Order details section */}
+            <div className="p-4 space-y-1 bg-amber-50 border-b border-amber-200">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">Order #:</span>
+                <span className="text-sm font-bold text-amber-700">{order.order_number}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">Customer:</span>
+                <span className="text-sm text-gray-800">{order.customer_name}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">Type:</span>
+                <span className="text-sm text-gray-800">{order.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">Payment:</span>
+                <span className="text-sm capitalize text-green-600 font-semibold">{order.payment_status}</span>
+              </div>
+              {shouldShowPaymentMethod && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Method:</span>
+                    <span className="text-sm text-gray-800 uppercase">{paymentMethod}</span>
+                  </div>
+              )}
+              {order.estimated_completion && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Est. Completion:</span>
+                    <span className="text-sm text-gray-800">{order.estimated_completion}</span>
+                  </div>
               )}
             </div>
+
+            {/* Items section */}
+            <div className="p-4">
+              <h3 className="text-sm font-bold mb-2 text-amber-700 border-b border-amber-200 pb-1">Items Ordered</h3>
+              <div className="space-y-2">
+                {order.items.map((item) => (
+                    <div key={item.product_id} className="flex justify-between items-center py-1 border-b border-gray-100 last:border-b-0">
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-gray-800">{item.product?.name || 'Unknown Item'}</span>
+                        <span className="text-xs text-gray-500 ml-2">x{item.quantity}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-semibold text-gray-800">${(item.sub_total || 0).toFixed(2)}</div>
+                        <div className="text-xs text-gray-500">${(item.product?.price || 0).toFixed(2)} each</div>
+                      </div>
+                    </div>
+                ))}
+              </div>
+
+              {/* Total section */}
+              <div className="mt-3 pt-3 border-t-2 border-amber-400 bg-amber-50 rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-bold text-amber-800">Total:</span>
+                  <span className="text-lg font-bold text-amber-800">${order.total_amount.toFixed(2)}</span>
+                </div>
+                {changeAmount > 0 && isPaymentProcessed && (
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-sm font-semibold text-green-600">Change:</span>
+                      <span className="text-sm font-semibold text-green-600">${changeAmount.toFixed(2)}</span>
+                    </div>
+                )}
+              </div>
+            </div>
           </div>
+
+          {/* Action buttons */}
+          {showButtons && (
+              <div className="p-4 flex gap-2 bg-gray-50 rounded-b-lg border-t border-gray-200">
+                <button
+                    onClick={handlePrint}
+                    className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg transition-colors text-sm font-semibold flex items-center justify-center gap-2"
+                >
+                  <PrinterIcon className="w-4 h-4" />
+                  Print
+                </button>
+                <button
+                    onClick={onClose}
+                    className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition-colors text-sm font-semibold"
+                >
+                  Close
+                </button>
+              </div>
+          )}
         </div>
-
-        {showButtons && (
-          <div className="mt-4 flex justify-between gap-2">
-            <button
-              onClick={handlePrint}
-              className="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-lg font-semibold"
-            >
-              <PrinterIcon className="w-6 h-6 inline-block mr-2" />
-              Print Receipt
-            </button>
-            <button
-              onClick={onClose}
-              className="flex-1 bg-blue-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-blue-300 transition-colors text-lg font-semibold"
-            >
-              Close
-            </button>
-          </div>
-        )}
-
-        {autoClose && (
-          <div className="mt-4 text-center">
-            <p className="text-sm text-gray-600">
-              This dialog will close automatically in {autoCloseDelay / 1000} seconds...
-            </p>
-          </div>
-        )}
       </div>
-    </div>
   );
 };
 
