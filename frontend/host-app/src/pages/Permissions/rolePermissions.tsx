@@ -49,7 +49,6 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
 
     // Create groups for parent permissions
     parentPermissions.forEach(parent => {
-      const prefix = parent.key.toLowerCase().replace('_access', '');
       groups.push({
         id: parent._id,
         key: parent.key,
@@ -215,12 +214,12 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
   const totalCount = permissions.length;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+    <div className="bg-[--background-color] text-[--text-color] rounded-lg shadow-md border border-[--border-color]">
+      <div className="p-6 border-b border-[--border-color]">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <UserGroupIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <UserGroupIcon className="w-6 h-6 text-[--primary-color]" />
+            <h3 className="text-xl font-semibold">
               Assign Permissions to Roles
             </h3>
           </div>
@@ -229,14 +228,14 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
               <div className="flex items-center space-x-2">
                 <button
                   onClick={expandAll}
-                  className="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
+                  className="text-sm text-[--primary-color] hover:text-[--primary-700]"
                 >
                   Expand All
                 </button>
-                <span className="text-gray-300">|</span>
+                <span className="text-[--text-secondary]">|</span>
                 <button
                   onClick={collapseAll}
-                  className="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
+                  className="text-sm text-[--primary-color] hover:text-[--primary-700]"
                 >
                   Collapse All
                 </button>
@@ -246,8 +245,8 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
                   onClick={() => setViewMode('hierarchical')}
                   className={`px-3 py-1 text-sm rounded-md ${
                     viewMode === 'hierarchical'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200'
+                      ? 'bg-[--primary-color] text-white'
+                      : 'bg-[--background-secondary] text-[--text-color]'
                   }`}
                 >
                   Hierarchical
@@ -256,8 +255,8 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
                   onClick={() => setViewMode('flat')}
                   className={`px-3 py-1 text-sm rounded-md ${
                     viewMode === 'flat'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200'
+                      ? 'bg-[--primary-color] text-white'
+                      : 'bg-[--background-secondary] text-[--text-color]'
                   }`}
                 >
                   Flat
@@ -271,7 +270,7 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
       <div className="p-6 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-[--text-color] mb-1">
               Select Role
             </label>
             <select
@@ -284,7 +283,7 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
                 setSearchQuery('');
                 setCurrentPage(1);
               }}
-              className="w-full p-2.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors duration-200"
+              className="w-full p-2.5 text-sm rounded-lg border border-[--border-color] bg-[--background-color] text-[--text-color] focus:ring-2 focus:ring-[--primary-color] transition-colors duration-200"
             >
               <option value="">Choose a role</option>
               {Array.isArray(roles) &&
@@ -298,7 +297,7 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
 
           {selectedRole && (
             <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-[--text-color] mb-1">
                 Search Permissions
               </label>
               <div className="relative">
@@ -309,10 +308,10 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
                     setSearchQuery(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full p-2.5 pl-10 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors duration-200"
+                  className="w-full p-2.5 pl-10 text-sm rounded-lg border border-[--border-color] bg-[--background-color] text-[--text-color] focus:ring-2 focus:ring-[--primary-color] transition-colors duration-200"
                   placeholder="Search by key or description..."
                 />
-                <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                <MagnifyingGlassIcon className="w-5 h-5 text-[--text-secondary] absolute left-3 top-1/2 transform -translate-y-1/2" />
               </div>
             </div>
           )}
@@ -321,17 +320,17 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
         {selectedRole && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h4 className="text-lg font-semibold text-[--text-color]">
                 Permissions for "{roles.find((r) => r._id === selectedRole)?.name}"
               </h4>
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-sm text-[--text-secondary]">
                   {selectedCount} of {totalCount} permissions selected
                 </span>
                 {selectedCount > 0 && (
-                  <div className="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                  <div className="w-24 bg-[--border-color] rounded-full h-2">
                     <div
-                      className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-[--primary-color] h-2 rounded-full transition-all duration-300"
                       style={{ width: `${(selectedCount / totalCount) * 100}%` }}
                     />
                   </div>
@@ -339,10 +338,10 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
               </div>
             </div>
 
-            <div className="max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900">
+            <div className="max-h-96 overflow-y-auto border border-[--border-color] rounded-lg bg-[--background-secondary]">
               {filteredPermissions.length === 0 ? (
                 <div className="p-8 text-center">
-                  <p className="text-gray-500 dark:text-gray-400">
+                  <p className="text-[--text-secondary]">
                     No permissions found matching your search.
                   </p>
                 </div>
@@ -350,12 +349,12 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
                 <div className="p-4 space-y-3">
                   {viewMode === 'hierarchical' ? (
                     filteredPermissions.map((group) => (
-                      <div key={group.id} className="border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
-                        <div className="p-3 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                      <div key={group.id} className="border border-[--border-color] rounded-lg bg-[--surface-color]">
+                        <div className="p-3 border-b border-[--border-color] bg-[--surface-secondary]">
                           <div className="flex items-center space-x-3">
                             <button
                               onClick={() => toggleGroup(group.id)}
-                              className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400"
+                              className="flex items-center space-x-2 text-sm font-medium text-[--text-color] hover:text-[--primary-color]"
                             >
                               {expandedGroups.has(group.id) ? (
                                 <ChevronDownIcon className="w-4 h-4" />
@@ -372,16 +371,16 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
                                   if (el) el.indeterminate = isGroupPartiallySelected(group);
                                 }}
                                 onChange={(e) => handleGroupToggle(group, e.target.checked)}
-                                className="h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500"
+                                className="h-4 w-4 text-[--primary-color] border-[--border-color] rounded focus:ring-[--primary-color]"
                                 disabled={isLoading.roleUpdate}
                               />
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                              <span className="text-xs text-[--text-secondary]">
                                 Select All ({1 + (group.subPermissions?.length || 0)})
                               </span>
                             </div>
                           </div>
                           {group.description && (
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 ml-6">
+                            <p className="text-xs text-[--text-secondary] mt-1 ml-6">
                               {group.description}
                             </p>
                           )}
@@ -390,19 +389,19 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
                         {expandedGroups.has(group.id) && (
                           <div className="p-3 space-y-2">
                             {group.isMainPage && (
-                              <div className="flex items-start space-x-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+                              <div className="flex items-start space-x-3 p-2 bg-[--info-color] bg-opacity-10 rounded-md border border-[--info-color] border-opacity-30">
                                 <input
                                   type="checkbox"
                                   checked={rolePermissions.includes(group.id)}
                                   onChange={(e) => handlePermissionToggle(group.id, e.target.checked)}
-                                  className="h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 mt-0.5"
+                                  className="h-4 w-4 text-[--primary-color] border-[--border-color] rounded focus:ring-[--primary-color] mt-0.5"
                                   disabled={isLoading.roleUpdate}
                                 />
                                 <div className="flex-1">
-                                  <label className="text-sm font-medium text-indigo-700 dark:text-indigo-300 cursor-pointer">
+                                  <label className="text-sm font-medium text-[--info-color] cursor-pointer">
                                     {group.key} (Main Access)
                                   </label>
-                                  <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                                  <p className="text-xs text-[--info-color] opacity-80 mt-1">
                                     Controls access to the main page/feature
                                   </p>
                                 </div>
@@ -412,21 +411,21 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
                             {group.subPermissions?.map((subPermission) => (
                               <div
                                 key={subPermission.id}
-                                className="flex items-start space-x-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-md ml-4 border-l-2 border-gray-300 dark:border-gray-600"
+                                className="flex items-start space-x-3 p-2 bg-[--background-secondary] rounded-md ml-4 border-l-2 border-[--border-color]"
                               >
                                 <input
                                   type="checkbox"
                                   checked={rolePermissions.includes(subPermission.id)}
                                   onChange={(e) => handlePermissionToggle(subPermission.id, e.target.checked)}
-                                  className="h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 mt-0.5"
+                                  className="h-4 w-4 text-[--primary-color] border-[--border-color] rounded focus:ring-[--primary-color] mt-0.5"
                                   disabled={isLoading.roleUpdate}
                                 />
                                 <div className="flex-1">
-                                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer">
+                                  <label className="text-sm font-medium text-[--text-color] cursor-pointer">
                                     {subPermission.key}
                                   </label>
                                   {subPermission.description && (
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                    <p className="text-xs text-[--text-secondary] mt-1">
                                       {subPermission.description}
                                     </p>
                                   )}
@@ -443,21 +442,21 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
                         group.isMainPage && (
                           <div
                             key={group.id}
-                            className="flex items-start space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800"
+                            className="flex items-start space-x-3 p-3 bg-[--info-color] bg-opacity-10 rounded-md border border-[--info-color] border-opacity-30"
                           >
                             <input
                               type="checkbox"
                               checked={rolePermissions.includes(group.id)}
                               onChange={(e) => handlePermissionToggle(group.id, e.target.checked)}
-                              className="h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 mt-0.5"
+                              className="h-4 w-4 text-[--primary-color] border-[--border-color] rounded focus:ring-[--primary-color] mt-0.5"
                               disabled={isLoading.roleUpdate}
                             />
                             <div className="flex-1">
-                              <label className="text-sm font-medium text-indigo-700 dark:text-indigo-300 cursor-pointer">
+                              <label className="text-sm font-medium text-[--info-color] cursor-pointer">
                                 {group.key} (Main Access)
                               </label>
                               {group.description && (
-                                <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                                <p className="text-xs text-[--info-color] opacity-80 mt-1">
                                   {group.description}
                                 </p>
                               )}
@@ -467,21 +466,21 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
                         ...(group.subPermissions?.map(subPermission => (
                           <div
                             key={subPermission.id}
-                            className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-md"
+                            className="flex items-start space-x-3 p-3 bg-[--background-secondary] rounded-md"
                           >
                             <input
                               type="checkbox"
                               checked={rolePermissions.includes(subPermission.id)}
                               onChange={(e) => handlePermissionToggle(subPermission.id, e.target.checked)}
-                              className="h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 mt-0.5"
+                              className="h-4 w-4 text-[--primary-color] border-[--border-color] rounded focus:ring-[--primary-color] mt-0.5"
                               disabled={isLoading.roleUpdate}
                             />
                             <div className="flex-1">
-                              <label className="text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer">
+                              <label className="text-sm font-medium text-[--text-color] cursor-pointer">
                                 {subPermission.key}
                               </label>
                               {subPermission.description && (
-                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                <p className="text-xs text-[--text-secondary] mt-1">
                                   {subPermission.description}
                                 </p>
                               )}
@@ -498,7 +497,7 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
             <button
               onClick={handleUpdateRolePermissions}
               disabled={isLoading.roleUpdate}
-              className="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white px-4 py-3 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200"
+              className="mt-6 w-full bg-[--primary-color] hover:bg-[--primary-600] disabled:bg-[--primary-color] disabled:opacity-50 text-white px-4 py-3 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[--focus-ring] transition-colors duration-200"
             >
               {isLoading.roleUpdate ? (
                 <span className="flex items-center justify-center">

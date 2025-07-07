@@ -24,25 +24,25 @@ interface UserCrudProps {
 }
 
 const UserCrud: React.FC<UserCrudProps> = ({
-                                             token,
-                                             logout,
-                                             users,
-                                             roles,
-                                             setUsers,
-                                             setFilteredUsers,
-                                             showCreateForm,
-                                             setShowCreateForm,
-                                             editUser,
-                                             setEditUser,
-                                             originalUser,
-                                             setOriginalUser,
-                                             setMessage,
-                                             setIsSuccess,
-                                             isLoading,
-                                             setIsLoading,
-                                             onCreateUser,
-                                             onUpdateUser,
-                                           }) => {
+  token,
+  logout,
+  users,
+  roles,
+  setUsers,
+  setFilteredUsers,
+  showCreateForm,
+  setShowCreateForm,
+  editUser,
+  setEditUser,
+  originalUser,
+  setOriginalUser,
+  setMessage,
+  setIsSuccess,
+  isLoading,
+  setIsLoading,
+  onCreateUser,
+  onUpdateUser,
+}) => {
   const [newUser, setNewUser] = React.useState<FormData>({
     name: '',
     email: '',
@@ -256,7 +256,7 @@ const UserCrud: React.FC<UserCrudProps> = ({
     e.preventDefault();
 
     const requiredFields = ['name', 'email', 'password'];
-    const allFields = ['name', 'email', 'password', 'phone_number', 'job_title', 'shift_time', 'salary Bolivia'];
+    const allFields = ['name', 'email', 'password', 'phone_number', 'job_title', 'shift_time', 'salary']; // Corrected 'salary Bolivia'
     setTouchedFields(new Set(allFields));
 
     const allErrors: any = {};
@@ -359,7 +359,7 @@ const UserCrud: React.FC<UserCrudProps> = ({
     return (
       <div className="mt-1 space-y-1">
         {errors.map((error, index) => (
-          <p key={index} className="text-red-500 text-xs flex items-start">
+          <p key={index} className="text-[var(--error-color)] text-xs flex items-start">
             <svg className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
@@ -375,14 +375,14 @@ const UserCrud: React.FC<UserCrudProps> = ({
     const isSubmitting = isEdit ? isLoading.update : isLoading.create;
 
     return (
-      <div ref={formRef} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 mb-6 shadow-sm">
+      <div ref={formRef} className="rounded-lg p-6 mb-6 shadow-sm" style={{ backgroundColor: 'var(--background-secondary)' }}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>
             {isEdit ? 'Edit User' : 'Create New User'}
           </h3>
           <button
             onClick={resetForm}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            style={{ color: 'var(--text-secondary)' }}
           >
             <XMarkIcon className="w-6 h-6" />
           </button>
@@ -391,7 +391,7 @@ const UserCrud: React.FC<UserCrudProps> = ({
         <form onSubmit={isEdit ? handleEditUser : handleCreateUser} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                 Name *
               </label>
               <input
@@ -400,11 +400,20 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 onChange={(e) => handleInputChange('name', e.target.value, isEdit)}
                 onFocus={() => handleFocus('name', isEdit)}
                 onBlur={() => handleBlur('name', isEdit)}
-                className={`w-full p-2.5 text-sm rounded-lg border ${
-                  formErrors.name && (Array.isArray(formErrors.name) ? formErrors.name.length > 0 : formErrors.name)
-                    ? 'border-red-500 ring-1 ring-red-500 bg-red-50 dark:bg-red-900/20'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-                } text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200`}
+                className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.name && (Array.isArray(formErrors.name) ? formErrors.name.length > 0 : formErrors.name)
+                    ? 'ring-1' // Classes for error state
+                    : ''
+                  }`}
+                style={{
+                  borderColor: formErrors.name && (Array.isArray(formErrors.name) ? formErrors.name.length > 0 : formErrors.name)
+                    ? 'var(--error-color)'
+                    : 'var(--border-color)',
+                  backgroundColor: formErrors.name && (Array.isArray(formErrors.name) ? formErrors.name.length > 0 : formErrors.name)
+                    ? 'var(--error-color-light)' // Assuming you might want a lighter error background
+                    : 'var(--background-color)',
+                  color: 'var(--text-color)',
+                  outlineColor: 'var(--focus-ring)' // This will be applied by the global focus style as well
+                }}
                 placeholder="Enter full name"
                 required
               />
@@ -412,7 +421,7 @@ const UserCrud: React.FC<UserCrudProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                 Email *
               </label>
               <input
@@ -421,11 +430,20 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 onChange={(e) => handleInputChange('email', e.target.value, isEdit)}
                 onFocus={() => handleFocus('email', isEdit)}
                 onBlur={() => handleBlur('email', isEdit)}
-                className={`w-full p-2.5 text-sm rounded-lg border ${
-                  formErrors.email && (Array.isArray(formErrors.email) ? formErrors.email.length > 0 : formErrors.email)
-                    ? 'border-red-500 ring-1 ring-red-500 bg-red-50 dark:bg-red-900/20'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-                } text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200`}
+                className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.email && (Array.isArray(formErrors.email) ? formErrors.email.length > 0 : formErrors.email)
+                    ? 'ring-1'
+                    : ''
+                  }`}
+                style={{
+                  borderColor: formErrors.email && (Array.isArray(formErrors.email) ? formErrors.email.length > 0 : formErrors.email)
+                    ? 'var(--error-color)'
+                    : 'var(--border-color)',
+                  backgroundColor: formErrors.email && (Array.isArray(formErrors.email) ? formErrors.email.length > 0 : formErrors.email)
+                    ? 'var(--error-color-light)'
+                    : 'var(--background-color)',
+                  color: 'var(--text-color)',
+                  outlineColor: 'var(--focus-ring)'
+                }}
                 placeholder="Enter email address"
                 required
               />
@@ -433,7 +451,7 @@ const UserCrud: React.FC<UserCrudProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                 {isEdit ? 'Password (Optional)' : 'Password *'}
               </label>
               <input
@@ -442,11 +460,20 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 onChange={(e) => handleInputChange('password', e.target.value, isEdit)}
                 onFocus={() => handleFocus('password', isEdit)}
                 onBlur={() => handleBlur('password', isEdit)}
-                className={`w-full p-2.5 text-sm rounded-lg border ${
-                  formErrors.password && (Array.isArray(formErrors.password) ? formErrors.password.length > 0 : formErrors.password)
-                    ? 'border-red-500 ring-1 ring-red-500 bg-red-50 dark:bg-red-900/20'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-                } text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200`}
+                className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.password && (Array.isArray(formErrors.password) ? formErrors.password.length > 0 : formErrors.password)
+                    ? 'ring-1'
+                    : ''
+                  }`}
+                style={{
+                  borderColor: formErrors.password && (Array.isArray(formErrors.password) ? formErrors.password.length > 0 : formErrors.password)
+                    ? 'var(--error-color)'
+                    : 'var(--border-color)',
+                  backgroundColor: formErrors.password && (Array.isArray(formErrors.password) ? formErrors.password.length > 0 : formErrors.password)
+                    ? 'var(--error-color-light)'
+                    : 'var(--background-color)',
+                  color: 'var(--text-color)',
+                  outlineColor: 'var(--focus-ring)'
+                }}
                 placeholder={isEdit ? 'Leave empty to keep current password' : 'Enter password'}
                 required={!isEdit}
               />
@@ -454,25 +481,36 @@ const UserCrud: React.FC<UserCrudProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                 User Type
               </label>
               <input
                 type="text"
                 value="Worker"
-                className="w-full p-2.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-gray-100 cursor-not-allowed"
+                className="w-full p-2.5 text-sm rounded-lg border cursor-not-allowed"
+                style={{
+                  borderColor: 'var(--border-color)',
+                  backgroundColor: 'var(--background-secondary)', // Use a themed background for disabled
+                  color: 'var(--text-secondary)' // Use a themed text color for disabled
+                }}
                 disabled
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                 Role (Optional)
               </label>
               <select
                 value={data?.role_id || ''}
                 onChange={(e) => handleInputChange('role_id', e.target.value, isEdit)}
-                className="w-full p-2.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200"
+                className="w-full p-2.5 text-sm rounded-lg border"
+                style={{
+                  borderColor: 'var(--border-color)',
+                  backgroundColor: 'var(--background-color)',
+                  color: 'var(--text-color)',
+                  outlineColor: 'var(--focus-ring)'
+                }}
               >
                 <option value="">Select Role</option>
                 {roles.map((role: Role) => (
@@ -482,7 +520,7 @@ const UserCrud: React.FC<UserCrudProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                 Phone Number (Optional)
               </label>
               <input
@@ -491,18 +529,27 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 onChange={(e) => handleInputChange('phone_number', e.target.value, isEdit)}
                 onFocus={() => handleFocus('phone_number', isEdit)}
                 onBlur={() => handleBlur('phone_number', isEdit)}
-                className={`w-full p-2.5 text-sm rounded-lg border ${
-                  formErrors.phone_number && (Array.isArray(formErrors.phone_number) ? formErrors.phone_number.length > 0 : formErrors.phone_number)
-                    ? 'border-red-500 ring-1 ring-red-500 bg-red-50 dark:bg-red-900/20'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-                } text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200`}
+                className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.phone_number && (Array.isArray(formErrors.phone_number) ? formErrors.phone_number.length > 0 : formErrors.phone_number)
+                    ? 'ring-1'
+                    : ''
+                  }`}
+                style={{
+                  borderColor: formErrors.phone_number && (Array.isArray(formErrors.phone_number) ? formErrors.phone_number.length > 0 : formErrors.phone_number)
+                    ? 'var(--error-color)'
+                    : 'var(--border-color)',
+                  backgroundColor: formErrors.phone_number && (Array.isArray(formErrors.phone_number) ? formErrors.phone_number.length > 0 : formErrors.phone_number)
+                    ? 'var(--error-color-light)'
+                    : 'var(--background-color)',
+                  color: 'var(--text-color)',
+                  outlineColor: 'var(--focus-ring)'
+                }}
                 placeholder="e.g., +1234567890"
               />
               {renderFieldErrors('phone_number')}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                 Job Title (Optional)
               </label>
               <input
@@ -511,18 +558,27 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 onChange={(e) => handleInputChange('job_title', e.target.value, isEdit)}
                 onFocus={() => handleFocus('job_title', isEdit)}
                 onBlur={() => handleBlur('job_title', isEdit)}
-                className={`w-full p-2.5 text-sm rounded-lg border ${
-                  formErrors.job_title && (Array.isArray(formErrors.job_title) ? formErrors.job_title.length > 0 : formErrors.job_title)
-                    ? 'border-red-500 ring-1 ring-red-500 bg-red-50 dark:bg-red-900/20'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-                } text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200`}
+                className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.job_title && (Array.isArray(formErrors.job_title) ? formErrors.job_title.length > 0 : formErrors.job_title)
+                    ? 'ring-1'
+                    : ''
+                  }`}
+                style={{
+                  borderColor: formErrors.job_title && (Array.isArray(formErrors.job_title) ? formErrors.job_title.length > 0 : formErrors.job_title)
+                    ? 'var(--error-color)'
+                    : 'var(--border-color)',
+                  backgroundColor: formErrors.job_title && (Array.isArray(formErrors.job_title) ? formErrors.job_title.length > 0 : formErrors.job_title)
+                    ? 'var(--error-color-light)'
+                    : 'var(--background-color)',
+                  color: 'var(--text-color)',
+                  outlineColor: 'var(--focus-ring)'
+                }}
                 placeholder="e.g., Chef, Server, Manager"
               />
               {renderFieldErrors('job_title')}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                 Shift Time (Optional)
               </label>
               <input
@@ -531,18 +587,27 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 onChange={(e) => handleInputChange('shift_time', e.target.value, isEdit)}
                 onFocus={() => handleFocus('shift_time', isEdit)}
                 onBlur={() => handleBlur('shift_time', isEdit)}
-                className={`w-full p-2.5 text-sm rounded-lg border ${
-                  formErrors.shift_time && (Array.isArray(formErrors.shift_time) ? formErrors.shift_time.length > 0 : formErrors.shift_time)
-                    ? 'border-red-500 ring-1 ring-red-500 bg-red-50 dark:bg-red-900/20'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-                } text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200`}
+                className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.shift_time && (Array.isArray(formErrors.shift_time) ? formErrors.shift_time.length > 0 : formErrors.shift_time)
+                    ? 'ring-1'
+                    : ''
+                  }`}
+                style={{
+                  borderColor: formErrors.shift_time && (Array.isArray(formErrors.shift_time) ? formErrors.shift_time.length > 0 : formErrors.shift_time)
+                    ? 'var(--error-color)'
+                    : 'var(--border-color)',
+                  backgroundColor: formErrors.shift_time && (Array.isArray(formErrors.shift_time) ? formErrors.shift_time.length > 0 : formErrors.shift_time)
+                    ? 'var(--error-color-light)'
+                    : 'var(--background-color)',
+                  color: 'var(--text-color)',
+                  outlineColor: 'var(--focus-ring)'
+                }}
                 placeholder="e.g., 9:00 AM - 5:00 PM"
               />
               {renderFieldErrors('shift_time')}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                 Salary (Optional)
               </label>
               <input
@@ -551,11 +616,20 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 onChange={(e) => handleInputChange('salary', e.target.value, isEdit)}
                 onFocus={() => handleFocus('salary', isEdit)}
                 onBlur={() => handleBlur('salary', isEdit)}
-                className={`w-full p-2.5 text-sm rounded-lg border ${
-                  formErrors.salary && (Array.isArray(formErrors.salary) ? formErrors.salary.length > 0 : formErrors.salary)
-                    ? 'border-red-500 ring-1 ring-red-500 bg-red-50 dark:bg-red-900/20'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-                } text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200`}
+                className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.salary && (Array.isArray(formErrors.salary) ? formErrors.salary.length > 0 : formErrors.salary)
+                    ? 'ring-1'
+                    : ''
+                  }`}
+                style={{
+                  borderColor: formErrors.salary && (Array.isArray(formErrors.salary) ? formErrors.salary.length > 0 : formErrors.salary)
+                    ? 'var(--error-color)'
+                    : 'var(--border-color)',
+                  backgroundColor: formErrors.salary && (Array.isArray(formErrors.salary) ? formErrors.salary.length > 0 : formErrors.salary)
+                    ? 'var(--error-color-light)'
+                    : 'var(--background-color)',
+                  color: 'var(--text-color)',
+                  outlineColor: 'var(--focus-ring)'
+                }}
                 placeholder="e.g., 50000"
                 min="0"
                 step="0.01"
@@ -568,11 +642,14 @@ const UserCrud: React.FC<UserCrudProps> = ({
             <button
               type="submit"
               disabled={isSubmitting || !isFormValid(isEdit)}
-              className={`flex-1 ${
-                isSubmitting || !isFormValid(isEdit)
-                  ? 'bg-indigo-400 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700'
-              } text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200`}
+              className={`flex-1 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200`}
+              style={{
+                backgroundColor: isSubmitting || !isFormValid(isEdit) ? 'var(--primary-600)' : 'var(--primary-color)',
+                cursor: isSubmitting || !isFormValid(isEdit) ? 'not-allowed' : 'pointer',
+                // Hover and active opacity are handled globally by styles.css
+                // Focus ring color is handled globally by styles.css
+                '--tw-ring-color': 'var(--focus-ring)' // Set ring color directly for Tailwind's ring utility
+              } as React.CSSProperties} // Cast to React.CSSProperties to allow custom CSS properties
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center">
@@ -589,7 +666,13 @@ const UserCrud: React.FC<UserCrudProps> = ({
             <button
               type="button"
               onClick={resetForm}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-200"
+              className="px-4 py-2 border rounded-lg text-sm font-medium transition-colors duration-200"
+              style={{
+                borderColor: 'var(--border-color)',
+                color: 'var(--text-secondary)',
+                backgroundColor: 'var(--background-color)',
+                // Hover and focus styles will be applied by global CSS and Tailwind utilities where applicable
+              }}
             >
               Cancel
             </button>
@@ -600,17 +683,25 @@ const UserCrud: React.FC<UserCrudProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 mt-6">
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+    <div className="rounded-lg shadow-md border mt-6"
+      style={{
+        backgroundColor: 'var(--surface-color)',
+        borderColor: 'var(--border-color)'
+      }}>
+      <div className="p-6 border-b" style={{ borderColor: 'var(--border-color)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <UserIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">User Management</h2>
+            <UserIcon className="w-6 h-6" style={{ color: 'var(--accent-color)' }} />
+            <h2 className="text-xl font-semibold" style={{ color: 'var(--text-color)' }}>User Management</h2>
           </div>
           {!showCreateForm && !editUser && (
             <button
               onClick={() => setShowCreateForm(true)}
-              className="flex items-center space-x-1 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200"
+              className="flex items-center space-x-1 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200"
+              style={{
+                backgroundColor: 'var(--primary-color)',
+                '--tw-ring-color': 'var(--focus-ring)'
+              } as React.CSSProperties}
             >
               <PlusIcon className="w-5 h-5" />
               <span>Add User</span>

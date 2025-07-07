@@ -85,7 +85,7 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
   };
 
   return (
-    <div className="space-y-6 p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="space-y-6 p-6 bg-[--background-color] min-h-screen text-[--text-color]">
       {message && (
         <FlashMessage
           message={message}
@@ -93,12 +93,12 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
           onClose={() => setMessage(null)}
         />
       )}
-      <div className="flex flex-col sm:flex-row sm:gap-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex flex-col sm:flex-row sm:gap-4 border-b border-[--border-color]">
         <button
           className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
             activeSection === 'list'
-              ? 'bg-indigo-600 text-white border-b-2 border-indigo-600'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700'
+              ? 'bg-[--primary-color] text-white border-b-2 border-[--primary-color]'
+              : 'bg-[--surface-color] text-[--text-secondary] hover:bg-[--background-secondary]'
           }`}
           onClick={() => {
             setActiveSection('list');
@@ -114,8 +114,8 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
         <button
           className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
             activeSection === 'add'
-              ? 'bg-indigo-600 text-white border-b-2 border-indigo-600'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700'
+              ? 'bg-[--primary-color] text-white border-b-2 border-[--primary-color]'
+              : 'bg-[--surface-color] text-[--text-secondary] hover:bg-[--background-secondary]'
           }`}
           onClick={() => {
             setActiveSection('add');
@@ -131,8 +131,8 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
         <button
           className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
             activeSection === 'assign'
-              ? 'bg-indigo-600 text-white border-b-2 border-indigo-600'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700'
+              ? 'bg-[--primary-color] text-white border-b-2 border-[--primary-color]'
+              : 'bg-[--surface-color] text-[--text-secondary] hover:bg-[--background-secondary]'
           }`}
           onClick={() => {
             setActiveSection('assign');
@@ -220,25 +220,25 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
       )}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+          <div className="bg-[--surface-color] rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
             <div className="flex items-center space-x-2 mb-4">
-              <ExclamationCircleIcon className="w-6 h-6 text-red-600" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Confirm Delete</h3>
+              <ExclamationCircleIcon className="w-6 h-6 text-[--error-color]" />
+              <h3 className="text-lg font-semibold text-[--text-color]">Confirm Delete</h3>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-sm text-[--text-secondary] mb-6">
               Are you sure you want to delete this permission? This action cannot be undone.
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={() => handleDeletePermission(deleteConfirm)}
                 disabled={isLoading.delete === deleteConfirm}
-                className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                className="flex-1 bg-[--error-color] hover:bg-[--error-color-hover] disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
               >
                 {isLoading.delete === deleteConfirm ? 'Deleting...' : 'Delete'}
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+                className="flex-1 border border-[--border-color] text-[--text-secondary] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[--background-secondary] transition-colors duration-200"
               >
                 Cancel
               </button>
