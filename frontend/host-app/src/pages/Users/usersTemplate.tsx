@@ -24,7 +24,8 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
     assign: false,
   });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<'add' | 'list' | 'role'>('list');
+  const [activeSection, setActiveSection] = useState<'list' | 'role'>('list');
+  const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
 
@@ -45,7 +46,7 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
         : true
     );
     setFilteredUsers(filtered);
-    setCurrentPage(1); // Reset to page 1 on search change
+    setCurrentPage(1);
   }, [searchQuery, users, roles]);
 
   const loadData = async () => {
@@ -94,7 +95,8 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
       setMessage('User created successfully!');
       setIsSuccess(true);
       await loadData();
-      setCurrentPage(1); // Reset to page 1 after creating user
+      setCurrentPage(1);
+      setShowCreateForm(false);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to create user');
       setIsSuccess(false);
@@ -146,63 +148,56 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
           onClose={() => setMessage(null)}
         />
       )}
-      <div
-        className="flex flex-col sm:flex-row sm:gap-4 border-b"
-        style={{
-          borderColor: 'var(--border-color)',
-        }}
-      >
+      <div className="flex justify-between items-center border-b" style={{ borderColor: 'var(--border-color)' }}>
+        <div className="flex flex-col sm:flex-row sm:gap-4">
+          <button
+            style={{
+              background: activeSection === 'list' ? 'var(--primary-color)' : 'var(--surface-color)',
+              color: activeSection === 'list' ? 'var(--surface-color)' : 'var(--text-secondary)',
+              borderBottom: activeSection === 'list' ? '2px solid var(--primary-color)' : '2px solid transparent',
+            }}
+            className="flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
+            onClick={() => {
+              setActiveSection('list');
+              setEditUser(null);
+              setOriginalUser(null);
+              setShowCreateForm(false);
+            }}
+          >
+            <UserIcon className="w-5 h-5" />
+            <span>User List</span>
+          </button>
+          <button
+            style={{
+              background: activeSection === 'role' ? 'var(--primary-color)' : 'var(--surface-color)',
+              color: activeSection === 'role' ? 'var(--surface-color)' : 'var(--text-secondary)',
+              borderBottom: activeSection === 'role' ? '2px solid var(--primary-color)' : '2px solid transparent',
+            }}
+            className="flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
+            onClick={() => {
+              setActiveSection('role');
+              setEditUser(null);
+              setOriginalUser(null);
+              setShowCreateForm(false);
+            }}
+          >
+            <UserIcon className="w-5 h-5" />
+            <span>Assign Role</span>
+          </button>
+        </div>
         <button
           style={{
-            background: activeSection === 'list' ? 'var(--primary-color)' : 'var(--surface-color)',
-            color: activeSection === 'list' ? 'var(--surface-color)' : 'var(--text-secondary)',
-            borderBottom: activeSection === 'list' ? '2px solid var(--primary-color)' : '2px solid transparent',
+            backgroundColor: 'var(--primary-color)',
+            color: 'var(--surface-color)',
           }}
-          className="flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
-          onClick={() => {
-            setActiveSection('list');
-            setEditUser(null);
-            setOriginalUser(null);
-          }}
-        >
-          <UserIcon className="w-5 h-5" />
-          <span>User List</span>
-        </button>
-        <button
-          style={{
-            background: activeSection === 'add' ? 'var(--primary-color)' : 'var(--surface-color)',
-            color: activeSection === 'add' ? 'var(--surface-color)' : 'var(--text-secondary)',
-            borderBottom: activeSection === 'add' ? '2px solid var(--primary-color)' : '2px solid transparent',
-          }}
-          className="flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
-          onClick={() => {
-            setActiveSection('add');
-            setEditUser(null);
-            setOriginalUser(null);
-          }}
+          className="flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 hover:opacity-90 focus:outline-none"
+          onClick={() => setShowCreateForm(true)}
         >
           <PlusIcon className="w-5 h-5" />
           <span>Add User</span>
         </button>
-        <button
-          style={{
-            background: activeSection === 'role' ? 'var(--primary-color)' : 'var(--surface-color)',
-            color: activeSection === 'role' ? 'var(--surface-color)' : 'var(--text-secondary)',
-            borderBottom: activeSection === 'role' ? '2px solid var(--primary-color)' : '2px solid transparent',
-          }}
-          className="flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
-          onClick={() => {
-            setActiveSection('role');
-            setEditUser(null);
-            setOriginalUser(null);
-          }}
-        >
-          <UserIcon className="w-5 h-5" />
-          <span>Assign Role</span>
-        </button>
       </div>
-      {/* ...rest of the code remains unchanged... */}
-      {activeSection === 'add' && (
+      {showCreateForm && (
         <UserCrud
           token={token}
           logout={logout}
@@ -210,8 +205,8 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
           roles={roles}
           setUsers={setUsers}
           setFilteredUsers={setFilteredUsers}
-          showCreateForm={activeSection === 'add'}
-          setShowCreateForm={(show: boolean) => setActiveSection(show ? 'add' : 'list')}
+          showCreateForm={showCreateForm}
+          setShowCreateForm={setShowCreateForm}
           editUser={editUser}
           setEditUser={setEditUser}
           originalUser={originalUser}
@@ -307,7 +302,7 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
           setUsers={setUsers}
           setFilteredUsers={setFilteredUsers}
           showCreateForm={false}
-          setShowCreateForm={() => { }}
+          setShowCreateForm={() => {}}
           editUser={editUser}
           setEditUser={setEditUser}
           originalUser={originalUser}
@@ -322,7 +317,6 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
       )}
     </div>
   );
-
 };
 
 export default UsersTemplate;

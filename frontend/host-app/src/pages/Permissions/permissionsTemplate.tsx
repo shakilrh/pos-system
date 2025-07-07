@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExclamationCircleIcon, KeyIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon, KeyIcon, UserGroupIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { fetchRoles } from '../../services/RoleService';
 import { fetchPermissions, deletePermission } from '../../services/PermissionService';
 import FlashMessage from '../FlashMessage';
@@ -25,7 +25,7 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
     roleUpdate: false,
   });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<'list' | 'add' | 'assign'>('list');
+  const [activeSection, setActiveSection] = useState<'list' | 'assign'>('list');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
 
@@ -93,60 +93,56 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
           onClose={() => setMessage(null)}
         />
       )}
-      <div className="flex flex-col sm:flex-row sm:gap-4 border-b border-[--border-color]">
+      <div className="flex justify-between items-center border-b border-[--border-color]">
+        <div className="flex flex-col sm:flex-row sm:gap-4">
+          <button
+            className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
+              activeSection === 'list'
+                ? 'bg-[--primary-color] text-white border-b-2 border-[--primary-color]'
+                : 'bg-[--surface-color] text-[--text-secondary] hover:bg-[--background-secondary]'
+            }`}
+            onClick={() => {
+              setActiveSection('list');
+              setEditPermission(null);
+              setShowCreateForm(false);
+              setSearchQuery('');
+              setCurrentPage(1);
+            }}
+          >
+            <KeyIcon className="w-5 h-5" />
+            <span>Permission List</span>
+          </button>
+          <button
+            className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
+              activeSection === 'assign'
+                ? 'bg-[--primary-color] text-white border-b-2 border-[--primary-color]'
+                : 'bg-[--surface-color] text-[--text-secondary] hover:bg-[--background-secondary]'
+            }`}
+            onClick={() => {
+              setActiveSection('assign');
+              setEditPermission(null);
+              setShowCreateForm(false);
+              setSearchQuery('');
+              setCurrentPage(1);
+            }}
+          >
+            <UserGroupIcon className="w-5 h-5" />
+            <span>Assign Role Permissions</span>
+          </button>
+        </div>
         <button
-          className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
-            activeSection === 'list'
-              ? 'bg-[--primary-color] text-white border-b-2 border-[--primary-color]'
-              : 'bg-[--surface-color] text-[--text-secondary] hover:bg-[--background-secondary]'
-          }`}
+          className="flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 hover:opacity-90 focus:outline-none bg-[--primary-color] text-white"
           onClick={() => {
-            setActiveSection('list');
-            setEditPermission(null);
-            setShowCreateForm(false);
-            setSearchQuery('');
-            setCurrentPage(1);
-          }}
-        >
-          <KeyIcon className="w-5 h-5" />
-          <span>Permission List</span>
-        </button>
-        <button
-          className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
-            activeSection === 'add'
-              ? 'bg-[--primary-color] text-white border-b-2 border-[--primary-color]'
-              : 'bg-[--surface-color] text-[--text-secondary] hover:bg-[--background-secondary]'
-          }`}
-          onClick={() => {
-            setActiveSection('add');
-            setEditPermission(null);
             setShowCreateForm(true);
-            setSearchQuery('');
-            setCurrentPage(1);
+            setEditPermission(null);
+            setActiveSection('list');
           }}
         >
-          <KeyIcon className="w-5 h-5" />
+          <PlusIcon className="w-5 h-5" />
           <span>Add Permission</span>
         </button>
-        <button
-          className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
-            activeSection === 'assign'
-              ? 'bg-[--primary-color] text-white border-b-2 border-[--primary-color]'
-              : 'bg-[--surface-color] text-[--text-secondary] hover:bg-[--background-secondary]'
-          }`}
-          onClick={() => {
-            setActiveSection('assign');
-            setEditPermission(null);
-            setShowCreateForm(false);
-            setSearchQuery('');
-            setCurrentPage(1);
-          }}
-        >
-          <UserGroupIcon className="w-5 h-5" />
-          <span>Assign Role Permissions</span>
-        </button>
       </div>
-      {activeSection === 'add' && (
+      {showCreateForm && (
         <PermissionCrud
           token={token}
           logout={logout}
@@ -177,7 +173,7 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
             currentPage={currentPage}
             setCurrentPage={setCurrentPage}
           />
-          {editPermission && (
+          {editPermission && !showCreateForm && (
             <PermissionCrud
               token={token}
               logout={logout}

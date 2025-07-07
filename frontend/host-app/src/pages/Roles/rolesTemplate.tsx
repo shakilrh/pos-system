@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExclamationCircleIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon, UserGroupIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { fetchRoles, deleteRole } from '../../services/RoleService';
 import FlashMessage from '../FlashMessage';
 import RoleList from './roleList';
@@ -18,7 +18,7 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
     delete: false,
   });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<'add' | 'list'>('list');
+  const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
 
@@ -72,22 +72,17 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
           onClose={() => setMessage(null)}
         />
       )}
-      <div
-        className="flex flex-col sm:flex-row sm:gap-4 border-b"
-        style={{
-          borderColor: 'var(--border-color)',
-        }}
-      >
+      <div className="flex justify-between items-center border-b" style={{ borderColor: 'var(--border-color)' }}>
         <button
           style={{
-            background: activeSection === 'list' ? 'var(--primary-color)' : 'var(--surface-color)',
-            color: activeSection === 'list' ? 'var(--surface-color)' : 'var(--text-secondary)',
-            borderBottom: activeSection === 'list' ? '2px solid var(--primary-color)' : '2px solid transparent',
+            background: 'var(--primary-color)',
+            color: 'var(--surface-color)',
+            borderBottom: '2px solid var(--primary-color)',
           }}
           className="flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
           onClick={() => {
-            setActiveSection('list');
             setEditRole(null);
+            setShowCreateForm(false);
           }}
         >
           <UserGroupIcon className="w-5 h-5" />
@@ -95,21 +90,17 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
         </button>
         <button
           style={{
-            background: activeSection === 'add' ? 'var(--primary-color)' : 'var(--surface-color)',
-            color: activeSection === 'add' ? 'var(--surface-color)' : 'var(--text-secondary)',
-            borderBottom: activeSection === 'add' ? '2px solid var(--primary-color)' : '2px solid transparent',
+            backgroundColor: 'var(--primary-color)',
+            color: 'var(--surface-color)',
           }}
-          className="flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
-          onClick={() => {
-            setActiveSection('add');
-            setEditRole(null);
-          }}
+          className="flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 hover:opacity-90 focus:outline-none"
+          onClick={() => setShowCreateForm(true)}
         >
-          <UserGroupIcon className="w-5 h-5" />
+          <PlusIcon className="w-5 h-5" />
           <span>Add Role</span>
         </button>
       </div>
-      {activeSection === 'add' && (
+      {showCreateForm && (
         <RoleCrud
           token={token}
           logout={logout}
@@ -117,8 +108,8 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
           setRoles={setRoles}
           editRole={editRole}
           setEditRole={setEditRole}
-          showCreateForm={activeSection === 'add'}
-          setShowCreateForm={(show: boolean) => setActiveSection(show ? 'add' : 'list')}
+          showCreateForm={showCreateForm}
+          setShowCreateForm={setShowCreateForm}
           setMessage={setMessage}
           setIsSuccess={setIsSuccess}
           isLoading={isLoading}
@@ -126,19 +117,17 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
           loadRoles={loadRoles}
         />
       )}
-      {activeSection === 'list' && (
-        <RoleList
-          roles={roles}
-          setEditRole={setEditRole}
-          handleDeleteRole={handleDeleteRole}
-          isLoading={isLoading}
-          setDeleteConfirm={setDeleteConfirm}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
-        />
-      )}
+      <RoleList
+        roles={roles}
+        setEditRole={setEditRole}
+        handleDeleteRole={handleDeleteRole}
+        isLoading={isLoading}
+        setDeleteConfirm={setDeleteConfirm}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+      />
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div
@@ -182,7 +171,7 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
           </div>
         </div>
       )}
-      {editRole && activeSection === 'list' && (
+      {editRole && !showCreateForm && (
         <RoleCrud
           token={token}
           logout={logout}
