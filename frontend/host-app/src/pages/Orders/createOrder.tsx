@@ -4,10 +4,10 @@ import { useAuth } from '../../context/AuthContext';
 import { createOrder, getAllOrders, processPayment } from '../../services/orderService';
 import { fetchProducts } from '../../services/productService';
 import { fetchCategories } from '../../services/categoryService';
-import { PrinterIcon } from '@heroicons/react/24/outline';
 import FlashMessage from '../FlashMessage';
 import OrderDetails from './OrderDetails';
 import OrderMenu from './OrderMenu';
+import ReceiptModal from './ReceiptModal';
 
 interface Product {
   _id: string;
@@ -47,81 +47,6 @@ interface Order {
   payment_status: string;
   estimated_completion?: string;
 }
-
-const ReceiptTemplate = ({
-                           createdOrder,
-                           onPrint,
-                           onClose,
-                           changeAmount,
-                         }: {
-  createdOrder: Order;
-  onPrint: () => void;
-  onClose: () => void;
-  changeAmount: number;
-}) => {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-h-[90vh] overflow-y-auto border-4 border-yellow-400">
-        <h2 className="text-2xl font-bold mb-4 text-center text-yellow-600">Order Confirmed</h2>
-        <div className="border-b-2 border-yellow-400 pb-4 mb-4">
-          <p className="text-lg"><strong>Order #:</strong> {createdOrder.order_number}</p>
-          <p className="text-lg"><strong>Customer:</strong> {createdOrder.customer_name}</p>
-          <p className="text-lg"><strong>Type:</strong> {createdOrder.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}</p>
-          <p className="text-lg"><strong>Payment:</strong> {createdOrder.payment_status}</p>
-          {createdOrder.estimated_completion && (
-            <p className="text-lg"><strong>Est. Completion:</strong> {createdOrder.estimated_completion}</p>
-          )}
-        </div>
-
-        <div className="mb-4">
-          <h3 className="text-xl font-semibold mb-2 text-yellow-700">Items:</h3>
-          <table className="w-full text-sm">
-            <thead>
-            <tr className="bg-yellow-100 border-b-2 border-yellow-400">
-              <th className="text-left py-2 text-yellow-800">Item</th>
-              <th className="text-center py-2 text-yellow-800">Qty</th>
-              <th className="text-right py-2 text-yellow-800">Price</th>
-              <th className="text-right py-2 text-yellow-800">Total</th>
-            </tr>
-            </thead>
-            <tbody>
-            {createdOrder.items.map((item) => (
-              <tr key={item.product_id} className="border-b border-yellow-200 hover:bg-yellow-50">
-                <td className="py-2 text-gray-800">{item.product.name}</td>
-                <td className="text-center py-2 text-gray-800">{item.quantity}</td>
-                <td className="text-right py-2 text-gray-800">${item.product.price.toFixed(2)}</td>
-                <td className="text-right py-2 text-gray-800">${item.sub_total.toFixed(2)}</td>
-              </tr>
-            ))}
-            </tbody>
-          </table>
-          <div className="mt-2 pt-2 border-t-2 border-yellow-400">
-            <p className="text-xl font-bold text-right text-yellow-700">Total: ${createdOrder.total_amount.toFixed(2)}</p>
-            {changeAmount > 0 && (
-              <p className="text-xl text-right text-green-600 font-bold">Change: ${changeAmount.toFixed(2)}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-4 flex justify-between gap-2">
-          <button
-            onClick={onPrint}
-            className="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-lg font-semibold"
-          >
-            <PrinterIcon className="w-6 h-6 inline-block mr-2" />
-            Print Receipt
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 bg-blue-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-blue-300 transition-colors text-lg font-semibold"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default function CreateOrder() {
   const { isAuthenticated, isLoading, token, logout, user } = useAuth();
@@ -239,7 +164,7 @@ export default function CreateOrder() {
           quantity: item.quantity,
           sub_total: item.sub_total || 0,
         })),
-        estimated_completion: response.estimated_completion, // Use backend response
+        estimated_completion: response.estimated_completion,
         status: serviceType === 'take_away' ? 'confirmed' : 'pending',
       };
 
@@ -407,11 +332,15 @@ export default function CreateOrder() {
       </div>
 
       {showReceipt && createdOrder && (
-        <ReceiptTemplate
-          createdOrder={createdOrder}
+        <ReceiptModal
+          order={createdOrder}
+          changeAmount={changeAmount}
           onPrint={handlePrintReceipt}
           onClose={handleCloseReceipt}
-          changeAmount={changeAmount}
+          autoClose={false}
+          showButtons={true}
+          title="Order Confirmed"
+          paymentMethod={paymentMethod}
         />
       )}
     </div>
