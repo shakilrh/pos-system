@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
@@ -21,26 +22,19 @@ export default function Login() {
     if (!email.trim()) {
       errors.push('Email address is required');
     } else {
-      // Check email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email.trim())) {
         errors.push('Please enter a valid email address');
       }
-
-      // Check for common email issues
       if (email.includes('..')) {
         errors.push('Email cannot contain consecutive dots');
       }
-
       if (email.startsWith('.') || email.endsWith('.')) {
         errors.push('Email cannot start or end with a dot');
       }
-
       if (email.length > 254) {
         errors.push('Email address is too long (max 254 characters)');
       }
-
-      // Check for spaces
       if (email.includes(' ')) {
         errors.push('Email address cannot contain spaces');
       }
@@ -51,16 +45,12 @@ export default function Login() {
 
   const validatePassword = (password: string): string[] => {
     const errors: string[] = [];
-
-    // For login, only check if password is provided
     if (!password.trim()) {
       errors.push('Password is required');
     }
-
     return errors;
   };
 
-  // Handle input change with real-time validation
   const handleInputChange = (field: string, value: string) => {
     if (field === 'email') {
       setEmail(value);
@@ -68,7 +58,6 @@ export default function Login() {
         setErrors(prev => ({ ...prev, email: validateEmail(value) }));
       }
     }
-
     if (field === 'password') {
       setPassword(value);
       if (touched.password) {
@@ -77,33 +66,27 @@ export default function Login() {
     }
   };
 
-  // Handle field focus - show validation errors immediately
   const handleFocus = (field: string) => {
     setTouched(prev => ({ ...prev, [field]: true }));
-
     if (field === 'email') {
       setErrors(prev => ({ ...prev, email: validateEmail(email) }));
     }
-
     if (field === 'password') {
       setErrors(prev => ({ ...prev, password: validatePassword(password) }));
     }
   };
 
-  // Handle blur - keep showing errors if field is invalid
   const handleBlur = (field: string) => {
     if (field === 'email') {
       const emailErrors = validateEmail(email);
       setErrors(prev => ({ ...prev, email: emailErrors }));
     }
-
     if (field === 'password') {
       const passwordErrors = validatePassword(password);
       setErrors(prev => ({ ...prev, password: passwordErrors }));
     }
   };
 
-  // Check if form is valid
   const isFormValid = () => {
     const emailErrors = validateEmail(email);
     const passwordErrors = validatePassword(password);
@@ -112,8 +95,6 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Mark all fields as touched and validate
     setTouched({ email: true, password: true });
     const emailErrors = validateEmail(email);
     const passwordErrors = validatePassword(password);
@@ -129,8 +110,6 @@ export default function Login() {
       const userData = await adminAuthService.loginAdmin(email, password, logout);
       await login(email, password);
       setFlashMessage({ message: 'Login successful! Redirecting...', type: 'success' });
-
-      // Clear form
       setEmail('');
       setPassword('');
       setErrors({});
@@ -147,7 +126,11 @@ export default function Login() {
   };
 
   const handleRegisterRedirect = () => {
-    router.push('Registration/registerAdmin');
+    router.push('/Registration/registerAdmin');
+  };
+
+  const handleForgotPasswordRedirect = () => {
+    router.push('/Registration/forgotPassword');
   };
 
   return (
@@ -169,7 +152,6 @@ export default function Login() {
         <div className="w-1/2 p-8 flex flex-col justify-center">
           <div className="max-w-sm mx-auto w-full">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 text-center">Admin Login</h2>
-
             {flashMessage && (
               <FlashMessage
                 message={flashMessage.message}
@@ -178,7 +160,6 @@ export default function Login() {
                 className="mb-4"
               />
             )}
-
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
@@ -193,10 +174,10 @@ export default function Login() {
                   onBlur={() => handleBlur('email')}
                   placeholder="Enter your email address"
                   className={`w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border ${
-                    errors.email && errors.email.length > 0
-                      ? 'border-red-500 focus:ring-red-400'
-                      : 'border-gray-200 dark:border-gray-600 focus:ring-orange-400'
-                  } focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 text-sm`}
+  errors.email && errors.email.length > 0
+    ? 'border-red-500 focus:ring-red-400'
+    : 'border-gray-200 dark:border-gray-600 focus:ring-orange-400'
+} focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 text-sm`}
                   autoComplete="username"
                   aria-invalid={errors.email && errors.email.length > 0}
                   aria-describedby={errors.email && errors.email.length > 0 ? 'email-error' : undefined}
@@ -236,10 +217,10 @@ export default function Login() {
                   onBlur={() => handleBlur('password')}
                   placeholder="Enter your password"
                   className={`w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border ${
-                    errors.password && errors.password.length > 0
-                      ? 'border-red-500 focus:ring-red-400'
-                      : 'border-gray-200 dark:border-gray-600 focus:ring-orange-400'
-                  } focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 text-sm`}
+  errors.password && errors.password.length > 0
+    ? 'border-red-500 focus:ring-red-400'
+    : 'border-gray-200 dark:border-gray-600 focus:ring-orange-400'
+} focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 text-sm`}
                   autoComplete="current-password"
                   aria-invalid={errors.password && errors.password.length > 0}
                   aria-describedby={errors.password && errors.password.length > 0 ? 'password-error' : undefined}
@@ -270,10 +251,10 @@ export default function Login() {
                 type="submit"
                 disabled={loading || !isFormValid()}
                 className={`w-full bg-gradient-to-r from-orange-500 to-red-500 text-white p-3 rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-300 text-sm font-semibold shadow-lg hover:shadow-xl ${
-                  loading || !isFormValid()
-                    ? 'opacity-50 cursor-not-allowed'
-                    : 'hover:scale-[1.02] transform active:scale-[0.98]'
-                }`}
+  loading || !isFormValid()
+    ? 'opacity-50 cursor-not-allowed'
+    : 'hover:scale-[1.02] transform active:scale-[0.98]'
+}`}
               >
                 {loading ? (
                   <span className="flex items-center justify-center">
@@ -296,13 +277,13 @@ export default function Login() {
                 >
                   Create Account
                 </button>
-                <a
-                  href="#"
+                <button
+                  type="button"
+                  onClick={handleForgotPasswordRedirect}
                   className="text-sm text-gray-600 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors duration-200 font-medium"
-                  onClick={(e) => e.preventDefault()}
                 >
                   Forgot Password?
-                </a>
+                </button>
               </div>
             </form>
           </div>
@@ -311,3 +292,4 @@ export default function Login() {
     </div>
   );
 }
+

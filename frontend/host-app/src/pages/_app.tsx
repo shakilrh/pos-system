@@ -27,7 +27,7 @@ const Footer = dynamic(
   { ssr: false }
 );
 
-const publicRoutes = ['/Registration/login', '/forgot-password', '/Registration/registerAdmin', '/NoAccess'];
+const publicRoutes = ['/Registration/login', '/Registration/forgotPassword', '/Registration/registerAdmin', '/NoAccess'];
 
 // Map routes to required permissions
 const routePermissions: { [key: string]: string } = {
