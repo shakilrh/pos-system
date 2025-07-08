@@ -27,11 +27,11 @@ export default function Profile() {
   }, [token]);
 
   useEffect(() => {
-    setName(user.user?.name || '');
-    setEmail(user.user?.email || '');
-    setLogo(user.user?.logoUrl || '');
-    setStoreName(user.user?.store_name || '');
-    setStoreLogo(user.user?.store_logo || '');
+    setName(user?.name || '');
+    setEmail(user?.email || '');
+    setLogo(user?.logoUrl || '');
+    setStoreName(user?.store_name || '');
+    setStoreLogo(user?.store_logo || '');
   }, [user]);
 
   const fetchProfile = async (retryCount = 1) => {
