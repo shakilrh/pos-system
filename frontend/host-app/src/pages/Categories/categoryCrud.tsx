@@ -242,9 +242,11 @@ export default function CategoryCrud({
             </button>
             <button
               type="submit"
-              className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center ${
-                !isFormValid() || isProductFormActive ? 'opacity-70 cursor-not-allowed' : ''
-              }`}
+              className={`px-4 py-2 rounded-lg flex items-center transition-all duration-200
+              bg-[color:var(--primary-color)] text-[color:var(--surface-color)]
+              hover:bg-[color:var(--primary-600)]
+              ${!isFormValid() || isProductFormActive ? 'opacity-70 cursor-not-allowed' : ''}
+              `}
               disabled={!isFormValid() || isProductFormActive}
             >
               {mode === 'edit' ? 'Save Changes' : 'Add Category'}

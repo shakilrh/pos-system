@@ -624,106 +624,122 @@ export default function OrderList({
                     )}
                     <div className="flex flex-col space-y-2">
                       {activeTab === 'to_be_prepared' && (
-                        <button
-                          onClick={async () => {
-                            if (!token) {
-                              setMessage('Please log in to retry this action.');
-                              return;
-                            }
-                            setIsLoading(true);
-                            try {
-                              const updatedOrder = await markOrderAsReady(token, logout, order.order_number);
-                              setOrders((prevOrders) =>
-                                prevOrders.map((o) =>
-                                  o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
-                                )
-                              );
-                              setMessage(`✅ Order #${order.order_number} is now ready!`);
-                            } catch (error) {
-                              setMessage(
-                                `❌ ${error instanceof Error ? error.message : 'Failed to mark order as ready'}`
-                              );
-                            } finally {
-                              setIsLoading(false);
-                            }
-                          }}
-                          className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 text-sm"
-                          disabled={isLoading}
-                        >
-                          Mark as Ready
-                        </button>
+                      <button
+                        onClick={async () => {
+                        if (!token) {
+                          setMessage('Please log in to retry this action.');
+                          return;
+                        }
+                        setIsLoading(true);
+                        try {
+                          const updatedOrder = await markOrderAsReady(token, logout, order.order_number);
+                          setOrders((prevOrders) =>
+                          prevOrders.map((o) =>
+                            o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
+                          )
+                          );
+                          setMessage(`✅ Order #${order.order_number} is now ready!`);
+                        } catch (error) {
+                          setMessage(
+                          `❌ ${error instanceof Error ? error.message : 'Failed to mark order as ready'}`
+                          );
+                        } finally {
+                          setIsLoading(false);
+                        }
+                        }}
+                        style={{
+                        backgroundColor: 'var(--primary-color)',
+                        color: 'var(--surface-color)',
+                        }}
+                        className="px-3 py-1 rounded-md hover:opacity-90 disabled:opacity-50 text-sm transition-colors"
+                        disabled={isLoading}
+                      >
+                        Mark as Ready
+                      </button>
                       )}
                       {activeTab === 'ready' && (
-                        <button
-                          onClick={async () => {
-                            if (!token) {
-                              setMessage('Please log in to retry this action.');
-                              return;
-                            }
-                            setIsLoading(true);
-                            try {
-                              const updatedOrder = await markOrderAsServed(token, logout, order.order_number);
-                              setOrders((prevOrders) =>
-                                prevOrders.map((o) =>
-                                  o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
-                                )
-                              );
-                              setMessage(`✅ Order #${order.order_number} is now served!`);
-                            } catch (error) {
-                              setMessage(
-                                `❌ ${error instanceof Error ? error.message : 'Failed to mark order as served'}`
-                              );
-                            } finally {
-                              setIsLoading(false);
-                            }
+                      <button
+                        onClick={async () => {
+                        if (!token) {
+                          setMessage('Please log in to retry this action.');
+                          return;
+                        }
+                        setIsLoading(true);
+                        try {
+                          const updatedOrder = await markOrderAsServed(token, logout, order.order_number);
+                          setOrders((prevOrders) =>
+                          prevOrders.map((o) =>
+                            o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
+                          )
+                          );
+                          setMessage(`✅ Order #${order.order_number} is now served!`);
+                        } catch (error) {
+                          setMessage(
+                          `❌ ${error instanceof Error ? error.message : 'Failed to mark order as served'}`
+                          );
+                        } finally {
+                          setIsLoading(false);
+                        }
+                        }}
+                        style={{
+                          backgroundColor: 'var(--success-color)',
+                          color: 'var(--surface-color)',
                           }}
-                          className="px-3 py-1 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50 text-sm"
-                          disabled={isLoading}
-                        >
-                          Mark as Served
-                        </button>
+                          className="px-3 py-1 rounded-md hover:opacity-90 text-sm transition-colors"
+                        disabled={isLoading}
+                      >
+                        Mark as Served
+                      </button>
                       )}
                       {activeTab === 'served' && (
-                        <>
-                          {order.payment_status === 'not_paid' && (
-                            <button
-                              onClick={() => handlePaymentOrderSelect(order)}
-                              className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm"
-                            >
-                              Process Payment
-                            </button>
-                          )}
-                          {order.payment_status === 'paid' && (
-                            <button
-                              onClick={async () => {
-                                if (!token) {
-                                  setMessage('Please log in to retry this action.');
-                                  return;
-                                }
-                                setIsLoading(true);
-                                try {
-                                  const updatedOrder = await markOrderAsCompleted(token, logout, order.order_number);
-                                  setOrders((prevOrders) =>
-                                    prevOrders.map((o) =>
-                                      o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
-                                    )
-                                  );
-                                  setMessage(`✅ Order #${order.order_number} is now completed!`);
-                                } catch (error) {
-                                  setMessage(
-                                    `❌ ${error instanceof Error ? error.message : 'Failed to mark order as completed'}`
-                                  );
-                                } finally {
-                                  setIsLoading(false);
-                                }
-                              }}
-                              className="px-3 py-1 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50 text-sm"
-                              disabled={isLoading}
-                            >
-                              Mark as Completed
-                            </button>
-                          )}
-                        </>
+                      <>
+                        {order.payment_status === 'not_paid' && (
+                        <button
+                          onClick={() => handlePaymentOrderSelect(order)}
+                          style={{
+                          backgroundColor: 'var(--success-color)',
+                          color: 'var(--surface-color)',
+                          }}
+                          className="px-3 py-1 rounded-md hover:opacity-90 text-sm transition-colors"
+                        >
+                          Process Payment
+                        </button>
+                        )}
+                        {order.payment_status === 'paid' && (
+                        <button
+                          onClick={async () => {
+                          if (!token) {
+                            setMessage('Please log in to retry this action.');
+                            return;
+                          }
+                          setIsLoading(true);
+                          try {
+                            const updatedOrder = await markOrderAsCompleted(token, logout, order.order_number);
+                            setOrders((prevOrders) =>
+                            prevOrders.map((o) =>
+                              o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
+                            )
+                            );
+                            setMessage(`✅ Order #${order.order_number} is now completed!`);
+                          } catch (error) {
+                            setMessage(
+                            `❌ ${error instanceof Error ? error.message : 'Failed to mark order as completed'}`
+                            );
+                          } finally {
+                            setIsLoading(false);
+                          }
+                          }}
+                          style={{
+                          backgroundColor: 'var(--primary-700)',
+                          color: 'var(--surface-color)',
+                          }}
+                          className="px-3 py-1 rounded-md hover:opacity-90 disabled:opacity-50 text-sm transition-colors"
+                          disabled={isLoading}
+                        >
+                          Mark as Completed
+                        </button>
+                        )}
+                      </>
                       )}
                     </div>
                   </div>
