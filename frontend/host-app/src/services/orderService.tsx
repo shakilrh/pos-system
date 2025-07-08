@@ -9,6 +9,7 @@ interface OrderData {
   order_type: string;
   customer_name: string;
   service_type: 'dine_in' | 'take_away';
+  table_number?: string;
 }
 
 interface Product {
@@ -47,7 +48,10 @@ interface Order {
   service_type: 'dine_in' | 'take_away';
   items: OrderItemResponse[];
   customer_name: string;
+  table_number?: string;
   __v: number;
+  notification?: 'pending' | 'confirmed' | 'ready' | 'served' | 'completed' | 'cancel';
+  notification_status?: 0 | 1;
 }
 
 interface QueueOrderItem {
@@ -70,6 +74,7 @@ interface QueueOrder {
   notification: string;
   notification_status: number;
   items: QueueOrderItem[];
+  table_number?: string;
 }
 
 interface QueueApiResponse {
@@ -88,6 +93,7 @@ interface PhysicalQueueOrder {
   status: string;
   customer_name: string;
   position: number;
+  table_number?: string;
 }
 
 interface ApiResponse<T> {
@@ -120,7 +126,6 @@ const handleApiError = (response: ApiResponse<any>, logout: () => void): string 
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.18.107:3000';
 
-// Order Creation and Management
 export const createOrder = async (
   token: string,
   logout: () => void,
@@ -152,7 +157,7 @@ export const createOrder = async (
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to create order';
     toast.error(message);
-    throw err;
+    throw new Error(message);
   }
 };
 
@@ -164,6 +169,7 @@ export const updateOrder = async (
     items?: OrderItem[];
     customer_name?: string;
     service_type?: 'dine_in' | 'take_away';
+    table_number?: string;
   }
 ): Promise<Order> => {
   try {
@@ -240,13 +246,13 @@ export const markOrderAsReady = async (
   }
 };
 
-export const markOrderAsPicked = async (
+export const markOrderAsServed = async (
   token: string,
   logout: () => void,
   order_number: string
 ): Promise<Order> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/orders/api/v1/picked`, {
+    const response = await fetch(`${API_BASE_URL}/orders/api/v1/served`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -262,7 +268,33 @@ export const markOrderAsPicked = async (
 
     return 'data' in data.data ? data.data.data : data.data;
   } catch (err) {
-    throw new Error(err instanceof Error ? err.message : 'Failed to mark order as picked');
+    throw new Error(err instanceof Error ? err.message : 'Failed to mark order as served');
+  }
+};
+
+export const markOrderAsCompleted = async (
+  token: string,
+  logout: () => void,
+  order_number: string
+): Promise<Order> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/api/v1/completed`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ order_number }),
+    });
+
+    const data: ApiResponse<Order> = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || handleApiError(data, logout));
+    }
+
+    return 'data' in data.data ? data.data.data : data.data;
+  } catch (err) {
+    throw new Error(err instanceof Error ? err.message : 'Failed to mark order as completed');
   }
 };
 
@@ -292,8 +324,7 @@ export const cancelOrder = async (
   }
 };
 
-// Order Fetching
-export const getAllOrders = async (token: string, logout: () => void): Promise<Order[]> => {
+export const getAllOrders = async (token: string, logout: string | (() => void)): Promise<Order[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/orders/api/v1/list`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -330,7 +361,6 @@ export const getOrderQueue = async (token: string, logout: () => void): Promise<
       throw new Error(data.message || handleApiError(data, logout));
     }
 
-    // Safely handle the response data structure
     return data.data?.data ?? [];
   } catch (err) {
     console.error('Error in getOrderQueue:', err);
@@ -338,10 +368,9 @@ export const getOrderQueue = async (token: string, logout: () => void): Promise<
   }
 };
 
-// Add this to your existing orderService.tsx
 export const processPayment = async (
   token: string,
-  logout: () => void,
+  logout: string | (() => void),
   order_id: string,
   received_amount: number,
   payment_method: string
@@ -367,7 +396,6 @@ export const processPayment = async (
   }
 };
 
-// Add this to your existing orderService.tsx
 export const markNotificationAsRead = async (
   token: string,
   logout: () => void,
@@ -411,5 +439,4 @@ export const getPhysicalQueue = async (token: string, logout: () => void): Promi
   }
 };
 
-// Export the types for use in other files
-export type { QueueOrder, QueueOrderItem };
+export type { QueueOrder, Order, OrderItemResponse };

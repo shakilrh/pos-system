@@ -12,7 +12,7 @@ export interface OrderItem {
   sub_total: number;
 }
 
-interface Order {
+export interface Order {
   _id: string;
   user_id: string | null;
   order_date: string;
@@ -30,7 +30,8 @@ interface Order {
   service_type: 'dine_in' | 'take_away';
   items: OrderItemResponse[];
   customer_name: string;
+  table_number?: string; // Added table_number
   __v: number;
-  notification?: 'pending' | 'confirmed' | 'ready' | 'picked' | 'cancel';
+  notification?: 'pending' | 'confirmed' | 'ready' | 'picked' | 'payment_pending' | 'completed' | 'cancel';
   notification_status?: 0 | 1; // 0 = unread, 1 = read
 }

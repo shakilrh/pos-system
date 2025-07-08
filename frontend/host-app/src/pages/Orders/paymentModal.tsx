@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Order } from './orderTypes';
-import { processPayment, markOrderAsPicked } from '../../services/orderService';
+import { processPayment, markOrderAsCompleted } from '../../services/orderService';
 import ReceiptModal from './ReceiptModal';
 
 interface PaymentModalProps {
@@ -71,6 +71,11 @@ const OrderSearch: React.FC<OrderSearchProps> = ({
                     <div className="text-xs text-gray-500">
                       {order.service_type === 'dine_in' ? '🍽️ Dine-In' : '🥡 Takeaway'}
                     </div>
+                    {order.table_number && (
+                      <div className="text-xs text-gray-500">
+                        Table: {order.table_number}
+                      </div>
+                    )}
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium">${order.total_amount?.toFixed(2) || '0.00'}</div>
@@ -106,7 +111,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const [currentOrder, setCurrentOrder] = useState<Order>(order);
   const [changeAmount, setChangeAmount] = useState<number>(0);
 
-  // Update currentOrder when order prop changes
   useEffect(() => {
     setCurrentOrder(order);
   }, [order]);
@@ -137,25 +141,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
     try {
       const updatedOrder = await processPayment(token, logout, currentOrder._id, amount, paymentMethod);
-
-      // Update the current order state
       const newOrder = { ...updatedOrder, items: currentOrder.items, payment_status: 'paid' };
       setCurrentOrder(newOrder);
-
-      // Calculate and store change amount
       const change = calculateChange();
       setChangeAmount(change);
-
-      // Update orders list
       setOrders((prevOrders) =>
         prevOrders.map((o) =>
-          o._id === updatedOrder._id ? newOrder : o
+          o.order_number === updatedOrder.order_number ? newOrder : o
         )
       );
-
       setMessage(`Payment processed successfully for Order #${currentOrder.order_number}`);
       setShowReceiptModal(true);
-
     } catch (error) {
       console.error('Payment processing error:', error);
       setMessage(`Failed to process payment: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -164,7 +160,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     }
   };
 
-  const handleMarkAsPicked = async () => {
+  const handleMarkAsCompleted = async () => {
     if (!token) {
       setMessage('Please log in.');
       return;
@@ -173,25 +169,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     setIsProcessing(true);
 
     try {
-      const updatedOrder = await markOrderAsPicked(token, logout, currentOrder.order_number);
-
-      // Update the current order state
-      const newOrder = { ...updatedOrder, items: currentOrder.items };
-      setCurrentOrder(newOrder);
-
-      // Update orders list
+      const updatedOrder = await markOrderAsCompleted(token, logout, currentOrder.order_number);
       setOrders((prevOrders) =>
         prevOrders.map((o) =>
-          o.order_number === updatedOrder.order_number ? newOrder : o
+          o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
         )
       );
-
-      setMessage(`Order #${currentOrder.order_number} marked as picked up!`);
+      setMessage(`Order #${currentOrder.order_number} marked as completed!`);
       onClose();
-
     } catch (error) {
-      console.error('Mark as picked error:', error);
-      setMessage(`Failed to mark as picked: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Mark as completed error:', error);
+      setMessage(`Failed to mark as completed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsProcessing(false);
     }
@@ -199,7 +187,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const handleReceiptClose = () => {
     setShowReceiptModal(false);
-    // Force a re-render to show the updated payment status
     setCurrentOrder(prev => ({ ...prev }));
   };
 
@@ -207,13 +194,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
         <div className="bg-white rounded-lg w-full max-w-xs">
-          {/* Header - Optimized */}
           <div className="flex items-center justify-between p-3 border-b border-gray-200">
             <div>
               <h2 className="text-base font-bold text-gray-800">#{currentOrder.order_number}</h2>
               <div className="text-sm text-gray-600 space-y-0.5">
                 <p>👤 {currentOrder.customer_name || 'Guest'}</p>
                 <p>{currentOrder.service_type === 'dine_in' ? '🍽️' : '🥡'} {currentOrder.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}</p>
+                {currentOrder.table_number && <p>Table: {currentOrder.table_number}</p>}
                 <p className="text-gray-500 capitalize">{currentOrder.payment_status.replace('_', ' ')}</p>
               </div>
             </div>
@@ -227,9 +214,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             </button>
           </div>
 
-          {/* Content - Optimized */}
           <div className="p-3 space-y-3">
-            {/* Order Items - Better sized */}
             <div className="space-y-2">
               <h3 className="font-semibold text-sm text-gray-700">Items:</h3>
               <div className="max-h-20 overflow-y-auto space-y-1">
@@ -253,7 +238,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
             </div>
 
-            {/* Total - Prominent */}
             <div className="border-t pt-2">
               <div className="flex justify-between text-lg font-bold text-gray-800">
                 <span>Total:</span>
@@ -261,7 +245,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
             </div>
 
-            {/* Payment Section - Eye-catching */}
             {currentOrder.payment_status === 'not_paid' ? (
               <div className="space-y-3 border-t pt-3">
                 <div>
@@ -269,7 +252,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   <div className="flex space-x-4">
                     <label className="flex items-center text-sm cursor-pointer">
                       <input
-                        type="checkbox"
+                        type="radio"
+                        name="paymentMethod"
                         checked={paymentMethod === 'cash'}
                         onChange={() => setPaymentMethod('cash')}
                         className="mr-2 w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
@@ -278,7 +262,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                     </label>
                     <label className="flex items-center text-sm cursor-pointer">
                       <input
-                        type="checkbox"
+                        type="radio"
+                        name="paymentMethod"
                         checked={paymentMethod === 'card'}
                         onChange={() => setPaymentMethod('card')}
                         className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
@@ -314,21 +299,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   disabled={isProcessing || !receivedAmount || parseFloat(receivedAmount) < (currentOrder.total_amount || 0)}
                   className="w-full py-3 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
                 >
-                  {isProcessing ? '⏳ Processing...' : ' Process Payment'}
+                  {isProcessing ? '⏳ Processing...' : 'Process Payment'}
                 </button>
               </div>
             ) : (
               <div className="space-y-3 border-t pt-3">
                 <div className="text-center p-3 bg-green-50 border border-green-200 rounded-lg">
                   <h3 className="text-sm font-semibold text-green-800">✅ Payment Processed!</h3>
-                  <p className="text-sm text-green-700">Ready for pickup</p>
+                  <p className="text-sm text-green-700">Ready for completion</p>
                 </div>
                 <button
-                  onClick={handleMarkAsPicked}
+                  onClick={handleMarkAsCompleted}
                   disabled={isProcessing}
                   className="w-full py-3 bg-purple-500 text-white rounded-lg text-sm font-semibold hover:bg-purple-600 disabled:opacity-50 transition-colors shadow-md"
                 >
-                  {isProcessing ? '⏳ Processing...' : '✅ Mark as Picked'}
+                  {isProcessing ? '⏳ Processing...' : 'Mark as Completed'}
                 </button>
               </div>
             )}

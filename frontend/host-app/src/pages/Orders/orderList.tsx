@@ -4,7 +4,8 @@ import PaymentModal, { OrderSearch } from './paymentModal';
 import OrderNotifications from './orderNotifications';
 import {
   markOrderAsReady,
-  markOrderAsPicked,
+  markOrderAsServed,
+  markOrderAsCompleted,
   markNotificationAsRead,
   QueueOrder,
 } from '../../services/orderService';
@@ -58,11 +59,34 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
     }
   };
 
+  const handleMarkAsServed = async () => {
+    if (!token) {
+      setMessage('Please log in.');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const updatedOrder = await markOrderAsServed(token, logout, order.order_number);
+      setOrders((prevOrders) =>
+        prevOrders.map((o) =>
+          o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
+        )
+      );
+      setMessage(`Order #${order.order_number} is now served!`);
+      onClose();
+    } catch (error) {
+      setMessage(`Failed to mark order as served`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
         <h2 className="text-xl font-bold mb-4">Order #{order.order_number}</h2>
         <p className="text-sm mb-2">👤 {order.customer_name || 'Guest'}</p>
+        {order.table_number && <p className="text-sm mb-2">Table: {order.table_number}</p>}
         <div className="space-y-2 mb-4">
           {order.items?.map((item, index) => (
             <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
@@ -78,6 +102,15 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
             className="w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 text-sm"
           >
             {isLoading ? 'Processing...' : 'Mark as Ready'}
+          </button>
+        )}
+        {activeTab === 'ready' && (
+          <button
+            onClick={handleMarkAsServed}
+            disabled={isLoading}
+            className="w-full py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50 text-sm"
+          >
+            {isLoading ? 'Processing...' : 'Mark as Served'}
           </button>
         )}
         <button
@@ -138,7 +171,7 @@ export default function OrderList({
   const physicalTabs = [
     { key: 'to_be_prepared', label: 'To Be Prepared', color: 'bg-green-500', lightColor: 'bg-green-100', textColor: 'text-green-700', borderColor: 'border-green-300' },
     { key: 'ready', label: 'Ready', color: 'bg-blue-500', lightColor: 'bg-blue-100', textColor: 'text-blue-700', borderColor: 'border-blue-300' },
-    { key: 'cancelled', label: 'Cancelled', color: 'bg-red-500', lightColor: 'bg-red-100', textColor: 'text-red-700', borderColor: 'border-red-300' },
+    { key: 'served', label: 'Served', color: 'bg-purple-500', lightColor: 'bg-purple-100', textColor: 'text-purple-700', borderColor: 'border-purple-300' },
     { key: 'completed', label: 'Completed', color: 'bg-orange-500', lightColor: 'bg-orange-100', textColor: 'text-orange-700', borderColor: 'border-orange-300' },
   ];
 
@@ -146,8 +179,8 @@ export default function OrderList({
     { key: 'pending', label: 'Pending', color: 'bg-yellow-500', lightColor: 'bg-yellow-100', textColor: 'text-yellow-700', borderColor: 'border-yellow-300' },
     { key: 'to_be_prepared', label: 'To Be Prepared', color: 'bg-green-500', lightColor: 'bg-green-100', textColor: 'text-green-700', borderColor: 'border-green-300' },
     { key: 'ready', label: 'Ready', color: 'bg-blue-500', lightColor: 'bg-blue-100', textColor: 'text-blue-700', borderColor: 'border-blue-300' },
-    { key: 'cancelled', label: 'Cancelled', color: 'bg-red-500', lightColor: 'bg-red-100', textColor: 'text-red-700', borderColor: 'border-red-300' },
     { key: 'completed', label: 'Completed', color: 'bg-orange-500', lightColor: 'bg-orange-100', textColor: 'text-orange-700', borderColor: 'border-orange-300' },
+    { key: 'cancelled', label: 'Cancelled', color: 'bg-red-500', lightColor: 'bg-red-100', textColor: 'text-red-700', borderColor: 'border-red-300' },
   ];
 
   const tabs = outerActiveTab === 'physical' ? physicalTabs : onlineTabs;
@@ -219,6 +252,7 @@ export default function OrderList({
       pending: [],
       to_be_prepared: [],
       ready: [],
+      served: [],
       cancelled: [],
       completed: [],
     };
@@ -228,8 +262,9 @@ export default function OrderList({
       if (status === 'pending' && outerActiveTab === 'online') groups.pending.push(order);
       else if (status === 'processing') groups.to_be_prepared.push(order);
       else if (status === 'ready') groups.ready.push(order);
+      else if (status === 'served') groups.served.push(order);
       else if (status === 'cancelled') groups.cancelled.push(order);
-      else if (status === 'picked') groups.completed.push(order);
+      else if (status === 'completed') groups.completed.push(order);
     });
 
     Object.keys(groups).forEach((status) =>
@@ -249,7 +284,7 @@ export default function OrderList({
           order._id?.toLowerCase().includes(preparationSearchTerm.toLowerCase()) ||
           order.order_number.toString().includes(preparationSearchTerm.toLowerCase())
       );
-    } else if (activeTab === 'ready') {
+    } else if (activeTab === 'ready' || activeTab === 'served') {
       filtered = ordersInActiveTab.filter(
         (order) =>
           order.customer_name?.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
@@ -267,8 +302,9 @@ export default function OrderList({
       pending: 'pending',
       processing: 'to_be_prepared',
       ready: 'ready',
+      served: 'served',
       cancelled: 'cancelled',
-      picked: 'completed',
+      completed: 'completed',
     };
     return statusMap[status.toLowerCase()] || 'to_be_prepared';
   };
@@ -333,8 +369,9 @@ export default function OrderList({
       pending: 'bg-yellow-100 text-yellow-700 border-yellow-300',
       processing: 'bg-blue-100 text-blue-700 border-blue-300',
       ready: 'bg-blue-100 text-blue-700 border-blue-300',
+      served: 'bg-purple-100 text-purple-700 border-purple-300',
       cancelled: 'bg-red-100 text-red-700 border-red-300',
-      picked: 'bg-orange-100 text-orange-700 border-orange-300',
+      completed: 'bg-orange-100 text-orange-700 border-orange-300',
     })[status.toLowerCase()] || 'bg-gray-100 text-gray-700 border-gray-300';
 
   const currentTab = tabs.find((tab) => tab.key === activeTab);
@@ -347,7 +384,7 @@ export default function OrderList({
   const getMessageStyles = (message: string) => {
     if (message.includes('Failed') || message.includes('Please log in')) {
       return 'border-red-500 bg-red-100 text-red-700';
-    } else if (message.includes('Order #') && (message.includes('ready') || message.includes('picked'))) {
+    } else if (message.includes('Order #') && (message.includes('ready') || message.includes('served') || message.includes('completed'))) {
       return 'border-green-500 bg-green-100 text-green-700';
     } else if (message.includes('Overdue') || message.includes('needs to be ready')) {
       return 'border-yellow-500 bg-yellow-100 text-yellow-700';
@@ -372,7 +409,7 @@ export default function OrderList({
                 setActiveTab(tab.key === 'physical' ? 'to_be_prepared' : 'pending');
                 setPage(1);
               }}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 min-w-[180px] ${
                 outerActiveTab === tab.key
                   ? `${tab.color} text-white shadow-md transform scale-105`
                   : `${tab.lightColor} ${tab.textColor} hover:scale-102`
@@ -465,15 +502,15 @@ export default function OrderList({
         </div>
       )}
 
-      {activeTab === 'ready' && (
+      {(activeTab === 'ready' || activeTab === 'served') && (
         <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
-          <div className="text-lg font-semibold text-gray-800 mb-2">💳 Process Payment & Pickup</div>
+          <div className="text-lg font-semibold text-gray-800 mb-2">{activeTab === 'ready' ? '📦 Ready for Pickup' : '💳 Process Payment'}</div>
           <OrderSearch
             orders={orders}
             onOrderSelect={handlePaymentOrderSelect}
             searchTerm={paymentSearchTerm}
             setSearchTerm={setPaymentSearchTerm}
-            statusFilter="ready"
+            statusFilter={activeTab === 'ready' ? 'ready' : 'served'}
           />
         </div>
       )}
@@ -537,6 +574,11 @@ export default function OrderList({
                         {order.service_type && (
                           <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
                             {order.service_type === 'dine_in' ? '🍽️ Dine-In' : '🥡 Takeaway'}
+                          </span>
+                        )}
+                        {order.table_number && (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">
+                            Table: {order.table_number}
                           </span>
                         )}
                       </div>
@@ -611,7 +653,7 @@ export default function OrderList({
                           Mark as Ready
                         </button>
                       )}
-                      {activeTab === 'ready' && order.payment_status === 'paid' && (
+                      {activeTab === 'ready' && (
                         <button
                           onClick={async () => {
                             if (!token) {
@@ -620,16 +662,16 @@ export default function OrderList({
                             }
                             setIsLoading(true);
                             try {
-                              const updatedOrder = await markOrderAsPicked(token, logout, order.order_number);
+                              const updatedOrder = await markOrderAsServed(token, logout, order.order_number);
                               setOrders((prevOrders) =>
                                 prevOrders.map((o) =>
                                   o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
                                 )
                               );
-                              setMessage(`✅ Order #${order.order_number} has been picked up!`);
+                              setMessage(`✅ Order #${order.order_number} is now served!`);
                             } catch (error) {
                               setMessage(
-                                `❌ ${error instanceof Error ? error.message : 'Failed to mark order as picked'}`
+                                `❌ ${error instanceof Error ? error.message : 'Failed to mark order as served'}`
                               );
                             } finally {
                               setIsLoading(false);
@@ -638,16 +680,50 @@ export default function OrderList({
                           className="px-3 py-1 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50 text-sm"
                           disabled={isLoading}
                         >
-                          Mark as Picked
+                          Mark as Served
                         </button>
                       )}
-                      {activeTab === 'ready' && order.payment_status === 'not_paid' && (
-                        <button
-                          onClick={() => handlePaymentOrderSelect(order)}
-                          className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm"
-                        >
-                          Process Payment
-                        </button>
+                      {activeTab === 'served' && (
+                        <>
+                          {order.payment_status === 'not_paid' && (
+                            <button
+                              onClick={() => handlePaymentOrderSelect(order)}
+                              className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm"
+                            >
+                              Process Payment
+                            </button>
+                          )}
+                          {order.payment_status === 'paid' && (
+                            <button
+                              onClick={async () => {
+                                if (!token) {
+                                  setMessage('Please log in to retry this action.');
+                                  return;
+                                }
+                                setIsLoading(true);
+                                try {
+                                  const updatedOrder = await markOrderAsCompleted(token, logout, order.order_number);
+                                  setOrders((prevOrders) =>
+                                    prevOrders.map((o) =>
+                                      o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
+                                    )
+                                  );
+                                  setMessage(`✅ Order #${order.order_number} is now completed!`);
+                                } catch (error) {
+                                  setMessage(
+                                    `❌ ${error instanceof Error ? error.message : 'Failed to mark order as completed'}`
+                                  );
+                                } finally {
+                                  setIsLoading(false);
+                                }
+                              }}
+                              className="px-3 py-1 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50 text-sm"
+                              disabled={isLoading}
+                            >
+                              Mark as Completed
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>

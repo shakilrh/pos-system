@@ -37,45 +37,49 @@ interface NotificationItem {
 
 const mapStatusToTab = (status: string): string => {
   const statusMap: Record<string, string> = {
-    'pending': 'pending',
-    'processing': 'to_be_prepared',
-    'ready': 'ready',
-    'cancelled': 'cancelled',
-    'picked': 'completed'
+    pending: 'pending',
+    processing: 'to_be_prepared',
+    ready: 'ready',
+    served: 'served',
+    cancelled: 'cancelled',
+    completed: 'completed'
   };
-  return statusMap[status] || 'pending';
+  return statusMap[status.toLowerCase()] || 'pending';
 };
 
 const getNotificationMessage = (status: string, timestamp: Date): string => {
   const timeStr = timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
   const messages: Record<string, string> = {
-    'pending': `Order received`,
-    'processing': `Order prepared`,
-    'ready': `Order ready`,
-    'cancelled': `Order cancelled`,
-    'picked': `Order completed`
+    pending: `Order received`,
+    processing: `Order prepared`,
+    ready: `Order ready`,
+    served: `Order served`,
+    cancelled: `Order cancelled`,
+    completed: `Order completed`
   };
   return `${messages[status] || 'Order updated'} <span class="text-xs text-gray-500">${timeStr}</span>`;
 };
 
 const getStatusIcon = (status: string): string => {
   const icons: Record<string, string> = {
-    'pending': '🆕',
-    'processing': '✅',
-    'ready': '🚀',
-    'cancelled': '❌',
-    'picked': '✔️'
+    pending: '🆕',
+    processing: '✅',
+    ready: '🚀',
+    served: '🍽️',
+    cancelled: '❌',
+    completed: '✔️'
   };
   return icons[status] || '📋';
 };
 
 const getStatusColor = (status: string): string => {
   const colors: Record<string, string> = {
-    'pending': 'border-gray-300 bg-gray-50',
-    'processing': 'border-green-300 bg-green-50',
-    'ready': 'border-blue-300 bg-blue-50',
-    'cancelled': 'border-red-300 bg-red-50',
-    'picked': 'border-orange-300 bg-orange-50'
+    pending: 'border-gray-300 bg-gray-50',
+    processing: 'border-green-300 bg-green-50',
+    ready: 'border-blue-300 bg-blue-50',
+    served: 'border-purple-300 bg-purple-50',
+    cancelled: 'border-red-300 bg-red-50',
+    completed: 'border-orange-300 bg-orange-50'
   };
   return colors[status] || 'border-gray-300 bg-gray-50';
 };
@@ -125,7 +129,7 @@ export default function OrderNotifications({
 
   useEffect(() => {
     const newNotifications: NotificationItem[] = [];
-    ['pending', 'to_be_prepared', 'ready', 'cancelled', 'completed'].forEach(tab => {
+    ['pending', 'to_be_prepared', 'ready', 'served', 'cancelled', 'completed'].forEach(tab => {
       const tabOrders = groupedOrders[tab] || [];
       tabOrders.forEach(order => {
         const currentStatus = order.status.toLowerCase();
