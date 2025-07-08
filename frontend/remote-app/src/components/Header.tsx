@@ -10,23 +10,37 @@ import {
 } from '@heroicons/react/24/outline';
 import UserService from '../services/UserService';
 
-export default function Header({
-  onSidebarToggle,
-  onNavigate,
-  darkMode,
-  onDarkModeToggle,
-  onLogout,
-  token,
-  user,
-}: {
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  user_type: string;
+  role_id: string | null;
+  profile?: any;
+  logoUrl?: string;
+  store_name?: string;
+  store_logo?: string;
+}
+
+interface HeaderProps {
   onSidebarToggle: () => void;
   onNavigate: (path: string) => void;
   darkMode: boolean;
   onDarkModeToggle: () => void;
   onLogout: () => void;
   token: string | null;
-  user: any | null;
-}) {
+  user: User | null;
+}
+
+export default function Header({
+                                 onSidebarToggle,
+                                 onNavigate,
+                                 darkMode,
+                                 onDarkModeToggle,
+                                 onLogout,
+                                 token,
+                                 user,
+                               }: HeaderProps) {
   const [storeData, setStoreData] = useState<{ store_name: string; store_logo: string }>({
     store_name: '',
     store_logo: '',
@@ -34,6 +48,8 @@ export default function Header({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null);
   const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
+  const [userDetails, setUserDetails] = useState<User | null>(null);
+  const [isLoadingUserDetails, setIsLoadingUserDetails] = useState(false);
 
   const { styles, attributes, update } = usePopper(referenceElement, popperElement, {
     placement: 'bottom-end',
@@ -69,26 +85,48 @@ export default function Header({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isProfileOpen, referenceElement, popperElement]);
 
-  // Fetch store data using service
+  // Fetch detailed user data and store data using service
   useEffect(() => {
-    const fetchStoreData = async () => {
-      if (!token) return;
-      try {
-        const response = await UserService.getUserDetails(token);
-        setStoreData({
-          store_name: response.store_name || 'Rasant POS',
-          store_logo: response.store_logo || '/file.svg',
-        });
-      } catch (err) {
-        console.error('Fetch store data error:', err);
+    const fetchUserData = async () => {
+      if (!token) {
+        console.log('No token available for fetching user data');
+        // Use fallback data from props
         setStoreData({
           store_name: user?.store_name || 'Rasant POS',
           store_logo: user?.store_logo || '/file.svg',
         });
+        setUserDetails(user);
+        return;
+      }
+
+      setIsLoadingUserDetails(true);
+      try {
+        console.log('Fetching user details with token:', token);
+        const response = await UserService.getUserDetails(token);
+        console.log('User details response:', response);
+
+        // Set user details from API response
+        setUserDetails(response);
+
+        // Set store data from API response with fallbacks
+        setStoreData({
+          store_name: response.store_name || user?.store_name || 'Rasant POS',
+          store_logo: response.store_logo || user?.store_logo || '/file.svg',
+        });
+      } catch (err) {
+        console.error('Fetch user data error:', err);
+        // Use fallback data from props in case of error
+        setStoreData({
+          store_name: user?.store_name || 'Rasant POS',
+          store_logo: user?.store_logo || '/file.svg',
+        });
+        setUserDetails(user);
+      } finally {
+        setIsLoadingUserDetails(false);
       }
     };
 
-    fetchStoreData();
+    fetchUserData();
   }, [token, user]);
 
   useEffect(() => {
@@ -110,23 +148,51 @@ export default function Header({
     setIsProfileOpen(false);
   };
 
+  // Get user display name with proper fallbacks
+  const getUserDisplayName = () => {
+    if (isLoadingUserDetails) return 'Loading...';
+    return userDetails?.name || user?.name || 'User';
+  };
+
+  // Get user email with proper fallbacks
+  const getUserEmail = () => {
+    if (isLoadingUserDetails) return 'Loading...';
+    return userDetails?.email || user?.email || 'user@example.com';
+  };
+
+  // Get user avatar with proper fallbacks
+  const getUserAvatar = () => {
+    return userDetails?.logoUrl || user?.logoUrl || userDetails?.store_logo || user?.store_logo || '/file.svg';
+  };
+
+  console.log('Header render - Current user data:', {
+    user,
+    userDetails,
+    displayName: getUserDisplayName(),
+    email: getUserEmail(),
+    isLoadingUserDetails
+  });
+
   return (
     <header className="fixed top-0 left-0 w-full h-16 bg-background-secondary shadow-lg z-50 p-4 transition-theme border-b border-border-color">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {/*<button className="md:hidden text-text-secondary hover:text-text-primary transition-colors" onClick={onSidebarToggle}>
-            <Bars3Icon className="w-6 h-6" />
-          </button>*/}
           <div className="flex items-center gap-2">
             <img
               src={storeData.store_logo}
               alt="Store Logo"
               className="w-8 h-8 rounded-full object-cover ring-2"
               style={{ ringColor: 'color-mix(in srgb, var(--primary-color) 20%, transparent)' }}
+              onError={(e) => {
+                e.currentTarget.src = '/file.svg';
+              }}
             />
-            <span className="text-lg font-semibold tracking-tight text-text-primary">{storeData.store_name}</span>
+            <span className="text-lg font-semibold tracking-tight text-text-primary">
+              {storeData.store_name}
+            </span>
           </div>
         </div>
+
         <div className="flex items-center gap-4">
           <button
             className="relative p-2 rounded-lg transition-all duration-200 hover:scale-105"
@@ -145,6 +211,7 @@ export default function Header({
           >
             <BellIcon className="w-5 h-5" />
           </button>
+
           <div className="relative">
             <button
               ref={setReferenceElement}
@@ -163,21 +230,31 @@ export default function Header({
                 e.currentTarget.style.backgroundColor = 'transparent';
               }}
             >
-              <UserCircleIcon className="w-5 h-5" />
-              <span
-                className="hidden md:block text-sm font-medium"
-                style={{ color: 'var(--text-color)' }}
-              >
-                {user?.name || 'Admin User'}
-              </span>
+              <div className="flex items-center gap-2">
+                <img
+                  src={getUserAvatar()}
+                  alt="User Avatar"
+                  className="w-6 h-6 rounded-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = '/file.svg';
+                  }}
+                />
+                <span
+                  className="hidden md:block text-sm font-medium"
+                  style={{ color: 'var(--text-color)' }}
+                >
+                  {getUserDisplayName()}
+                </span>
+              </div>
             </button>
+
             {isProfileOpen && (
               <div
                 ref={setPopperElement}
                 style={styles.popper}
                 {...attributes.popper}
                 className="w-64 rounded-xl shadow-xl border py-2 z-20 bg-white"
-                 css={{
+                css={{
                   backgroundColor: 'var(--background-secondary)',
                   borderColor: 'var(--border-color)'
                 }}
@@ -186,19 +263,32 @@ export default function Header({
                   className="px-4 py-3 border-b"
                   style={{ borderColor: 'var(--border-color)' }}
                 >
-                  <p
-                    className="text-sm font-semibold"
-                    style={{ color: 'var(--text-color)' }}
-                  >
-                    {user?.name || 'Admin User'}
-                  </p>
-                  <p
-                    className="text-xs"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    {user?.email || 'admin@rasant.com'}
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={getUserAvatar()}
+                      alt="User Avatar"
+                      className="w-10 h-10 rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = '/file.svg';
+                      }}
+                    />
+                    <div>
+                      <p
+                        className="text-sm font-semibold"
+                        style={{ color: 'var(--text-color)' }}
+                      >
+                        {getUserDisplayName()}
+                      </p>
+                      <p
+                        className="text-xs"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        {getUserEmail()}
+                      </p>
+                    </div>
+                  </div>
                 </div>
+
                 <button
                   onClick={handleProfileClick}
                   className="w-full text-left px-4 py-2 text-sm transition-all duration-200 flex items-center gap-3"
@@ -215,6 +305,7 @@ export default function Header({
                   <UserIcon className="w-4 h-4" style={{ color: 'inherit' }} />
                   Profile
                 </button>
+
                 <button
                   onClick={handleSettingsClick}
                   className="w-full text-left px-4 py-2 text-sm transition-all duration-200 flex items-center gap-3"
@@ -231,10 +322,12 @@ export default function Header({
                   <Cog6ToothIcon className="w-4 h-4" style={{ color: 'inherit' }} />
                   Settings
                 </button>
+
                 <hr
                   className="my-1"
                   style={{ borderColor: 'var(--border-color)' }}
                 />
+
                 <button
                   onClick={onLogout}
                   className="w-full text-left px-4 py-2 text-sm transition-all duration-200 flex items-center gap-3"
