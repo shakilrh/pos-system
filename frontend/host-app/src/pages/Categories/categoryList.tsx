@@ -1,6 +1,7 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeftIcon, ArrowRightIcon, PencilIcon, TrashIcon, PlusCircleIcon } from '@heroicons/react/24/solid';
 import { Category } from './categoryTypes';
+import FlashMessage from '../FlashMessage';
 
 interface CategoryListProps {
   token: string | null;
@@ -8,15 +9,12 @@ interface CategoryListProps {
   logout: () => void;
   categories: Category[];
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
-  tableErrorMessage: string | null;
-  setTableErrorMessage: (message: string | null) => void;
-  currentCategoryPage: number;
-  setCurrentCategoryPage: (page: number) => void;
-  itemsPerPage: number;
   isProductFormActive: boolean;
   onAdd: () => void;
   onEdit: (category: Category) => void;
-  onDelete: (category: Category) => void;
+  onDelete: (id: string) => void;
+  flashMessage: { message: string; type: 'success' | 'error' } | null;
+  setFlashMessage: React.Dispatch<React.SetStateAction<{ message: string; type: 'success' | 'error' } | null>>;
 }
 
 export default function CategoryList({
@@ -25,39 +23,57 @@ export default function CategoryList({
                                        logout,
                                        categories,
                                        setCategories,
-                                       tableErrorMessage,
-                                       setTableErrorMessage,
-                                       currentCategoryPage,
-                                       setCurrentCategoryPage,
-                                       itemsPerPage,
                                        isProductFormActive,
                                        onAdd,
                                        onEdit,
                                        onDelete,
+                                       flashMessage,
+                                       setFlashMessage,
                                      }: CategoryListProps) {
+  const [currentCategoryPage, setCurrentCategoryPage] = useState(1);
+  const itemsPerPage = 9;
+
+  useEffect(() => {
+    const totalCategoryPages = Math.ceil(categories.length / itemsPerPage);
+    if (currentCategoryPage > totalCategoryPages && totalCategoryPages > 0) {
+      setCurrentCategoryPage(totalCategoryPages);
+    } else if (categories.length === 0) {
+      setCurrentCategoryPage(1);
+    }
+  }, [categories, currentCategoryPage]);
+
   const indexOfLastCategory = currentCategoryPage * itemsPerPage;
   const indexOfFirstCategory = indexOfLastCategory - itemsPerPage;
-  const currentCategories = Array.isArray(categories) ? categories.slice(indexOfFirstCategory, indexOfLastCategory) : [];
-  const totalCategoryPages = Array.isArray(categories) ? Math.ceil(categories.length / itemsPerPage) : 1;
+  const currentCategories = Array.isArray(categories)
+    ? categories.slice(indexOfFirstCategory, indexOfLastCategory)
+    : [];
+  const totalCategoryPages = Array.isArray(categories)
+    ? Math.ceil(categories.length / itemsPerPage)
+    : 1;
 
   return (
     <div className="relative z-0" style={{ opacity: isProductFormActive ? 0.5 : 1, pointerEvents: isProductFormActive ? 'none' : 'auto' }}>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
-          <span className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 p-2 rounded-lg mr-2">
-            Categories
-          </span>
-          <span className="text-sm text-gray-500 dark:text-gray-400">{categories.length} total</span>
+      {/* Header with title and add button */}
+      <div className="flex justify-between items-center mb-3">
+        <h2 className="text-xl font-semibold text-black dark:text-white">
+          Categories
+          <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">({categories.length} total)</span>
         </h2>
         <button
           onClick={onAdd}
-          className="flex items-center px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
+            isProductFormActive
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
+          }`}
           disabled={isProductFormActive}
         >
           <PlusCircleIcon className="w-4 h-4 mr-1" />
           <span className="text-sm">Add</span>
         </button>
       </div>
+
+      {/* Categories table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
@@ -78,36 +94,38 @@ export default function CategoryList({
               <td className="py-3 px-4 flex space-x-2">
                 <button
                   onClick={() => onEdit(category)}
-                  className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                  className={`text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 ${isProductFormActive ? 'opacity-50 cursor-not-allowed' : ''}`}
                   title="Edit"
                   disabled={isProductFormActive}
                 >
                   <PencilIcon className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={() => onDelete(category)}
-                  className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50"
-                  title="Delete"
-                  disabled={isProductFormActive}
-                >
-                  <TrashIcon className="w-4 h-4" />
-                </button>
+                {/* Uncomment if delete functionality is needed */}
+                {/*<button
+                    onClick={() => onDelete(category._id)}
+                    className={`text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50 ${isProductFormActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    title="Delete"
+                    disabled={isProductFormActive}
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </button>*/}
               </td>
             </tr>
           ))}
           </tbody>
         </table>
       </div>
-      {tableErrorMessage && (
-        <div className="mt-4 text-red-500 dark:text-red-400 text-center text-sm">{tableErrorMessage}</div>
-      )}
+
+      {/* Pagination - only show if there are multiple pages */}
       {totalCategoryPages > 1 && (
-        <div className="flex justify-between items-center mt-4 px-2">
+        <div className="flex justify-between items-center mt-3 px-2">
           <button
             onClick={() => setCurrentCategoryPage(Math.max(currentCategoryPage - 1, 1))}
             disabled={currentCategoryPage === 1 || isProductFormActive}
-            className={`flex items-center px-3 py-1 rounded-lg ${
-              currentCategoryPage === 1 || isProductFormActive ? 'text-gray-400 cursor-not-allowed' : 'text-indigo-600 hover:bg-indigo-50 dark:hover:bg-gray-700'
+            className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
+              currentCategoryPage === 1 || isProductFormActive
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
             }`}
           >
             <ArrowLeftIcon className="w-4 h-4 mr-1" />
@@ -119,8 +137,10 @@ export default function CategoryList({
           <button
             onClick={() => setCurrentCategoryPage(Math.min(currentCategoryPage + 1, totalCategoryPages))}
             disabled={currentCategoryPage === totalCategoryPages || isProductFormActive}
-            className={`flex items-center px-3 py-1 rounded-lg ${
-              currentCategoryPage === totalCategoryPages || isProductFormActive ? 'text-gray-400 cursor-not-allowed' : 'text-indigo-600 hover:bg-indigo-50 dark:hover:bg-gray-700'
+            className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
+              currentCategoryPage === totalCategoryPages || isProductFormActive
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
             }`}
           >
             Next

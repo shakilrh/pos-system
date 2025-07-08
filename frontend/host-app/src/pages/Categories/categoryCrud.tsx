@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import { addCategory, updateCategory, deleteCategory } from '../../services/categoryService';
 import { Category } from './categoryTypes';
-import FlashMessage from '../FlashMessage';
 
 interface CategoryCrudProps {
   token: string | null;
@@ -12,10 +11,10 @@ interface CategoryCrudProps {
   category?: Category | null;
   editingCategoryId?: string | null;
   deleteCategoryId?: string | null;
-  setTableErrorMessage?: (message: string | null) => void;
   onCancel: () => void;
   isProductFormActive: boolean;
   mode: 'add' | 'edit' | 'delete';
+  setFlashMessageInParent: (message: { message: string; type: 'success' | 'error' }) => void;
 }
 
 export default function CategoryCrud({
@@ -26,14 +25,13 @@ export default function CategoryCrud({
                                        category,
                                        editingCategoryId,
                                        deleteCategoryId,
-                                       setTableErrorMessage,
                                        onCancel,
                                        isProductFormActive,
                                        mode,
+                                       setFlashMessageInParent,
                                      }: CategoryCrudProps) {
   const [newCategoryName, setNewCategoryName] = useState(category?.name || '');
   const [newCategoryDesc, setNewCategoryDesc] = useState(category?.description || '');
-  const [flashMessage, setFlashMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [errors, setErrors] = useState<{
     name?: string[];
     description?: string[];
@@ -47,7 +45,6 @@ export default function CategoryCrud({
     setTouchedFields(new Set());
   }, [category]);
 
-  // Validation functions
   const validateName = (name: string): string[] => {
     const errors: string[] = [];
     if (!name.trim()) {
@@ -130,8 +127,8 @@ export default function CategoryCrud({
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
 
     if (mode === 'add' || mode === 'edit') {
       const allFields = ['name', 'description'];
@@ -143,15 +140,13 @@ export default function CategoryCrud({
       setErrors(allErrors);
 
       if (validateName(newCategoryName).length > 0) {
-        setFlashMessage({ message: 'Please fix all errors before submitting', type: 'error' });
+        setFlashMessageInParent({ message: 'Please fix all errors before submitting', type: 'error' });
         return;
       }
     }
 
     if (!token) {
-      const errorMessage = { message: 'Please log in to perform this action', type: 'error' };
-      setFlashMessage(errorMessage);
-      if (setTableErrorMessage && mode === 'delete') setTableErrorMessage(errorMessage.message);
+      setFlashMessageInParent({ message: 'Please log in to perform this action', type: 'error' });
       return;
     }
 
@@ -160,38 +155,38 @@ export default function CategoryCrud({
       if (mode === 'add') {
         updatedCategory = await addCategory(token, logout, newCategoryName, newCategoryDesc || undefined);
         setCategories([...categories, updatedCategory]);
-        setFlashMessage({ message: `Category "${newCategoryName || 'new category'}" added successfully!`, type: 'success' });
+        setFlashMessageInParent({
+          message: `Category "${newCategoryName}" added successfully!`,
+          type: 'success'
+        });
       } else if (mode === 'edit' && editingCategoryId) {
         updatedCategory = await updateCategory(token, logout, editingCategoryId, newCategoryName, newCategoryDesc || undefined);
         setCategories(categories.map((cat) => (cat._id === editingCategoryId ? updatedCategory : cat)));
-        setFlashMessage({ message: `Category "${newCategoryName || 'updated category'}" updated successfully!`, type: 'success' });
+        setFlashMessageInParent({
+          message: `Category "${newCategoryName}" updated successfully!`,
+          type: 'success'
+        });
       } else if (mode === 'delete' && deleteCategoryId) {
         await deleteCategory(token, logout, deleteCategoryId);
         setCategories(categories.filter((cat) => cat._id !== deleteCategoryId));
-        setFlashMessage({ message: `Category "${category?.name || 'category'}" deleted successfully!`, type: 'success' });
-        setTableErrorMessage?.(null);
+        setFlashMessageInParent({
+          message: `Category "${category?.name}" deleted successfully!`,
+          type: 'success'
+        });
       }
       onCancel();
     } catch (err) {
       let message = err instanceof Error ? err.message : `Failed to ${mode} category`;
       if (mode === 'delete' && err instanceof Error && err.message.includes('products associated')) {
-        message = `Cannot delete category "${category?.name || 'category'}" because it has associated products.`;
+        message = `Cannot delete category "${category?.name}" because it has associated products.`;
       }
-      setFlashMessage({ message, type: 'error' });
-      if (setTableErrorMessage && mode === 'delete') setTableErrorMessage(message);
+      setFlashMessageInParent({ message, type: 'error' });
     }
   };
 
   if (mode === 'add' || mode === 'edit') {
     return (
       <div className="absolute inset-0 z-10 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-y-auto">
-        {flashMessage && (
-          <FlashMessage
-            message={flashMessage.message}
-            type={flashMessage.type}
-            onClose={() => setFlashMessage(null)}
-          />
-        )}
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {mode === 'add' ? 'Add New Category' : 'Edit Category'}
@@ -202,7 +197,9 @@ export default function CategoryCrud({
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="categoryName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category Name *</label>
+            <label htmlFor="categoryName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Category Name *
+            </label>
             <input
               id="categoryName"
               type="text"
@@ -218,7 +215,9 @@ export default function CategoryCrud({
             {renderFieldErrors('name')}
           </div>
           <div>
-            <label htmlFor="categoryDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (optional)</label>
+            <label htmlFor="categoryDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Description (optional)
+            </label>
             <textarea
               id="categoryDescription"
               value={newCategoryDesc}
@@ -260,13 +259,6 @@ export default function CategoryCrud({
     return (
       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm">
-          {flashMessage && (
-            <FlashMessage
-              message={flashMessage.message}
-              type={flashMessage.type}
-              onClose={() => setFlashMessage(null)}
-            />
-          )}
           <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Confirm Deletion</h3>
             <button onClick={onCancel} className="text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200">

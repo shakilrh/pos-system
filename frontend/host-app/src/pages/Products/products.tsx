@@ -151,13 +151,16 @@ export default function Products({
       style={{ opacity: isCategoryFormActive ? 0.5 : 1 }}
     >
       <Toaster position="top-right" />
-      {flashMessage && (
-        <FlashMessage
-          message={flashMessage.message}
-          type={flashMessage.type}
-          onClose={() => setFlashMessage(null)}
-        />
-      )}
+
+      <div className="h-10 mb-4">
+        {flashMessage && (
+          <FlashMessage
+            message={flashMessage.message}
+            type={flashMessage.type}
+            onClose={() => setFlashMessage(null)}
+          />
+        )}
+      </div>
       <ProductList
         token={token}
         isAuthenticated={isAuthenticated}

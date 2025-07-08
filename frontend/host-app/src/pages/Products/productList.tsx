@@ -62,13 +62,16 @@ export default function ProductList({
   return (
     <div className="relative z-0" style={{ opacity: isCategoryFormActive ? 0.5 : 1, pointerEvents: isCategoryFormActive ? 'none' : 'auto' }}>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
-          <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 p-2 rounded-lg mr-2">Products</span>
-          <span className="text-sm text-gray-500 dark:text-gray-400">{filteredProducts.length} items</span>
+        <h2  className="text-xl font-semibold text-black dark:text-white">Products
+          <span className="text-sm text-gray-500 dark:text-gray-400">({filteredProducts.length} items)</span>
         </h2>
         <button
           onClick={onAdd}
-          className="flex items-center px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
+            isCategoryFormActive
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
+          }`}
           disabled={isCategoryFormActive}
         >
           <PlusCircleIcon className="w-4 h-4 mr-1" />
@@ -80,9 +83,9 @@ export default function ProductList({
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleFilterChange('all')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               filterCategory === 'all' || filterCategory === null
-                ? 'bg-blue-600 text-white'
+                ? 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
           >
@@ -90,9 +93,9 @@ export default function ProductList({
           </button>
           <button
             onClick={() => handleFilterChange('inactive')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               filterCategory === 'inactive'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
           >
@@ -102,9 +105,9 @@ export default function ProductList({
             <button
               key={category._id}
               onClick={() => handleFilterChange(category._id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 filterCategory === category._id
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
               }`}
             >
@@ -114,12 +117,12 @@ export default function ProductList({
         </div>
       </div>
       {currentProducts.length > 0 ? (
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 w-full">
           {currentProducts.map((product) => (
             <div
               key={`product-${product._id}`}
-              className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:scale-[1.02] hover:shadow-lg transition-all duration-300 ${!product.isActive ? 'opacity-50' : ''}`}
-              style={{ height: '240px', width: '180px' }}
+              className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:scale-[1.02] hover:shadow-lg transition-all duration-300 ${!product.isActive ? 'opacity-50' : ''} w-full max-w-[180px] mx-auto`}
+              style={{ height: '240px' }}
             >
               <div className="relative h-1/2 cursor-pointer" onClick={() => !isCategoryFormActive && onViewDetails(product)}>
                 {product.pictureUrl ? (
@@ -161,20 +164,20 @@ export default function ProductList({
                   <div className="flex space-x-1">
                     <button
                       onClick={() => !isCategoryFormActive && onEdit(product)}
-                      className="text-blue-600 dark:hover:text-blue-400 p-0.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                      className={`text-blue-600 dark:hover:text-blue-400 p-0.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 ${isCategoryFormActive ? 'opacity-50 cursor-not-allowed' : ''}`}
                       title="Edit"
                       disabled={isCategoryFormActive}
                     >
                       <PencilIcon className="w-4 h-4" />
                     </button>
-                    {/*<button*/}
-                    {/*  onClick={() => !isCategoryFormActive && onDelete(product._id)}*/}
-                    {/*  className="text-red-600 dark:hover:text-red-400 p-0.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50"*/}
-                    {/*  title="Delete"*/}
-                    {/*  disabled={isCategoryFormActive}*/}
-                    {/*>*/}
-                    {/*  <TrashIcon className="w-4 h-4" />*/}
-                    {/*</button>*/}
+                    {/*<button
+                      onClick={() => !isCategoryFormActive && onDelete(product._id)}
+                      className="text-red-600 dark:hover:text-red-400 p-0.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50"
+                      title="Delete"
+                      disabled={isCategoryFormActive}
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>*/}
                   </div>
                 </div>
               </div>
@@ -191,7 +194,11 @@ export default function ProductList({
           <button
             onClick={() => !isCategoryFormActive && setCurrentProductPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentProductPage === 1 || isCategoryFormActive}
-            className={`flex items-center px-4 py-2 rounded-lg ${currentProductPage === 1 || isCategoryFormActive ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30'}`}
+            className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
+              currentProductPage === 1 || isCategoryFormActive
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
+            }`}
           >
             <ArrowLeftIcon className="w-4 h-4 mr-1" />
             Previous
@@ -200,7 +207,11 @@ export default function ProductList({
           <button
             onClick={() => !isCategoryFormActive && setCurrentProductPage((prev) => Math.min(prev + 1, totalProductPages))}
             disabled={currentProductPage === totalProductPages || isCategoryFormActive}
-            className={`flex items-center px-4 py-2 rounded-lg ${currentProductPage === totalProductPages || isCategoryFormActive ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30'}`}
+            className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
+              currentProductPage === totalProductPages || isCategoryFormActive
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
+            }`}
           >
             Next
             <ArrowRightIcon className="w-4 h-4 ml-1" />

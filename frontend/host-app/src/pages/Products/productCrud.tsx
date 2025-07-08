@@ -114,9 +114,7 @@ export default function ProductCrud({
 
   const validateDescription = (description: string): string[] => {
     const errors: string[] = [];
-    if (!description.trim()) {
-      errors.push('Description is required');
-    } else if (description.length > 500) {
+    if (description && description.length > 500) {
       errors.push('Description must be less than 500 characters');
     }
     return errors;
@@ -162,9 +160,9 @@ export default function ProductCrud({
   };
 
   const isFormValid = (): boolean => {
-    const requiredFields = ['name', 'price', 'category', 'description', 'timeRequired'];
+    const requiredFields = ['name', 'price', 'category', 'timeRequired'];
     const requiredFieldsValid = requiredFields.every(field => getFieldErrors(field).length === 0);
-    const optionalFieldsValid = ['picture'].every(field => getFieldErrors(field).length === 0);
+    const optionalFieldsValid = ['picture', 'description'].every(field => getFieldErrors(field).length === 0);
     return requiredFieldsValid && optionalFieldsValid;
   };
 
@@ -414,7 +412,7 @@ export default function ProductCrud({
               value={newProductTimeRequired}
               onChange={(e) => handleInputChange('timeRequired', e.target.value)}
               onFocus={() => handleFocus('timeRequired')}
-              onBlur={() => handleBlur(' timeRequired')}
+              onBlur={() => handleBlur('timeRequired')}
               placeholder="Time required in minutes"
               className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
                 errors.timeRequired && errors.timeRequired.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
@@ -445,14 +443,14 @@ export default function ProductCrud({
             {renderFieldErrors('category')}
           </div>
           <div>
-            <label htmlFor="productDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description *</label>
+            <label htmlFor="productDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (Optional)</label>
             <textarea
               id="productDescription"
               value={newProductDesc}
               onChange={(e) => handleInputChange('description', e.target.value)}
               onFocus={() => handleFocus('description')}
               onBlur={() => handleBlur('description')}
-              placeholder="Product description"
+              placeholder="Product description (optional)"
               className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
                 errors.description && errors.description.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
               } focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all duration-200`}
@@ -473,8 +471,10 @@ export default function ProductCrud({
               />
               <label
                 htmlFor="imageUpload"
-                className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer flex items-center gap-1 ${
-                  isCategoryFormActive ? 'opacity-50 cursor-not-allowed' : ''
+                className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-1 ${
+                  isCategoryFormActive
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
                 }`}
               >
                 <PlusCircleIcon className="w-4 h-4" />
@@ -506,8 +506,10 @@ export default function ProductCrud({
             </button>
             <button
               type="submit"
-              className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center ${
-                isCategoryFormActive || !isFormValid() ? 'opacity-70 cursor-not-allowed' : ''
+              className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center ${
+                isCategoryFormActive || !isFormValid()
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
               }`}
               disabled={isCategoryFormActive || !isFormValid()}
             >
@@ -608,14 +610,14 @@ export default function ProductCrud({
             {renderFieldErrors('category')}
           </div>
           <div>
-            <label htmlFor="productDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description *</label>
+            <label htmlFor="productDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
             <textarea
               id="productDescription"
               value={newProductDesc}
               onChange={(e) => handleInputChange('description', e.target.value)}
               onFocus={() => handleFocus('description')}
               onBlur={() => handleBlur('description')}
-              placeholder="Product description"
+              placeholder="Product description (optional)"
               className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
                 errors.description && errors.description.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
               } focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all duration-200`}
@@ -636,8 +638,10 @@ export default function ProductCrud({
               />
               <label
                 htmlFor="imageUpload"
-                className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer flex items-center gap-1 ${
-                  isCategoryFormActive ? 'opacity-50 cursor-not-allowed' : ''
+                className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-1 ${
+                  isCategoryFormActive
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
                 }`}
               >
                 <PlusCircleIcon className="w-4 h-4" />
@@ -669,8 +673,10 @@ export default function ProductCrud({
             </button>
             <button
               type="submit"
-              className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center ${
-                isCategoryFormActive || !isFormValid() ? 'opacity-70 cursor-not-allowed' : ''
+              className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center ${
+                isCategoryFormActive || !isFormValid()
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
               }`}
               disabled={isCategoryFormActive || !isFormValid()}
             >

@@ -56,28 +56,32 @@ export default function MenuManagement() {
   }
 
   return (
-    <div className="flex-1 container mx-auto p-4 sm:p-6 lg:p-5">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <Categories
-          token={token}
-          isAuthenticated={isAuthenticated}
-          logout={logout}
-          categories={categories}
-          setCategories={setCategories}
-          onFormActive={setIsCategoryFormActive}
-          isProductFormActive={isProductFormActive}
-        />
-        <Products
-          token={token}
-          isAuthenticated={isAuthenticated}
-          logout={logout}
-          categories={categories}
-          setFormMode={(mode, product) => handleSetFormMode(mode, 'product', product)}
-          filterCategory={filterCategory}
-          setFilterCategory={setFilterCategory}
-          isFormActive={isProductFormActive}
-          isCategoryFormActive={isCategoryFormActive}
-        />
+    <div className="w-full min-h-screen pl-4 pr-4 py-4">
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 h-full">
+        <div className="lg:col-span-3 pl-2">
+          <Categories
+            token={token}
+            isAuthenticated={isAuthenticated}
+            logout={logout}
+            categories={categories}
+            setCategories={setCategories}
+            onFormActive={setIsCategoryFormActive}
+            isProductFormActive={isProductFormActive}
+          />
+        </div>
+        <div className="lg:col-span-7">
+          <Products
+            token={token}
+            isAuthenticated={isAuthenticated}
+            logout={logout}
+            categories={categories}
+            setFormMode={(mode, product) => handleSetFormMode(mode, 'product', product)}
+            filterCategory={filterCategory}
+            setFilterCategory={setFilterCategory}
+            isFormActive={isProductFormActive}
+            isCategoryFormActive={isCategoryFormActive}
+          />
+        </div>
       </div>
     </div>
   );
