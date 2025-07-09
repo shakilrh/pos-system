@@ -51,7 +51,7 @@ const UserList: React.FC<UserListProps> = ({
     <div className="p-6 rounded-lg shadow-lg" style={{backgroundColor: 'var(--surface-color)'}}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="w-full sm:w-72">
-          <label className="block text-sm font-medium" style={{color: 'var(--text-secondary)'}}>Search Users</label>
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)'}}>Search Users</label>
           <div className="relative">
             <input
               type="text"
