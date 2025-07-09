@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MagnifyingGlassIcon, PencilIcon, TrashIcon, UserGroupIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PencilIcon, TrashIcon, UserGroupIcon, XMarkIcon,PlusIcon  } from '@heroicons/react/24/outline';
 import { Role, RoleListProps } from './roleTypes';
 
 const RoleList: React.FC<RoleListProps> = ({
@@ -12,6 +12,7 @@ const RoleList: React.FC<RoleListProps> = ({
                                              setSearchQuery,
                                              currentPage,
                                              setCurrentPage,
+                                             setShowCreateForm, // Add this prop
                                            }) => {
   const rolesPerPage = 6;
   const filteredRoles = roles.filter((role) =>
@@ -60,6 +61,18 @@ const RoleList: React.FC<RoleListProps> = ({
             <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
           </div>
         </div>
+        {/* Add the Add Role button here */}
+        <button
+          onClick={() => setShowCreateForm(true)}
+          className="flex items-center space-x-1 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 self-end"
+          style={{
+            backgroundColor: 'var(--primary-color)',
+            '--tw-ring-color': 'var(--focus-ring)'
+          } as React.CSSProperties}
+        >
+          <PlusIcon className="w-5 h-5" />
+          <span>Add Role</span>
+        </button>
       </div>
 
       {isLoading.fetch ? (

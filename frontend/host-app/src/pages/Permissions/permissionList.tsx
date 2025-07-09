@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { MagnifyingGlassIcon, PencilIcon, TrashIcon, KeyIcon, XMarkIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PencilIcon, TrashIcon, KeyIcon, XMarkIcon, ChevronDownIcon, ChevronRightIcon,PlusIcon } from '@heroicons/react/24/outline';
 import { Permission, PermissionListProps } from './permissionsTypes';
 
 interface GroupedPermission {
@@ -20,6 +20,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
                                                          setSearchQuery,
                                                          currentPage,
                                                          setCurrentPage,
+                                                         setShowCreateForm, // Add this prop
                                                        }) => {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [selectedPermission, setSelectedPermission] = useState<Permission | null>(null);
@@ -145,21 +146,18 @@ const PermissionList: React.FC<PermissionListProps> = ({
             <MagnifyingGlassIcon className="w-5 h-5 text-[--text-secondary] absolute left-3 top-1/2 transform -translate-y-1/2" />
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setExpandedGroups(new Set(filteredPermissions.map(group => group.id)))}
-            className="text-sm text-[--info-color] hover:opacity-80"
-          >
-            Expand All
-          </button>
-          <span className="text-[--border-color]">|</span>
-          <button
-            onClick={() => setExpandedGroups(new Set())}
-            className="text-sm text-[--info-color] hover:opacity-80"
-          >
-            Collapse All
-          </button>
-        </div>
+        {/* Add the Add Permission button here */}
+        <button
+          onClick={() => setShowCreateForm(true)}
+          className="flex items-center space-x-1 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 self-end"
+          style={{
+            backgroundColor: 'var(--primary-color)',
+            '--tw-ring-color': 'var(--focus-ring)'
+          } as React.CSSProperties}
+        >
+          <PlusIcon className="w-5 h-5" />
+          <span>Add Permission</span>
+        </button>
       </div>
 
       {isLoading.fetch ? (

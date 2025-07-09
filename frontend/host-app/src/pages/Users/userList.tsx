@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { MagnifyingGlassIcon, PencilIcon, TrashIcon, UserIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PencilIcon, TrashIcon, UserIcon, XMarkIcon,PlusIcon  } from '@heroicons/react/24/outline';
 import { User, Role } from './userTypes';
-
+import UserCrud from './userCrud';
 interface UserListProps {
   users: User[];
   roles: Role[];
@@ -14,6 +14,7 @@ interface UserListProps {
   handleDeleteUser: (userId: string) => Promise<void>;
   isLoading: { fetch: boolean; delete: boolean };
   setDeleteConfirm: (id: string | null) => void;
+  setShowCreateForm: (show: boolean) => void; // Add this prop
 }
 
 const UserList: React.FC<UserListProps> = ({
@@ -28,6 +29,7 @@ const UserList: React.FC<UserListProps> = ({
                                              handleDeleteUser,
                                              isLoading,
                                              setDeleteConfirm,
+                                             setShowCreateForm, // Add this prop
                                            }) => {
   const usersPerPage = 6;
   const indexOfLastUser = currentPage * usersPerPage;
@@ -67,6 +69,18 @@ const UserList: React.FC<UserListProps> = ({
             <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2" style={{color: 'var(--text-tertiary)'}} />
           </div>
         </div>
+        {/* Add the Add User button here */}
+        <button
+          onClick={() => setShowCreateForm(true)}
+          className="flex items-center space-x-1 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 self-end"
+          style={{
+            backgroundColor: 'var(--primary-color)',
+            '--tw-ring-color': 'var(--focus-ring)'
+          } as React.CSSProperties}
+        >
+          <PlusIcon className="w-5 h-5" />
+          <span>Add User</span>
+        </button>
       </div>
 
       {isLoading.fetch ? (

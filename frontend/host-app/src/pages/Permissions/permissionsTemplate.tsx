@@ -130,17 +130,7 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
             <span>Assign Role Permissions</span>
           </button>
         </div>
-        <button
-          className="flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 hover:opacity-90 focus:outline-none bg-[--primary-color] text-white"
-          onClick={() => {
-            setShowCreateForm(true);
-            setEditPermission(null);
-            setActiveSection('list');
-          }}
-        >
-          <PlusIcon className="w-5 h-5" />
-          <span>Add Permission</span>
-        </button>
+
       </div>
       {showCreateForm && (
         <PermissionCrud
@@ -172,6 +162,7 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
             setSearchQuery={setSearchQuery}
             currentPage={currentPage}
             setCurrentPage={setCurrentPage}
+            setShowCreateForm={setShowCreateForm} // Add this prop
           />
           {editPermission && !showCreateForm && (
             <PermissionCrud

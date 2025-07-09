@@ -88,17 +88,7 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
           <UserGroupIcon className="w-5 h-5" />
           <span>Role List</span>
         </button>
-        <button
-          style={{
-            backgroundColor: 'var(--primary-color)',
-            color: 'var(--surface-color)',
-          }}
-          className="flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 hover:opacity-90 focus:outline-none"
-          onClick={() => setShowCreateForm(true)}
-        >
-          <PlusIcon className="w-5 h-5" />
-          <span>Add Role</span>
-        </button>
+
       </div>
       {showCreateForm && (
         <RoleCrud
@@ -127,6 +117,7 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
         setSearchQuery={setSearchQuery}
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
+        setShowCreateForm={setShowCreateForm} // Add this prop
       />
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

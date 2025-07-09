@@ -185,17 +185,6 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
             <span>Assign Role</span>
           </button>
         </div>
-        <button
-          style={{
-            backgroundColor: 'var(--primary-color)',
-            color: 'var(--surface-color)',
-          }}
-          className="flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 hover:opacity-90 focus:outline-none"
-          onClick={() => setShowCreateForm(true)}
-        >
-          <PlusIcon className="w-5 h-5" />
-          <span>Add User</span>
-        </button>
       </div>
       {showCreateForm && (
         <UserCrud
@@ -232,6 +221,7 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
           handleDeleteUser={handleDeleteUser}
           isLoading={isLoading}
           setDeleteConfirm={setDeleteConfirm}
+          setShowCreateForm={setShowCreateForm} // Add this prop
         />
       )}
       {activeSection === 'role' && (
