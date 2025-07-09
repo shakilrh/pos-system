@@ -174,7 +174,11 @@ export default function Header({
   });
 
   return (
-    <header className="fixed top-0 left-0 w-full h-16 bg-background-secondary shadow-lg z-50 p-4 transition-theme border-b border-border-color">
+    <header className="fixed top-0 left-0 w-full h-16 shadow-lg z-50 p-4 transition-theme border-b"
+            style={{
+              backgroundColor: 'var(--background-secondary)',
+              borderColor: 'var(--border-color)'
+            }}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
@@ -187,7 +191,8 @@ export default function Header({
                 e.currentTarget.src = '/file.svg';
               }}
             />
-            <span className="text-lg font-semibold tracking-tight text-text-primary">
+            <span className="text-lg font-semibold tracking-tight"
+                  style={{ color: 'var(--text-color)' }}>
               {storeData.store_name}
             </span>
           </div>
@@ -251,13 +256,13 @@ export default function Header({
             {isProfileOpen && (
               <div
                 ref={setPopperElement}
-                style={styles.popper}
-                {...attributes.popper}
-                className="w-64 rounded-xl shadow-xl border py-2 z-20 bg-white"
-                css={{
-                  backgroundColor: 'var(--background-secondary)',
+                style={{
+                  ...styles.popper,
+                  backgroundColor: 'var(--surface-color)',
                   borderColor: 'var(--border-color)'
                 }}
+                {...attributes.popper}
+                className="w-64 rounded-xl shadow-xl border py-2 z-20"
               >
                 <div
                   className="px-4 py-3 border-b"
@@ -294,7 +299,7 @@ export default function Header({
                   className="w-full text-left px-4 py-2 text-sm transition-all duration-200 flex items-center gap-3"
                   style={{ color: 'var(--text-color)' }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--surface-color)';
+                    e.currentTarget.style.backgroundColor = 'var(--background-secondary)';
                     e.currentTarget.style.color = 'var(--primary-color)';
                   }}
                   onMouseLeave={(e) => {
@@ -311,7 +316,7 @@ export default function Header({
                   className="w-full text-left px-4 py-2 text-sm transition-all duration-200 flex items-center gap-3"
                   style={{ color: 'var(--text-color)' }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--surface-color)';
+                    e.currentTarget.style.backgroundColor = 'var(--background-secondary)';
                     e.currentTarget.style.color = 'var(--primary-color)';
                   }}
                   onMouseLeave={(e) => {

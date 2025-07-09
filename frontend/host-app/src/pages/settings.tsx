@@ -80,9 +80,7 @@ export default function Settings() {
                 { value: 'default', label: 'Default', color: 'bg-orange-500', border: 'border-orange-200' },
                 { value: 'blue', label: 'Blue', color: 'bg-blue-500', border: 'border-blue-200' },
                 { value: 'green', label: 'Green', color: 'bg-emerald-600', border: 'border-emerald-200' },
-                { value: 'defaultNo2', label: 'Default No2', color: 'bg-blue-800', border: 'border-blue-300' },
                 { value: 'professional', label: 'Professional', color: 'bg-gray-900', border: 'border-gray-400' },
-                { value: 'modern-blue', label: 'Modern Blue', color: 'bg-teal-700', border: 'border-teal-200' },
                 { value: 'warm-minimal', label: 'Warm Minimal', color: 'bg-orange-900', border: 'border-orange-300' },
                 { value: 'dark-pro', label: 'Dark Pro', color: 'bg-gray-800', border: 'border-gray-500' },
               ].map((themeOption) => {
