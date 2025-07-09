@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MagnifyingGlassIcon, PencilIcon, TrashIcon, UserGroupIcon, XMarkIcon,PlusIcon  } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PencilIcon, TrashIcon, UserGroupIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { Role, RoleListProps } from './roleTypes';
 
 const RoleList: React.FC<RoleListProps> = ({
@@ -12,7 +12,7 @@ const RoleList: React.FC<RoleListProps> = ({
                                              setSearchQuery,
                                              currentPage,
                                              setCurrentPage,
-                                             setShowCreateForm, // Add this prop
+                                             setShowCreateForm,
                                            }) => {
   const rolesPerPage = 6;
   const filteredRoles = roles.filter((role) =>
@@ -61,7 +61,6 @@ const RoleList: React.FC<RoleListProps> = ({
             <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
           </div>
         </div>
-        {/* Add the Add Role button here */}
         <button
           onClick={() => setShowCreateForm(true)}
           className="flex items-center space-x-1 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 self-end"
@@ -88,54 +87,79 @@ const RoleList: React.FC<RoleListProps> = ({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y" style={{ borderColor: 'var(--border-color)' }}>
+          <table className="min-w-full divide-y table-fixed" style={{ borderColor: 'var(--border-color)' }}>
             <thead style={{ backgroundColor: 'var(--background-secondary)' }}>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Description</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Permissions</th>
-              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider w-1/6" style={{ color: 'var(--text-secondary)' }}>Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider w-1/4" style={{ color: 'var(--text-secondary)' }}>Description</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider w-2/5" style={{ color: 'var(--text-secondary)' }}>Permissions</th>
+              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider w-1/6" style={{ color: 'var(--text-secondary)' }}>Actions</th>
             </tr>
             </thead>
             <tbody className="divide-y" style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}>
             {currentRoles.map((role) => (
               <tr key={role._id} className="transition-colors duration-150" style={{ '--tw-bg-opacity': '0.1', '&:hover': { backgroundColor: 'var(--primary-color)' } } as React.CSSProperties}>
                 <td
-                  className="px-6 py-4 whitespace-nowrap text-sm font-medium cursor-pointer hover:underline"
+                  className="px-6 py-4 text-sm font-medium cursor-pointer hover:underline"
                   style={{ color: 'var(--primary-color)' }}
                   onClick={() => handleRoleClick(role)}
                 >
-                  {role.name || 'N/A'}
+                  <div className="break-words">
+                    {role.name || 'N/A'}
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--text-color)' }}>{role.description || 'N/A'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--text-color)' }}>
-                  {role.permissions?.length ? role.permissions.map(p => p.key).join(', ') : 'None'}
+                <td className="px-6 py-4 text-sm" style={{ color: 'var(--text-color)' }}>
+                  <div className="break-words">
+                    {role.description || 'N/A'}
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => setEditRole(role)}
-                    className="mr-4"
-                    style={{ color: 'var(--primary-color)' }}
-                    title="Edit role"
-                  >
-                    <PencilIcon className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(role._id)}
-                    disabled={isLoading.delete}
-                    className="disabled:opacity-50"
-                    style={{ color: 'var(--error-color)' }}
-                    title="Delete role"
-                  >
-                    {isLoading.delete ? (
-                      <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--error-color)' }}>
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
+                <td className="px-6 py-4 text-sm" style={{ color: 'var(--text-color)' }}>
+                  <div className="break-words">
+                    {role.permissions?.length ? (
+                      <div className="flex flex-wrap gap-1">
+                        {role.permissions.map((permission, index) => (
+                          <React.Fragment key={index}>
+                            {index > 0 && (
+                              <span className="text-gray-400 select-none">|</span>
+                            )}
+                            <span className="inline-block">
+                                {permission.key}
+                              </span>
+                          </React.Fragment>
+                        ))}
+                      </div>
                     ) : (
-                      <TrashIcon className="w-5 h-5" />
+                      'None'
                     )}
-                  </button>
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-right text-sm font-medium">
+                  <div className="flex items-center justify-end space-x-2">
+                    <button
+                      onClick={() => setEditRole(role)}
+                      className="p-1 rounded hover:bg-opacity-10 transition-colors duration-200"
+                      style={{ color: 'var(--primary-color)' }}
+                      title="Edit role"
+                    >
+                      <PencilIcon className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(role._id)}
+                      disabled={isLoading.delete}
+                      className="p-1 rounded hover:bg-opacity-10 transition-colors duration-200 disabled:opacity-50"
+                      style={{ color: 'var(--error-color)' }}
+                      title="Delete role"
+                    >
+                      {isLoading.delete ? (
+                        <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--error-color)' }}>
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <TrashIcon className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -192,41 +216,78 @@ const RoleList: React.FC<RoleListProps> = ({
       )}
 
       {selectedRole && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div className="rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl border" style={{ backgroundColor: 'var(--surface-color)', borderColor: 'var(--border-color)' }}>
-            <div className="flex justify-between items-center mb-5 border-b pb-3" style={{ borderColor: 'var(--border-color)' }}>
-              <h3 className="text-xl font-bold" style={{ color: 'var(--text-color)' }}>Role Details</h3>
-              <button onClick={closeModal} style={{ color: 'var(--text-tertiary)' }}>
-                <XMarkIcon className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="space-y-4 text-sm">
-              <div className="flex justify-between">
-                <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>Name:</span>
-                <span style={{ color: 'var(--text-color)' }}>{selectedRole.name || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>Description:</span>
-                <span style={{ color: 'var(--text-color)' }}>{selectedRole.description || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>Permissions:</span>
-                <span style={{ color: 'var(--text-color)' }}>
-                  {selectedRole.permissions?.length ? selectedRole.permissions.map(p => p.key).join(', ') : 'None'}
-                </span>
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="rounded-lg p-4 w-full max-w-md mx-4 shadow-2xl border max-h-[70vh] overflow-y-auto" style={{ backgroundColor: 'var(--surface-color)', borderColor: 'var(--border-color)' }}>
+            <div className="flex justify-between items-center mb-4 pb-3 border-b" style={{ borderColor: 'var(--border-color)' }}>
+              <h3 className="text-lg font-bold" style={{ color: 'var(--text-color)' }}>Role Details</h3>
               <button
                 onClick={closeModal}
-                className="px-4 py-2 text-white rounded-lg focus:outline-none focus:ring-2 transition-colors duration-200"
-                style={{
-                  backgroundColor: 'var(--primary-color)',
-                  '--tw-ring-color': 'var(--focus-ring)'
-                } as React.CSSProperties}
+                className="p-1 rounded-full hover:bg-opacity-10 transition-colors duration-200"
+                style={{ color: 'var(--text-tertiary)', backgroundColor: 'transparent' }}
               >
-                Close
+                <XMarkIcon className="w-5 h-5" />
               </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>
+                  Role Name
+                </label>
+                <div className="p-2 rounded-md border" style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}>
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-color)' }}>
+                    {selectedRole.name || 'N/A'}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>
+                  Description
+                </label>
+                <div className="p-2 rounded-md border" style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}>
+                  <span className="text-sm" style={{ color: 'var(--text-color)' }}>
+                    {selectedRole.description || 'No description provided'}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  Permissions ({selectedRole.permissions?.length || 0})
+                </label>
+                <div className="space-y-1 max-h-28 overflow-y-auto">
+                  {selectedRole.permissions?.length ? (
+                    selectedRole.permissions.map((permission, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center p-2 rounded-md border-l-2 transition-colors duration-150"
+                        style={{
+                          backgroundColor: 'var(--background-color)',
+                          borderColor: 'var(--border-color)',
+                          borderLeftColor: 'var(--primary-color)'
+                        }}
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: 'var(--primary-color)' }}></div>
+                        <span className="text-xs font-medium" style={{ color: 'var(--text-color)' }}>
+                          {permission.key}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-3 text-center rounded-md border-2 border-dashed" style={{ borderColor: 'var(--border-color)' }}>
+                      <UserGroupIcon className="w-6 h-6 mx-auto mb-1" style={{ color: 'var(--text-tertiary)' }} />
+                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                        No permissions assigned
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end space-x-2 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
+
             </div>
           </div>
         </div>

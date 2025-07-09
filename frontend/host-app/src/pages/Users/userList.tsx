@@ -203,63 +203,120 @@ const UserList: React.FC<UserListProps> = ({
       )}
 
       {selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div className="rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl border" style={{backgroundColor: 'var(--surface-color)', borderColor: 'var(--border-color)'}}>
-            <div className="flex justify-between items-center mb-5 border-b pb-3" style={{borderColor: 'var(--border-color)'}}>
-              <h3 className="text-xl font-bold" style={{color: 'var(--text-color)'}}>User Details</h3>
-              <button onClick={closeModal} style={{color: 'var(--text-secondary)'}}>
-                <XMarkIcon className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="space-y-4 text-sm">
-              <div className="flex justify-between">
-                <span className="font-medium" style={{color: 'var(--text-secondary)'}}>Name:</span>
-                <span style={{color: 'var(--text-color)'}}>{selectedUser.name || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium" style={{color: 'var(--text-secondary)'}}>Email:</span>
-                <span style={{color: 'var(--text-color)'}}>{selectedUser.email || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium" style={{color: 'var(--text-secondary)'}}>Type:</span>
-                <span style={{color: 'var(--text-color)'}}>{selectedUser.user_type || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium" style={{color: 'var(--text-secondary)'}}>Role:</span>
-                <span style={{color: 'var(--text-color)'}}>{roles.find(r => r._id === selectedUser.role_id)?.name || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium" style={{color: 'var(--text-secondary)'}}>Phone:</span>
-                <span style={{color: 'var(--text-color)'}}>{selectedUser.phone_number || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium" style={{color: 'var(--text-secondary)'}}>Job Title:</span>
-                <span style={{color: 'var(--text-color)'}}>{selectedUser.job_title || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium" style={{color: 'var(--text-secondary)'}}>Shift Time:</span>
-                <span style={{color: 'var(--text-color)'}}>{selectedUser.shift_time || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium" style={{color: 'var(--text-secondary)'}}>Salary:</span>
-                <span style={{color: 'var(--text-color)'}}>{selectedUser.salary ? `$${selectedUser.salary.toFixed(2)}` : 'N/A'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium" style={{color: 'var(--text-secondary)'}}>Address:</span>
-                <span style={{color: 'var(--text-color)'}}>{selectedUser.address || 'N/A'}</span>
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="rounded-lg p-4 w-full max-w-md mx-4 shadow-2xl border max-h-[70vh] overflow-y-auto" style={{backgroundColor: 'var(--surface-color)', borderColor: 'var(--border-color)'}}>
+            <div className="flex justify-between items-center mb-4 pb-3 border-b" style={{borderColor: 'var(--border-color)'}}>
+              <h3 className="text-lg font-bold" style={{color: 'var(--text-color)'}}>User Details</h3>
               <button
                 onClick={closeModal}
-                className="px-4 py-2 text-white rounded-lg focus:outline-none focus:ring-2 transition-colors duration-200"
-                style={{
-                  backgroundColor: 'var(--primary-color)',
-                  '--tw-ring-color': 'var(--focus-ring)'
-                } as React.CSSProperties}
+                className="p-1 rounded-full hover:bg-opacity-10 transition-colors duration-200"
+                style={{color: 'var(--text-tertiary)', backgroundColor: 'transparent'}}
               >
-                Close
+                <XMarkIcon className="w-5 h-5" />
               </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* User Name */}
+              <div>
+                <label className="block text-xs font-semibold mb-1" style={{color: 'var(--text-secondary)'}}>
+                  Full Name
+                </label>
+                <div className="p-2 rounded-md border" style={{backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)'}}>
+                  <span className="text-sm font-medium" style={{color: 'var(--text-color)'}}>
+                    {selectedUser.name || 'N/A'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-semibold mb-1" style={{color: 'var(--text-secondary)'}}>
+                  Email Address
+                </label>
+                <div className="p-2 rounded-md border" style={{backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)'}}>
+                  <span className="text-sm" style={{color: 'var(--text-color)'}}>
+                    {selectedUser.email || 'N/A'}
+                  </span>
+                </div>
+              </div>
+
+              {/* User Type & Role in same row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold mb-1" style={{color: 'var(--text-secondary)'}}>
+                    User Type
+                  </label>
+                  <div className="p-2 rounded-md border" style={{backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)'}}>
+                    <span className="text-sm" style={{color: 'var(--text-color)'}}>
+                      {selectedUser.user_type || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1" style={{color: 'var(--text-secondary)'}}>
+                    Role
+                  </label>
+                  <div className="p-2 rounded-md border" style={{backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)'}}>
+                    <span className="text-sm" style={{color: 'var(--text-color)'}}>
+                      {roles.find(r => r._id === selectedUser.role_id)?.name || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Phone & Job Title in same row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold mb-1" style={{color: 'var(--text-secondary)'}}>
+                    Phone
+                  </label>
+                  <div className="p-2 rounded-md border" style={{backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)'}}>
+                    <span className="text-sm" style={{color: 'var(--text-color)'}}>
+                      {selectedUser.phone_number || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1" style={{color: 'var(--text-secondary)'}}>
+                    Job Title
+                  </label>
+                  <div className="p-2 rounded-md border" style={{backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)'}}>
+                    <span className="text-sm" style={{color: 'var(--text-color)'}}>
+                      {selectedUser.job_title || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Shift Time & Salary in same row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold mb-1" style={{color: 'var(--text-secondary)'}}>
+                    Shift Time
+                  </label>
+                  <div className="p-2 rounded-md border" style={{backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)'}}>
+                    <span className="text-sm" style={{color: 'var(--text-color)'}}>
+                      {selectedUser.shift_time || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1" style={{color: 'var(--text-secondary)'}}>
+                    Salary
+                  </label>
+                  <div className="p-2 rounded-md border" style={{backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)'}}>
+                    <span className="text-sm font-medium" style={{color: 'var(--primary-color)'}}>
+                      {selectedUser.salary ? `$${selectedUser.salary.toFixed(2)}` : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end space-x-2 pt-3 border-t" style={{borderColor: 'var(--border-color)'}}>
+
+
             </div>
           </div>
         </div>

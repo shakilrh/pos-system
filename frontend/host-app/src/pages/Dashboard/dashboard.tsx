@@ -57,9 +57,10 @@ const getOrderStatusData = (orders: Order[]) => {
   }, {} as { [key: string]: number });
   return [
     { name: 'Pending', value: statusCounts['pending'] || 0 },
-    { name: 'To Be Prepared', value: statusCounts['confirmed'] || 0 },
-    { name: 'Ready', value: statusCounts['ready'] || 0 },
-    { name: 'Picked', value: statusCounts['picked'] || 0 },
+    { name: 'Processing', value: statusCounts['processing'] || 0 },
+    { name: 'Served', value: statusCounts['served'] || 0 },
+    { name: 'Completed', value: statusCounts['completed'] || 0 },
+    { name: 'Cancelled', value: statusCounts['cancelled'] || 0 },
   ];
 };
 
@@ -106,7 +107,7 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
           <AreaChart data={salesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--primary-color)" stopOpacity={0.8} /> {/* Use theme variable */}
+                <stop offset="5%" stopColor="var(--primary-color)" stopOpacity={0.8} />
                 <stop offset="95%" stopColor="var(--primary-color)" stopOpacity={0.1} />
               </linearGradient>
               <linearGradient id="colorValueSecondary" x1="0" y1="0" x2="0" y2="1">
@@ -171,12 +172,12 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
 
 const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Order[] }) => {
   const orderTypeData = getOrderTypeData(orders);
-  const COLORS = ['var(--success-color)', 'var(--error-color)']; // Use theme variables
+  const COLORS = ['var(--success-color)', 'var(--error-color)'];
 
   return (
     <div className="bg-[var(--background-secondary)] rounded-lg shadow-md p-4 border border-[var(--border-color)] hover:shadow-lg transition-shadow duration-300">
       <h3 className="text-base font-bold text-[var(--text-color)] mb-3 flex items-center">
-        <span className="w-2 h-2 bg-[var(--success-color)] rounded-full mr-2"></span>
+        <span className="w-2 h-2 bg-[var(--primary-color)] rounded-full mr-2"></span>
         Revenue by Order Type
       </h3>
       <div className="text-center mb-2">
@@ -279,7 +280,7 @@ const TopSellingItems = ({ items }: { items: { name: string; orders: number; ima
 const RoleList = ({ roles }: { roles: { _id: string; name: string; permissions: { _id: string; key: string; description: string }[] }[] }) => (
   <div className="bg-[var(--background-secondary)] rounded-lg shadow-md p-4 border border-[var(--border-color)] hover:shadow-lg transition-shadow duration-300">
     <h3 className="text-base font-bold text-[var(--text-color)] mb-3 flex items-center">
-      <span className="w-2 h-2 bg-[var(--accent-color)] rounded-full mr-2"></span>
+      <span className="w-2 h-2 bg-[var(--primary-color)] rounded-full mr-2"></span>
       User Roles
     </h3>
     <div className="space-y-2">
@@ -287,7 +288,7 @@ const RoleList = ({ roles }: { roles: { _id: string; name: string; permissions: 
         <div key={role._id} className="p-3 bg-[var(--surface-color)] rounded-md border border-[var(--border-color)]">
           <h4 className="font-semibold text-[var(--text-color)] text-sm mb-1">{role.name}</h4>
           <div className="flex items-center text-xs text-[var(--text-secondary)]">
-            <span className="bg-[var(--accent-color)]/20 text-[var(--accent-color)] px-2 py-1 rounded-full font-medium text-xs">
+            <span className="bg-[var(--primary-color)]/20 text-[var(--primary-color)] px-2 py-1 rounded-full font-medium text-xs">
               {role.permissions.length} Permissions
             </span>
           </div>
@@ -305,12 +306,12 @@ const RoleList = ({ roles }: { roles: { _id: string; name: string; permissions: 
 
 const OrderStatusChart = ({ orders }: { orders: Order[] }) => {
   const data = getOrderStatusData(orders);
-  const COLORS = ['var(--warning-color)', 'var(--success-color)', 'var(--primary-color)', 'var(--accent-color)'];
+  const COLORS = ['var(--warning-color)', 'var(--success-color)', 'var(--primary-color)', 'var(--accent-color)', 'var(--error-color)'];
 
   return (
     <div className="bg-[var(--background-secondary)] rounded-lg shadow-md p-4 border border-[var(--border-color)] hover:shadow-lg transition-shadow duration-300">
       <h3 className="text-base font-bold text-[var(--text-color)] mb-3 flex items-center">
-        <span className="w-2 h-2 bg-[var(--warning-color)] rounded-full mr-2"></span>
+        <span className="w-2 h-2 bg-[var(--primary-color)] rounded-full mr-2"></span>
         Order Status
       </h3>
       <div className="h-32">
@@ -408,7 +409,7 @@ const Dashboard = () => {
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--primary-color)]"></div> {/* Theme-aware spinner */}
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--primary-color)]"></div>
       </div>
     );
   }
@@ -424,7 +425,7 @@ const Dashboard = () => {
   const { start, end } = getStartDate(startDate, endDate);
   const filteredOrders = orders.filter(order => new Date(order.createdAt) >= start && new Date(order.createdAt) <= end);
   const totalSales = filteredOrders.reduce((sum, order) => sum + order.total_amount, 0);
-  const ordersProcessed = filteredOrders.filter(order => ['picked', 'ready'].includes(order.status)).length;
+  const ordersProcessed = filteredOrders.filter(order => order.status === 'completed').length;
   const salesData = getSalesData(filteredOrders, start, end);
   const topSellingItemsData = getTopSellingItems(filteredOrders, 4);
 
@@ -469,8 +470,7 @@ const Dashboard = () => {
         <div className="bg-[var(--background-secondary)] rounded-lg shadow-md p-4 mb-6 border border-[var(--border-color)]">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
             <div className="mb-3 lg:mb-0">
-              <h1 className="text-2xl font-bold text-gray-800">POS Dashboard
-              </h1>
+              <h1 className="text-2xl font-bold text-gray-800">POS Dashboard</h1>
               <p className="text-[var(--text-secondary)] mt-1 text-sm">Welcome back! Here's what's happening today.</p>
             </div>
             <div className="text-right">

@@ -22,7 +22,8 @@ const PermissionList: React.FC<PermissionListProps> = ({
                                                          setCurrentPage,
                                                          setShowCreateForm, // Add this prop
                                                        }) => {
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  // Changed from Set to string to track only one expanded group
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [selectedPermission, setSelectedPermission] = useState<Permission | null>(null);
   const permissionsPerPage = 6;
 
@@ -110,15 +111,15 @@ const PermissionList: React.FC<PermissionListProps> = ({
   const currentGroups = filteredPermissions.slice(indexOfFirstGroup, indexOfLastGroup);
   const totalPages = Math.ceil(filteredPermissions.length / permissionsPerPage);
 
+  // Modified toggle function for single accordion behavior
   const toggleGroup = (groupId: string) => {
-    setExpandedGroups(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(groupId)) {
-        newSet.delete(groupId);
-      } else {
-        newSet.add(groupId);
+    setExpandedGroup(prev => {
+      // If clicking the same group that's already expanded, close it
+      if (prev === groupId) {
+        return null;
       }
-      return newSet;
+      // Otherwise, open the clicked group (this will close any other open group)
+      return groupId;
     });
   };
 
@@ -181,7 +182,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
                     onClick={() => toggleGroup(group.id)}
                     className="flex items-center space-x-2 text-sm font-medium text-[--primary-color] hover:opacity-80"
                   >
-                    {expandedGroups.has(group.id) ? (
+                    {expandedGroup === group.id ? (
                       <ChevronDownIcon className="w-4 h-4" />
                     ) : (
                       <ChevronRightIcon className="w-4 h-4" />
@@ -219,7 +220,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
                   </div>
                 )}
               </div>
-              {expandedGroups.has(group.id) && group.subPermissions && group.subPermissions.length > 0 && (
+              {expandedGroup === group.id && group.subPermissions && group.subPermissions.length > 0 && (
                 <div className="p-3 space-y-2">
                   {group.subPermissions.map(permission => (
                     <div
