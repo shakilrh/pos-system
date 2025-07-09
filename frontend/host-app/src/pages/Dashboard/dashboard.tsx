@@ -470,7 +470,7 @@ const Dashboard = () => {
         <div className="bg-[var(--background-secondary)] rounded-lg shadow-md p-4 mb-6 border border-[var(--border-color)]">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
             <div className="mb-3 lg:mb-0">
-              <h1 className="text-2xl font-bold text-gray-800">POS Dashboard</h1>
+              <h1 className="text-2xl font-bold text-[var(--text-color)]">POS Dashboard</h1>
               <p className="text-[var(--text-secondary)] mt-1 text-sm">Welcome back! Here's what's happening today.</p>
             </div>
             <div className="text-right">
