@@ -55,17 +55,21 @@ export default function CategoryList({
     <div className="relative z-0" style={{ opacity: isProductFormActive ? 0.5 : 1, pointerEvents: isProductFormActive ? 'none' : 'auto' }}>
       {/* Header with title and add button */}
       <div className="flex justify-between items-center mb-3">
-        <h2 className="text-xl font-semibold text-black dark:text-white">
+        <h2 className="text-xl font-semibold" style={{ color: 'var(--text-color)' }}> {/* Use text-color */}
           Categories
-          <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">({categories.length} total)</span>
+          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>({categories.length} total)</span> {/* Use text-secondary */}
         </h2>
         <button
           onClick={onAdd}
           className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
             isProductFormActive
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
+              : ''
           }`}
+          style={{
+            backgroundColor: isProductFormActive ? '' : 'var(--primary-color)',
+            color: isProductFormActive ? '' : 'var(--surface-color)'
+          }}
           disabled={isProductFormActive}
         >
           <PlusCircleIcon className="w-4 h-4 mr-1" />
@@ -74,10 +78,10 @@ export default function CategoryList({
       </div>
 
       {/* Categories table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" style={{ backgroundColor: 'var(--surface-color)' }}> {/* Use surface-color for the table background */}
         <table className="w-full text-left text-sm">
           <thead>
-          <tr className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 uppercase text-xs">
+          <tr style={{ backgroundColor: 'var(--background-secondary)', color: 'var(--text-secondary)' }}> {/* Use background-secondary and text-secondary */}
             <th className="py-3 px-4">Name</th>
             <th className="py-3 px-4">Actions</th>
           </tr>
@@ -86,15 +90,19 @@ export default function CategoryList({
           {currentCategories.map((category, idx) => (
             <tr
               key={category._id}
-              className={`border-b border-gray-200 dark:border-gray-700 ${
-                idx % 2 === 0 ? 'bg-gray-50 dark:bg-gray-700/50' : 'bg-white dark:bg-gray-800'
-              } hover:bg-gray-100 dark:hover:bg-gray-600`}
+              className={`border-b`}
+              style={{
+                borderColor: 'var(--border-color)', // Use border-color
+                backgroundColor: idx % 2 === 0 ? 'var(--background-color)' : 'var(--surface-secondary)', // Use background-color and surface-secondary for rows
+                color: 'var(--text-color)' // Use text-color for row text
+              }}
             >
-              <td className="py-3 px-4 text-gray-800 dark:text-gray-200 font-semibold">{category.name}</td>
+              <td className="py-3 px-4 font-semibold">{category.name}</td>
               <td className="py-3 px-4 flex space-x-2">
                 <button
                   onClick={() => onEdit(category)}
-                  className={`text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 ${isProductFormActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`p-1 rounded-full ${isProductFormActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  style={{ color: 'var(--info-color)' }} // Use info-color for edit icon
                   title="Edit"
                   disabled={isProductFormActive}
                 >
@@ -103,7 +111,8 @@ export default function CategoryList({
                 {/* Uncomment if delete functionality is needed */}
                 {/*<button
                     onClick={() => onDelete(category._id)}
-                    className={`text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50 ${isProductFormActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`p-1 rounded-full ${isProductFormActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    style={{ color: 'var(--error-color)' }} // Use error-color for delete icon
                     title="Delete"
                     disabled={isProductFormActive}
                   >
@@ -125,13 +134,17 @@ export default function CategoryList({
             className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
               currentCategoryPage === 1 || isProductFormActive
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
+                : ''
             }`}
+            style={{
+                backgroundColor: (currentCategoryPage === 1 || isProductFormActive) ? '' : 'var(--primary-color)',
+                color: (currentCategoryPage === 1 || isProductFormActive) ? '' : 'var(--surface-color)'
+            }}
           >
             <ArrowLeftIcon className="w-4 h-4 mr-1" />
             Prev
           </button>
-          <span className="text-sm text-gray-600 dark:text-gray-300">
+          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}> {/* Use text-secondary */}
             Page {currentCategoryPage} of {totalCategoryPages}
           </span>
           <button
@@ -140,8 +153,12 @@ export default function CategoryList({
             className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
               currentCategoryPage === totalCategoryPages || isProductFormActive
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
+                : ''
             }`}
+            style={{
+                backgroundColor: (currentCategoryPage === totalCategoryPages || isProductFormActive) ? '' : 'var(--primary-color)',
+                color: (currentCategoryPage === totalCategoryPages || isProductFormActive) ? '' : 'var(--surface-color)'
+            }}
           >
             Next
             <ArrowRightIcon className="w-4 h-4 ml-1" />

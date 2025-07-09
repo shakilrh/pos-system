@@ -111,16 +111,20 @@ export default function ProductList({
   return (
     <div className="relative z-0" style={{ opacity: isCategoryFormActive ? 0.5 : 1, pointerEvents: isCategoryFormActive ? 'none' : 'auto' }}>
       <div className="flex justify-between items-center mb-4">
-        <h2  className="text-xl font-semibold text-black dark:text-white">Products
-          <span className="text-sm text-gray-500 dark:text-gray-400">({filteredProducts.length} items)</span>
+        <h2 className="text-xl font-semibold" style={{ color: 'var(--text-color)' }}>Products
+          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>({filteredProducts.length} items)</span>
         </h2>
         <button
           onClick={onAdd}
           className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
             isCategoryFormActive
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
+              : ''
           }`}
+          style={{
+            backgroundColor: isCategoryFormActive ? '' : 'var(--primary-color)',
+            color: isCategoryFormActive ? '' : 'var(--surface-color)'
+          }}
           disabled={isCategoryFormActive}
         >
           <PlusCircleIcon className="w-4 h-4 mr-1" />
@@ -129,15 +133,19 @@ export default function ProductList({
       </div>
 
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Category</label>
+        <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Filter by Category</label>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleFilterChange('all')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               filterCategory === 'all' || filterCategory === null
                 ? 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                : ''
             }`}
+            style={{
+              backgroundColor: (filterCategory === 'all' || filterCategory === null) ? 'var(--primary-color)' : 'var(--background-secondary)',
+              color: (filterCategory === 'all' || filterCategory === null) ? 'var(--surface-color)' : 'var(--text-color)',
+            }}
           >
             All Products
           </button>
@@ -146,8 +154,12 @@ export default function ProductList({
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               filterCategory === 'inactive'
                 ? 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                : ''
             }`}
+            style={{
+              backgroundColor: filterCategory === 'inactive' ? 'var(--primary-color)' : 'var(--background-secondary)',
+              color: filterCategory === 'inactive' ? 'var(--surface-color)' : 'var(--text-color)',
+            }}
           >
             Inactive Products
           </button>
@@ -158,8 +170,12 @@ export default function ProductList({
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 filterCategory === category._id
                   ? 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  : ''
               }`}
+              style={{
+                backgroundColor: filterCategory === category._id ? 'var(--primary-color)' : 'var(--background-secondary)',
+                color: filterCategory === category._id ? 'var(--surface-color)' : 'var(--text-color)',
+              }}
             >
               {category.name}
             </button>
@@ -168,7 +184,7 @@ export default function ProductList({
       </div>
 
       {/* Display current items per page info for debugging (remove in production) */}
-      <div className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+      <div className="mb-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
         Showing {itemsPerPage} items per page
       </div>
 
@@ -177,8 +193,8 @@ export default function ProductList({
           {currentProducts.map((product) => (
             <div
               key={`product-${product._id}`}
-              className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:scale-[1.02] hover:shadow-lg transition-all duration-300 ${!product.isActive ? 'opacity-50' : ''} w-full max-w-[180px] mx-auto`}
-              style={{ height: '240px' }}
+              className={`relative rounded-lg shadow-md overflow-hidden hover:scale-[1.02] hover:shadow-lg transition-all duration-300 ${!product.isActive ? 'opacity-50' : ''} w-full max-w-[180px] mx-auto`}
+              style={{ height: '240px', backgroundColor: 'var(--surface-color)' }}
             >
               <div className="relative h-1/2 cursor-pointer" onClick={() => !isCategoryFormActive && onViewDetails(product)}>
                 {product.pictureUrl ? (
@@ -189,17 +205,17 @@ export default function ProductList({
                     onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/150?text=No+Image'; }}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-600">
-                    <span className="text-gray-600 dark:text-gray-400">No Image</span>
+                  <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: 'var(--background-secondary)' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>No Image</span>
                   </div>
                 )}
               </div>
               <div className="p-2 flex flex-col justify-between h-1/2">
                 <div>
-                  <h3 className="text-md font-semibold text-gray-900 dark:text-white truncate">{product.name}</h3>
+                  <h3 className="text-md font-semibold truncate" style={{ color: 'var(--text-color)' }}>{product.name}</h3>
                   <div className="flex items-center justify-between mt-1">
-                    <p className="text-blue-400 dark:text-blue-600 font-medium text-sm">{product.displayPrice}</p>
-                    <p className="text-gray-400 dark:text-gray-500 text-xs">{product.categoryName}</p>
+                    <p className="font-medium text-sm" style={{ color: 'var(--accent-color)' }}>{product.displayPrice}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{product.categoryName}</p>
                   </div>
                 </div>
                 <div className="flex justify-between items-center mt-2">
@@ -212,15 +228,16 @@ export default function ProductList({
                         className="sr-only"
                         disabled={isCategoryFormActive}
                       />
-                      <div className={`w-10 h-5 rounded-full transition duration-200 ${product.isActive ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition duration-200 transform ${product.isActive ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                      <div className={`w-10 h-5 rounded-full transition duration-200`} style={{ backgroundColor: product.isActive ? 'var(--success-color)' : 'var(--border-color)' }}></div>
+                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full shadow transition duration-200 transform`} style={{ backgroundColor: 'var(--background-color)', transform: product.isActive ? 'translateX(20px)' : 'translateX(0)' }}></div>
                     </div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{product.isActive ? 'Active' : 'Deactive'}</span>
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{product.isActive ? 'Active' : 'Deactive'}</span>
                   </label>
                   <div className="flex space-x-1">
                     <button
                       onClick={() => !isCategoryFormActive && onEdit(product)}
-                      className={`text-blue-600 dark:hover:text-blue-400 p-0.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 ${isCategoryFormActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`p-0.5 rounded-full ${isCategoryFormActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      style={{ color: 'var(--info-color)' }}
                       title="Edit"
                       disabled={isCategoryFormActive}
                     >
@@ -241,7 +258,7 @@ export default function ProductList({
           ))}
         </div>
       ) : (
-        <div className="text-center py-8 text-gray-600 dark:text-gray-400">
+        <div className="text-center py-8" style={{ color: 'var(--text-secondary)' }}>
           {filteredProducts.length === 0 ? 'No products available' : 'No products found for this filter'}
         </div>
       )}
@@ -254,13 +271,17 @@ export default function ProductList({
             className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
               currentProductPage === 1 || isCategoryFormActive
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
+                : ''
             }`}
+            style={{
+              backgroundColor: (currentProductPage === 1 || isCategoryFormActive) ? '' : 'var(--primary-color)',
+              color: (currentProductPage === 1 || isCategoryFormActive) ? '' : 'var(--surface-color)'
+            }}
           >
             <ArrowLeftIcon className="w-4 h-4 mr-1" />
             Previous
           </button>
-          <span className="text-sm text-gray-600 dark:text-gray-300">
+          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             Page {currentProductPage} of {totalProductPages} • {itemsPerPage} items per page
           </span>
           <button
@@ -269,8 +290,12 @@ export default function ProductList({
             className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
               currentProductPage === totalProductPages || isCategoryFormActive
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
+                : ''
             }`}
+            style={{
+              backgroundColor: (currentProductPage === totalProductPages || isCategoryFormActive) ? '' : 'var(--primary-color)',
+              color: (currentProductPage === totalProductPages || isCategoryFormActive) ? '' : 'var(--surface-color)'
+            }}
           >
             Next
             <ArrowRightIcon className="w-4 h-4 ml-1" />

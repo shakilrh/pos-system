@@ -116,7 +116,7 @@ export default function CategoryCrud({
     return (
       <div className="mt-1 space-y-1">
         {fieldErrors.map((error, index) => (
-          <p key={index} className="text-red-500 text-xs flex items-start">
+          <p key={index} className="text-xs flex items-start" style={{ color: 'var(--error-color)' }}> {/* Use error-color */}
             <svg className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
@@ -186,18 +186,19 @@ export default function CategoryCrud({
 
   if (mode === 'add' || mode === 'edit') {
     return (
-      <div className="absolute inset-0 z-10 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-y-auto">
+      <div className="absolute inset-0 z-10 p-4 rounded-xl shadow-lg border overflow-y-auto"
+           style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}> {/* Use theme variables */}
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}> {/* Use text-color */}
             {mode === 'add' ? 'Add New Category' : 'Edit Category'}
           </h3>
-          <button onClick={onCancel} className="text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200">
+          <button onClick={onCancel} style={{ color: 'var(--text-secondary)' }}> {/* Use text-secondary */}
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="categoryName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="categoryName" className="block text-sm font-medium" style={{ color: 'var(--text-color)' }}> {/* Use text-color */}
               Category Name *
             </label>
             <input
@@ -208,14 +209,21 @@ export default function CategoryCrud({
               onFocus={() => handleFocus('name')}
               onBlur={() => handleBlur('name')}
               placeholder="Enter category name"
-              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
-                errors.name && errors.name.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
-              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
+              className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 transition-all duration-200 ${
+                errors.name && errors.name.length > 0 ? 'ring-1' : ''
+              }`}
+              style={{
+                backgroundColor: 'var(--background-secondary)', // Use background-secondary
+                color: 'var(--text-color)', // Use text-color
+                borderColor: errors.name && errors.name.length > 0 ? 'var(--error-color)' : 'var(--border-color)', // Use error-color and border-color
+                boxShadow: errors.name && errors.name.length > 0 ? `0 0 0 1px var(--error-color)` : 'none', // Use error-color for ring
+                '--tw-ring-color': 'var(--focus-ring)' // Use focus-ring
+              } as React.CSSProperties} // Cast to React.CSSProperties
             />
             {renderFieldErrors('name')}
           </div>
           <div>
-            <label htmlFor="categoryDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="categoryDescription" className="block text-sm font-medium" style={{ color: 'var(--text-color)' }}> {/* Use text-color */}
               Description (optional)
             </label>
             <textarea
@@ -225,10 +233,17 @@ export default function CategoryCrud({
               onFocus={() => handleFocus('description')}
               onBlur={() => handleBlur('description')}
               placeholder="Enter category description"
-              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
-                errors.description && errors.description.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
-              } focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all duration-200`}
+              className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 resize-none transition-all duration-200 ${
+                errors.description && errors.description.length > 0 ? 'ring-1' : ''
+              }`}
               rows={3}
+              style={{
+                backgroundColor: 'var(--background-secondary)', // Use background-secondary
+                color: 'var(--text-color)', // Use text-color
+                borderColor: errors.description && errors.description.length > 0 ? 'var(--error-color)' : 'var(--border-color)', // Use error-color and border-color
+                boxShadow: errors.description && errors.description.length > 0 ? `0 0 0 1px var(--error-color)` : 'none', // Use error-color for ring
+                '--tw-ring-color': 'var(--focus-ring)' // Use focus-ring
+              } as React.CSSProperties} // Cast to React.CSSProperties
             />
             {renderFieldErrors('description')}
           </div>
@@ -236,17 +251,26 @@ export default function CategoryCrud({
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="px-4 py-2 border rounded-lg"
+              style={{
+                borderColor: 'var(--border-color)', // Use border-color
+                color: 'var(--text-color)', // Use text-color
+                backgroundColor: 'var(--background-color)', // Use background-color
+                '--tw-ring-color': 'var(--focus-ring)' // Use focus-ring for hover/focus
+              } as React.CSSProperties} // Cast to React.CSSProperties
             >
               Cancel
             </button>
             <button
               type="submit"
               className={`px-4 py-2 rounded-lg flex items-center transition-all duration-200
-              bg-[color:var(--primary-color)] text-[color:var(--surface-color)]
-              hover:bg-[color:var(--primary-600)]
               ${!isFormValid() || isProductFormActive ? 'opacity-70 cursor-not-allowed' : ''}
               `}
+              style={{
+                backgroundColor: 'var(--primary-color)', // Use primary-color
+                color: 'var(--surface-color)', // Use surface-color
+                '--tw-ring-color': 'var(--focus-ring)' // Use focus-ring
+              } as React.CSSProperties} // Cast to React.CSSProperties
               disabled={!isFormValid() || isProductFormActive}
             >
               {mode === 'edit' ? 'Save Changes' : 'Add Category'}
@@ -260,27 +284,38 @@ export default function CategoryCrud({
   if (mode === 'delete' && deleteCategoryId) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm">
-          <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Confirm Deletion</h3>
-            <button onClick={onCancel} className="text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200">
+        <div className="rounded-xl shadow-2xl w-full max-w-sm" style={{ backgroundColor: 'var(--background-color)' }}> {/* Use background-color */}
+          <div className="flex justify-between items-center border-b p-4" style={{ borderColor: 'var(--border-color)' }}> {/* Use border-color */}
+            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Confirm Deletion</h3> {/* Use text-color */}
+            <button onClick={onCancel} style={{ color: 'var(--text-secondary)' }}> {/* Use text-secondary */}
               <XMarkIcon className="w-6 h-6" />
             </button>
           </div>
           <div className="p-4">
-            <p className="text-gray-700 dark:text-gray-300 mb-6">
+            <p className="mb-6" style={{ color: 'var(--text-color)' }}> {/* Use text-color */}
               Are you sure you want to delete the category "{category?.name}"?
             </p>
             <div className="flex justify-end space-x-3">
               <button
                 onClick={onCancel}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                className="px-4 py-2 border rounded-lg"
+                style={{
+                  borderColor: 'var(--border-color)', // Use border-color
+                  color: 'var(--text-color)', // Use text-color
+                  backgroundColor: 'var(--background-color)', // Use background-color
+                  '--tw-ring-color': 'var(--focus-ring)' // Use focus-ring
+                } as React.CSSProperties} // Cast to React.CSSProperties
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center"
+                className="px-4 py-2 rounded-lg flex items-center"
+                style={{
+                  backgroundColor: 'var(--error-color)', // Use error-color
+                  color: 'var(--surface-color)', // Use surface-color (assuming it's a good contrast for error-color)
+                  '--tw-ring-color': 'var(--focus-ring)' // Use focus-ring
+                } as React.CSSProperties} // Cast to React.CSSProperties
               >
                 Yes, Delete
               </button>

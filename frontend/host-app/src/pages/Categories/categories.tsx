@@ -17,14 +17,14 @@ interface CategoriesProps {
 }
 
 export default function Categories({
-                                     token,
-                                     isAuthenticated,
-                                     logout,
-                                     categories,
-                                     setCategories,
-                                     onFormActive,
-                                     isProductFormActive
-                                   }: CategoriesProps) {
+  token,
+  isAuthenticated,
+  logout,
+  categories,
+  setCategories,
+  onFormActive,
+  isProductFormActive
+}: CategoriesProps) {
   const [loading, setLoading] = useState(true);
   const [flashMessage, setFlashMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [activeSection, setActiveSection] = useState<'list' | 'add' | 'edit' | 'delete'>('list');
@@ -90,11 +90,11 @@ export default function Categories({
 
   if (loading) {
     return (
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700 h-full">
+      <div className="flex-1 bg-[var(--background-secondary)] rounded-xl shadow-lg p-4 border border-[var(--border-color)] h-full">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+          <div className="h-8 bg-[var(--surface-secondary)] rounded-lg"></div>
           {Array(4).fill(0).map((_, idx) => (
-            <div key={idx} className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+            <div key={idx} className="h-8 bg-[var(--surface-secondary)] rounded-lg"></div>
           ))}
         </div>
       </div>
@@ -104,10 +104,7 @@ export default function Categories({
   const isFormActive = activeSection !== 'list';
 
   return (
-    <div
-      className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700 h-full relative"
-      style={{ opacity: isProductFormActive ? 0.5 : 1 }}
-    >
+    <div className="flex-1 bg-[var(--background-secondary)] rounded-xl shadow-lg p-4 border border-[var(--border-color)] h-full relative" style={{ opacity: isProductFormActive ? 0.5 : 1, pointerEvents: isProductFormActive ? 'none' : 'auto' }}>
       <Toaster position="top-right" />
 
       {/* Reserved space for flash messages - always present */}
