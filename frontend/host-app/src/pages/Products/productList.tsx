@@ -36,7 +36,55 @@ export default function ProductList({
                                       onToggleActive,
                                     }: ProductListProps) {
   const [currentProductPage, setCurrentProductPage] = React.useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = React.useState(10);
+
+  // Calculate items per page based on screen size
+  const calculateItemsPerPage = React.useCallback(() => {
+    const screenWidth = window.innerWidth;
+
+    // Calculate columns based on Tailwind breakpoints
+    let columns = 1; // Default for mobile
+
+    if (screenWidth >= 1536) { // 2xl
+      columns = 6;
+    } else if (screenWidth >= 1280) { // xl
+      columns = 5;
+    } else if (screenWidth >= 1024) { // lg
+      columns = 4;
+    } else if (screenWidth >= 768) { // md
+      columns = 3;
+    } else if (screenWidth >= 640) { // sm
+      columns = 2;
+    }
+
+    // Calculate rows that fit in viewport
+    const headerHeight = 200; // Approximate height for header, filters, etc.
+    const paginationHeight = 80; // Approximate height for pagination
+    const productCardHeight = 240; // Height of each product card
+    const gap = 12; // Gap between rows (0.75rem = 12px)
+
+    const availableHeight = window.innerHeight - headerHeight - paginationHeight;
+    const maxRows = Math.max(2, Math.floor(availableHeight / (productCardHeight + gap)));
+
+    return columns * maxRows;
+  }, []);
+
+  // Update items per page on window resize
+  React.useEffect(() => {
+    const handleResize = () => {
+      const newItemsPerPage = calculateItemsPerPage();
+      setItemsPerPage(newItemsPerPage);
+    };
+
+    // Set initial value
+    handleResize();
+
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', handleResize);
+  }, [calculateItemsPerPage]);
 
   // Filter products based on category
   const filteredProducts = React.useMemo(() => {
@@ -45,6 +93,7 @@ export default function ProductList({
     return products.filter(product => product.category_id === filterCategory);
   }, [products, filterCategory]);
 
+  // Reset current page when items per page changes or filter changes
   React.useEffect(() => {
     const totalProductPages = Math.ceil(filteredProducts.length / itemsPerPage);
     if (currentProductPage > totalProductPages && totalProductPages > 0) {
@@ -52,7 +101,7 @@ export default function ProductList({
     } else if (filteredProducts.length === 0) {
       setCurrentProductPage(1);
     }
-  }, [filteredProducts, currentProductPage]);
+  }, [filteredProducts, currentProductPage, itemsPerPage]);
 
   const indexOfLastProduct = currentProductPage * itemsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
@@ -78,6 +127,7 @@ export default function ProductList({
           <span className="text-sm">Add Product</span>
         </button>
       </div>
+
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Category</label>
         <div className="flex flex-wrap gap-2">
@@ -116,6 +166,12 @@ export default function ProductList({
           ))}
         </div>
       </div>
+
+      {/* Display current items per page info for debugging (remove in production) */}
+      <div className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+        Showing {itemsPerPage} items per page
+      </div>
+
       {currentProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 w-full">
           {currentProducts.map((product) => (
@@ -189,7 +245,8 @@ export default function ProductList({
           {filteredProducts.length === 0 ? 'No products available' : 'No products found for this filter'}
         </div>
       )}
-      {totalProductPages > 0 && (
+
+      {totalProductPages > 1 && (
         <div className="flex justify-between items-center mt-4 px-4">
           <button
             onClick={() => !isCategoryFormActive && setCurrentProductPage((prev) => Math.max(prev - 1, 1))}
@@ -203,7 +260,9 @@ export default function ProductList({
             <ArrowLeftIcon className="w-4 h-4 mr-1" />
             Previous
           </button>
-          <span className="text-sm text-gray-600 dark:text-gray-300">Page {currentProductPage} of {totalProductPages}</span>
+          <span className="text-sm text-gray-600 dark:text-gray-300">
+            Page {currentProductPage} of {totalProductPages} • {itemsPerPage} items per page
+          </span>
           <button
             onClick={() => !isCategoryFormActive && setCurrentProductPage((prev) => Math.min(prev + 1, totalProductPages))}
             disabled={currentProductPage === totalProductPages || isCategoryFormActive}
