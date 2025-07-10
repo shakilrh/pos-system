@@ -23,26 +23,22 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
     delete: false,
     assign: false,
   });
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<'list' | 'role'>('list');
   const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   useEffect(() => {
-    if (token) {
-      loadData();
-    }
+    if (token) loadData();
   }, [token]);
 
   useEffect(() => {
     const filtered = users.filter((user) =>
       searchQuery
-        ? [
-          user.name || '',
-          user.email || '',
-          roles.find(r => r._id === user.role_id)?.name || '',
-        ].some((field) => field.toLowerCase().includes(searchQuery.toLowerCase()))
+        ? [user.name || '', user.email || '', roles.find((r) => r._id === user.role_id)?.name || ''].some((field) =>
+          field.toLowerCase().includes(searchQuery.toLowerCase())
+        )
         : true
     );
     setFilteredUsers(filtered);
@@ -66,41 +62,23 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    setIsLoading((prev) => ({ ...prev, delete: true }));
-    try {
-      await deleteUser(token!, logout, userId);
-      setUsers((prev) => prev.filter((u) => u._id !== userId));
-      setFilteredUsers((prev) => prev.filter((u) => u._id !== userId));
-      setDeleteConfirm(null);
-      setMessage('User deleted successfully!');
-      setIsSuccess(true);
-      if (filteredUsers.length <= (currentPage - 1) * 6 && currentPage > 1) {
-        setCurrentPage((prev) => prev - 1);
-      }
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to delete user');
-      setIsSuccess(false);
-    } finally {
-      setIsLoading((prev) => ({ ...prev, delete: false }));
-    }
-  };
-
   const handleCreateUser = async (userData: Partial<User>) => {
     setIsLoading((prev) => ({ ...prev, create: true }));
+    setMessage(null);
     try {
       const createdUser = await createUser(token!, logout, userData);
       setUsers((prev) => [...prev, createdUser]);
       setFilteredUsers((prev) => [...prev, createdUser]);
       setMessage('User created successfully!');
       setIsSuccess(true);
+      setShowCreateForm(false);
       await loadData();
       setCurrentPage(1);
-      setShowCreateForm(false);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to create user');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+      setMessage(errorMessage);
       setIsSuccess(false);
-      console.error('Create user error:', error);
+      throw error;
     } finally {
       setIsLoading((prev) => ({ ...prev, create: false }));
     }
@@ -108,14 +86,11 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
 
   const handleUpdateUser = async (userData: Partial<User>) => {
     setIsLoading((prev) => ({ ...prev, update: true }));
+    setMessage(null);
     try {
-      if (!editUser || !editUser._id) {
-        throw new Error('User ID is required for update');
-      }
+      if (!editUser || !editUser._id) throw new Error('User ID is required for update');
       const updatedUserData = { ...userData, _id: editUser._id };
-      if (userData.role_id === '') {
-        updatedUserData.role_id = null;
-      }
+      if (updatedUserData.role_id === '') updatedUserData.role_id = null;
       const updatedUser = await updateUser(token!, logout, updatedUserData);
       setUsers((prev) => prev.map((u) => (u._id === updatedUser._id ? updatedUser : u)));
       setFilteredUsers((prev) => prev.map((u) => (u._id === updatedUser._id ? updatedUser : u)));
@@ -125,7 +100,8 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
       setIsSuccess(true);
       await loadData();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to update user');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update user';
+      setMessage(errorMessage);
       setIsSuccess(false);
       console.error('Update user error:', error);
     } finally {
@@ -133,38 +109,61 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
     }
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    setIsLoading((prev) => ({ ...prev, delete: true }));
+    setMessage(null);
+    try {
+      await deleteUser(token!, logout, userId);
+      setUsers((prev) => prev.filter((u) => u._id !== userId));
+      setFilteredUsers((prev) => prev.filter((u) => u._id !== userId));
+      setMessage('User deleted successfully!');
+      setIsSuccess(true);
+      if (filteredUsers.length <= (currentPage - 1) * 6 && currentPage > 1) {
+        setCurrentPage((prev) => prev - 1);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
+      setMessage(errorMessage);
+      setIsSuccess(false);
+    } finally {
+      setIsLoading((prev) => ({ ...prev, delete: false }));
+      resetForm();
+    }
+  };
+
+  const resetForm = () => {
+    setShowCreateForm(false);
+    setEditUser(null);
+    setOriginalUser(null);
+    setDeleteUserId(null);
+  };
+
   return (
-    <div
-      className="space-y-6 p-6 min-h-screen"
-      style={{
-        backgroundColor: 'var(--surface-color)',
-        color: 'var(--text-color)',
-      }}
-    >
-      {message && (
-        <FlashMessage
-          message={message}
-          type={isSuccess ? 'success' : 'error'}
-          onClose={() => setMessage(null)}
-        />
-      )}
+    <div className="space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
+      <div className="min-h-[50px]">
+        {message && (
+          <FlashMessage
+            message={message}
+            type={isSuccess ? 'success' : 'error'}
+            onClose={() => setMessage(null)}
+          />
+        )}
+      </div>
       <div className="flex justify-between items-center border-b" style={{ borderColor: 'var(--border-color)' }}>
-        <div className="flex flex-col sm:flex-row sm:gap-4">
+        <div className="flex flex-col sm:flex-row sm:gap-2">
           <button
             style={{
               background: activeSection === 'list' ? 'var(--primary-color)' : 'var(--surface-color)',
               color: activeSection === 'list' ? 'var(--surface-color)' : 'var(--text-secondary)',
               borderBottom: activeSection === 'list' ? '2px solid var(--primary-color)' : '2px solid transparent',
             }}
-            className="flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
+            className="flex items-center space-x-1 px-2.5 py-1.5 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
             onClick={() => {
               setActiveSection('list');
-              setEditUser(null);
-              setOriginalUser(null);
-              setShowCreateForm(false);
+              resetForm();
             }}
           >
-            <UserIcon className="w-5 h-5" />
+            <UserIcon className="w-4 h-4" />
             <span>User List</span>
           </button>
           <button
@@ -173,56 +172,98 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
               color: activeSection === 'role' ? 'var(--surface-color)' : 'var(--text-secondary)',
               borderBottom: activeSection === 'role' ? '2px solid var(--primary-color)' : '2px solid transparent',
             }}
-            className="flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
+            className="flex items-center space-x-1 px-2.5 py-1.5 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
             onClick={() => {
               setActiveSection('role');
-              setEditUser(null);
-              setOriginalUser(null);
-              setShowCreateForm(false);
+              resetForm();
             }}
           >
-            <UserIcon className="w-5 h-5" />
+            <UserIcon className="w-4 h-4" />
             <span>Assign Role</span>
           </button>
         </div>
       </div>
-      {showCreateForm && (
-        <UserCrud
-          token={token}
-          logout={logout}
-          users={users}
-          roles={roles}
-          setUsers={setUsers}
-          setFilteredUsers={setFilteredUsers}
-          showCreateForm={showCreateForm}
-          setShowCreateForm={setShowCreateForm}
-          editUser={editUser}
-          setEditUser={setEditUser}
-          originalUser={originalUser}
-          setOriginalUser={setOriginalUser}
-          setMessage={setMessage}
-          setIsSuccess={setIsSuccess}
-          isLoading={isLoading}
-          setIsLoading={setIsLoading}
-          onCreateUser={handleCreateUser}
-          onUpdateUser={handleUpdateUser}
-        />
-      )}
       {activeSection === 'list' && (
-        <UserList
-          users={filteredUsers}
-          roles={roles}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
-          setEditUser={setEditUser}
-          setOriginalUser={setOriginalUser}
-          handleDeleteUser={handleDeleteUser}
-          isLoading={isLoading}
-          setDeleteConfirm={setDeleteConfirm}
-          setShowCreateForm={setShowCreateForm} // Add this prop
-        />
+        <>
+          {(!showCreateForm && !editUser) && (
+            <UserList
+              token={token}
+              logout={logout}
+              users={filteredUsers}
+              roles={roles}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              setUsers={setUsers}
+              setFilteredUsers={setFilteredUsers}
+              setMessage={setMessage}
+              setIsSuccess={setIsSuccess}
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
+              onCreateUser={handleCreateUser}
+              onUpdateUser={handleUpdateUser}
+              onDeleteUser={handleDeleteUser}
+              showCreateForm={showCreateForm}
+              setShowCreateForm={setShowCreateForm}
+              setEditUser={setEditUser}
+              setOriginalUser={setOriginalUser}
+              setDeleteUserId={setDeleteUserId}
+            />
+          )}
+          {(showCreateForm || editUser) && (
+            <UserCrud
+              token={token}
+              logout={logout}
+              users={users}
+              roles={roles}
+              setUsers={setUsers}
+              setFilteredUsers={setFilteredUsers}
+              showCreateForm={showCreateForm}
+              setShowCreateForm={setShowCreateForm}
+              editUser={editUser}
+              setEditUser={setEditUser}
+              originalUser={originalUser}
+              setOriginalUser={setOriginalUser}
+              setMessage={setMessage}
+              setIsSuccess={setIsSuccess}
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
+              onCreateUser={handleCreateUser}
+              onUpdateUser={handleUpdateUser}
+              onDeleteUser={handleDeleteUser}
+              mode={editUser ? 'edit' : 'create'}
+              deleteUserId={null}
+              onCancel={resetForm}
+            />
+          )}
+          {deleteUserId && (
+            <UserCrud
+              token={token}
+              logout={logout}
+              users={users}
+              roles={roles}
+              setUsers={setUsers}
+              setFilteredUsers={setFilteredUsers}
+              showCreateForm={showCreateForm}
+              setShowCreateForm={setShowCreateForm}
+              editUser={editUser}
+              setEditUser={setEditUser}
+              originalUser={originalUser}
+              setOriginalUser={setOriginalUser}
+              setMessage={setMessage}
+              setIsSuccess={setIsSuccess}
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
+              onCreateUser={handleCreateUser}
+              onUpdateUser={handleUpdateUser}
+              onDeleteUser={handleDeleteUser}
+              mode="delete"
+              deleteUserId={deleteUserId}
+              onCancel={resetForm}
+            />
+          )}
+        </>
       )}
       {activeSection === 'role' && (
         <UserRole
@@ -236,73 +277,6 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
           setIsSuccess={setIsSuccess}
           isLoading={{ assign: isLoading.assign }}
           setIsLoading={(state) => setIsLoading((prev) => ({ ...prev, assign: state.assign }))}
-        />
-      )}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div
-            className="rounded-lg p-6 w-full max-w-md mx-4 shadow-xl"
-            style={{
-              backgroundColor: 'var(--surface-color)',
-              color: 'var(--text-color)',
-            }}
-          >
-            <div className="flex items-center space-x-2 mb-4">
-              <ExclamationCircleIcon className="w-6 h-6" style={{ color: 'var(--error-color)' }} />
-              <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>
-                Confirm Delete
-              </h3>
-            </div>
-            <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-              Are you sure you want to delete this user? This action cannot be undone.
-            </p>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => handleDeleteUser(deleteConfirm)}
-                disabled={isLoading.delete}
-                style={{
-                  backgroundColor: 'var(--error-color)',
-                  color: 'var(--surface-color)',
-                }}
-                className="flex-1 hover:opacity-90 disabled:opacity-60 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
-              >
-                {isLoading.delete ? 'Deleting...' : 'Delete'}
-              </button>
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                style={{
-                  borderColor: 'var(--border-color)',
-                  color: 'var(--text-secondary)',
-                  backgroundColor: 'var(--surface-color)',
-                }}
-                className="flex-1 border px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-colors duration-200"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {editUser && activeSection === 'list' && (
-        <UserCrud
-          token={token}
-          logout={logout}
-          users={users}
-          roles={roles}
-          setUsers={setUsers}
-          setFilteredUsers={setFilteredUsers}
-          showCreateForm={false}
-          setShowCreateForm={() => {}}
-          editUser={editUser}
-          setEditUser={setEditUser}
-          originalUser={originalUser}
-          setOriginalUser={setOriginalUser}
-          setMessage={setMessage}
-          setIsSuccess={setIsSuccess}
-          isLoading={isLoading}
-          setIsLoading={setIsLoading}
-          onCreateUser={handleCreateUser}
-          onUpdateUser={handleUpdateUser}
         />
       )}
     </div>

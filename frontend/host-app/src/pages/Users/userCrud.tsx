@@ -21,28 +21,36 @@ interface UserCrudProps {
   setIsLoading: React.Dispatch<React.SetStateAction<{ create: boolean; update: boolean; delete: boolean }>>;
   onCreateUser: (userData: Partial<User>) => Promise<void>;
   onUpdateUser: (userData: Partial<User>) => Promise<void>;
+  onDeleteUser: (userId: string) => Promise<void>;
+  mode: 'create' | 'edit' | 'delete';
+  deleteUserId: string | null;
+  onCancel: () => void;
 }
 
 const UserCrud: React.FC<UserCrudProps> = ({
-  token,
-  logout,
-  users,
-  roles,
-  setUsers,
-  setFilteredUsers,
-  showCreateForm,
-  setShowCreateForm,
-  editUser,
-  setEditUser,
-  originalUser,
-  setOriginalUser,
-  setMessage,
-  setIsSuccess,
-  isLoading,
-  setIsLoading,
-  onCreateUser,
-  onUpdateUser,
-}) => {
+                                             token,
+                                             logout,
+                                             users,
+                                             roles,
+                                             setUsers,
+                                             setFilteredUsers,
+                                             showCreateForm,
+                                             setShowCreateForm,
+                                             editUser,
+                                             setEditUser,
+                                             originalUser,
+                                             setOriginalUser,
+                                             setMessage,
+                                             setIsSuccess,
+                                             isLoading,
+                                             setIsLoading,
+                                             onCreateUser,
+                                             onUpdateUser,
+                                             onDeleteUser,
+                                             mode,
+                                             deleteUserId,
+                                             onCancel,
+                                           }) => {
   const [newUser, setNewUser] = React.useState<FormData>({
     name: '',
     email: '',
@@ -58,12 +66,10 @@ const UserCrud: React.FC<UserCrudProps> = ({
   const [touchedFields, setTouchedFields] = React.useState<Set<string>>(new Set());
   const formRef = React.useRef<HTMLDivElement>(null);
 
-  // Enhanced validation functions that return arrays of error messages
   const validateName = (name: string): string[] => {
     const errors: string[] = [];
-    if (!name.trim()) {
-      errors.push('Name is required');
-    } else {
+    if (!name.trim()) errors.push('Name is required');
+    else {
       if (name.length < 2) errors.push('Name must be at least 2 characters long');
       if (name.length > 100) errors.push('Name must be less than 100 characters');
       if (!/^[A-Za-z\s'-]+$/.test(name)) errors.push('Name can only contain letters, spaces, hyphens, and apostrophes');
@@ -75,19 +81,15 @@ const UserCrud: React.FC<UserCrudProps> = ({
 
   const validateEmail = (email: string, isEdit: boolean = false): string[] => {
     const errors: string[] = [];
-    if (!email.trim()) {
-      errors.push('Email is required');
-    } else {
+    if (!email.trim()) errors.push('Email is required');
+    else {
       const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailRegex.test(email)) errors.push('Please enter a valid email address');
       if (email.length > 255) errors.push('Email address is too long');
       if (email.includes('..')) errors.push('Email cannot contain consecutive dots');
-
       if (!isEdit || (isEdit && originalUser && email.toLowerCase() !== originalUser.email.toLowerCase())) {
         const isDuplicate = users.some((user) => user.email.toLowerCase() === email.toLowerCase());
-        if (isDuplicate) {
-          errors.push('Email already exists');
-        }
+        if (isDuplicate) errors.push('Email already exists');
       }
     }
     return errors;
@@ -95,17 +97,15 @@ const UserCrud: React.FC<UserCrudProps> = ({
 
   const validatePassword = (password: string, isEdit: boolean = false): string[] => {
     const errors: string[] = [];
-    if (!isEdit && !password.trim()) {
-      errors.push('Password is required');
-    } else if (password && password.trim()) {
+    if (!isEdit && !password.trim()) errors.push('Password is required');
+    else if (password && password.trim()) {
       if (password.length < 8) errors.push('Password must be at least 8 characters long');
       if (password.length > 100) errors.push('Password must be less than 100 characters');
       if (!/[A-Z]/.test(password)) errors.push('Password must include at least one uppercase letter');
       if (!/[a-z]/.test(password)) errors.push('Password must include at least one lowercase letter');
       if (!/[0-9]/.test(password)) errors.push('Password must include at least one number');
-      if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password))
         errors.push('Password must include at least one special character');
-      }
       if (/\s/.test(password)) errors.push('Password cannot contain spaces');
       if (/(.)\1{2,}/.test(password)) errors.push('Password cannot contain more than 2 consecutive identical characters');
     }
@@ -115,9 +115,7 @@ const UserCrud: React.FC<UserCrudProps> = ({
   const validatePhoneNumber = (phone: string): string[] => {
     const errors: string[] = [];
     if (phone && phone.trim()) {
-      if (!/^\+?[\d\s-()]{7,20}$/.test(phone.trim())) {
-        errors.push('Invalid phone number format');
-      }
+      if (!/^\+?[\d\s-()]{7,20}$/.test(phone.trim())) errors.push('Invalid phone number format');
       if (phone.length > 20) errors.push('Phone number is too long');
     }
     return errors;
@@ -127,9 +125,8 @@ const UserCrud: React.FC<UserCrudProps> = ({
     const errors: string[] = [];
     if (jobTitle && jobTitle.trim()) {
       if (jobTitle.length > 100) errors.push('Job title must be less than 100 characters');
-      if (!/^[A-Za-z0-9\s&'-.,()]+$/.test(jobTitle)) {
+      if (!/^[A-Za-z0-9\s&'-.,()]+$/.test(jobTitle))
         errors.push('Job title can only contain letters, numbers, spaces, and common punctuation');
-      }
       if (/^\s|\s$/.test(jobTitle)) errors.push('Job title cannot start or end with spaces');
       if (/\s{2,}/.test(jobTitle)) errors.push('Job title cannot contain multiple consecutive spaces');
     }
@@ -140,9 +137,8 @@ const UserCrud: React.FC<UserCrudProps> = ({
     const errors: string[] = [];
     if (shiftTime && shiftTime.trim()) {
       if (shiftTime.length > 100) errors.push('Shift time must be less than 100 characters');
-      if (!/^[A-Za-z0-9\s:-]+$/.test(shiftTime)) {
+      if (!/^[A-Za-z0-9\s:-]+$/.test(shiftTime))
         errors.push('Shift time can only contain letters, numbers, spaces, colons, and hyphens');
-      }
       if (/^\s|\s$/.test(shiftTime)) errors.push('Shift time cannot start or end with spaces');
       if (/\s{2,}/.test(shiftTime)) errors.push('Shift time cannot contain multiple consecutive spaces');
     }
@@ -164,35 +160,22 @@ const UserCrud: React.FC<UserCrudProps> = ({
   const getFieldErrors = (fieldName: string, isEdit: boolean = false): string[] => {
     const data = isEdit ? editUser : newUser;
     if (!data) return [];
-
     switch (fieldName) {
-      case 'name':
-        return validateName(data.name);
-      case 'email':
-        return validateEmail(data.email, isEdit);
-      case 'password':
-        return validatePassword(data.password || '', isEdit);
-      case 'phone_number':
-        return validatePhoneNumber(data.phone_number || '');
-      case 'job_title':
-        return validateJobTitle(data.job_title || '');
-      case 'shift_time':
-        return validateShiftTime(data.shift_time || '');
-      case 'salary':
-        return validateSalary(data.salary || '');
-      default:
-        return [];
+      case 'name': return validateName(data.name);
+      case 'email': return validateEmail(data.email, isEdit);
+      case 'password': return validatePassword(data.password || '', isEdit);
+      case 'phone_number': return validatePhoneNumber(data.phone_number || '');
+      case 'job_title': return validateJobTitle(data.job_title || '');
+      case 'shift_time': return validateShiftTime(data.shift_time || '');
+      case 'salary': return validateSalary(data.salary || '');
+      default: return [];
     }
   };
 
   const isFormValid = (isEdit: boolean = false): boolean => {
     const requiredFields = ['name', 'email'];
     if (!isEdit) requiredFields.push('password');
-
-    return requiredFields.every(field => {
-      const errors = getFieldErrors(field, isEdit);
-      return errors.length === 0;
-    });
+    return requiredFields.every(field => getFieldErrors(field, isEdit).length === 0);
   };
 
   React.useEffect(() => {
@@ -207,29 +190,19 @@ const UserCrud: React.FC<UserCrudProps> = ({
     } else {
       setNewUser({ ...newUser, [field]: value });
     }
-
     if (touchedFields.has(field)) {
-      setFormErrors(prev => ({
-        ...prev,
-        [field]: getFieldErrors(field, isEdit)
-      }));
+      setFormErrors(prev => ({ ...prev, [field]: getFieldErrors(field, isEdit) }));
     }
   };
 
   const handleFocus = (fieldName: string, isEdit: boolean) => {
     setTouchedFields(prev => new Set(prev).add(fieldName));
-    setFormErrors(prev => ({
-      ...prev,
-      [fieldName]: getFieldErrors(fieldName, isEdit)
-    }));
+    setFormErrors(prev => ({ ...prev, [fieldName]: getFieldErrors(fieldName, isEdit) }));
   };
 
   const handleBlur = (fieldName: string, isEdit: boolean) => {
     if (touchedFields.has(fieldName)) {
-      setFormErrors(prev => ({
-        ...prev,
-        [fieldName]: getFieldErrors(fieldName, isEdit)
-      }));
+      setFormErrors(prev => ({ ...prev, [fieldName]: getFieldErrors(fieldName, isEdit) }));
     }
   };
 
@@ -243,7 +216,7 @@ const UserCrud: React.FC<UserCrudProps> = ({
       phone_number: '',
       job_title: '',
       shift_time: '',
-      salary: ''
+      salary: '',
     });
     setEditUser(null);
     setOriginalUser(null);
@@ -254,26 +227,20 @@ const UserCrud: React.FC<UserCrudProps> = ({
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const requiredFields = ['name', 'email', 'password'];
-    const allFields = ['name', 'email', 'password', 'phone_number', 'job_title', 'shift_time', 'salary']; // Corrected 'salary Bolivia'
+    const allFields = ['name', 'email', 'password', 'phone_number', 'job_title', 'shift_time', 'salary'];
     setTouchedFields(new Set(allFields));
-
     const allErrors: any = {};
     allFields.forEach(field => {
       allErrors[field] = getFieldErrors(field, false);
     });
-
     setFormErrors(allErrors);
-
     const hasErrors = Object.values(allErrors).some((fieldErrors: any) => fieldErrors.length > 0);
-
     if (hasErrors) {
       setMessage('Please fix all errors before submitting');
       setIsSuccess(false);
       return;
     }
-
     setIsLoading((prev) => ({ ...prev, create: true }));
     try {
       const userData: Partial<User> = {
@@ -288,11 +255,20 @@ const UserCrud: React.FC<UserCrudProps> = ({
         role_id: newUser.role_id === '' || newUser.role_id === undefined ? null : newUser.role_id,
       };
       await onCreateUser(userData);
-      resetForm();
       setMessage('User created successfully');
       setIsSuccess(true);
+      resetForm();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to create user');
+      let errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+      if (errorMessage.includes('already exists')) {
+        setFormErrors(prev => ({ ...prev, email: ['Email already exists'] }));
+        setTouchedFields(prev => new Set(prev).add('email'));
+        errorMessage = 'Please fix all errors before submitting';
+      } else {
+        setFormErrors(prev => ({ ...prev, email: [errorMessage] }));
+        setTouchedFields(prev => new Set(prev).add('email'));
+      }
+      setMessage(errorMessage);
       setIsSuccess(false);
     } finally {
       setIsLoading((prev) => ({ ...prev, create: false }));
@@ -302,25 +278,19 @@ const UserCrud: React.FC<UserCrudProps> = ({
   const handleEditUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editUser) return;
-
     const allFields = ['name', 'email', 'password', 'phone_number', 'job_title', 'shift_time', 'salary'];
     setTouchedFields(new Set(allFields));
-
     const allErrors: any = {};
     allFields.forEach(field => {
       allErrors[field] = getFieldErrors(field, true);
     });
-
     setFormErrors(allErrors);
-
     const hasErrors = Object.values(allErrors).some((fieldErrors: any) => fieldErrors.length > 0);
-
     if (hasErrors) {
       setMessage('Please fix all errors before submitting');
       setIsSuccess(false);
       return;
     }
-
     setIsLoading((prev) => ({ ...prev, update: true }));
     try {
       const userData: Partial<User> = {
@@ -335,7 +305,6 @@ const UserCrud: React.FC<UserCrudProps> = ({
         shift_time: editUser.shift_time?.trim() || undefined,
         salary: editUser.salary ? parseFloat(editUser.salary.toString()) : undefined,
       };
-
       await onUpdateUser(userData);
       setUsers(prev => prev.map(user => user._id === editUser._id ? { ...user, ...userData } : user));
       setFilteredUsers(prev => prev.map(user => user._id === editUser._id ? { ...user, ...userData } : user));
@@ -343,19 +312,35 @@ const UserCrud: React.FC<UserCrudProps> = ({
       setMessage('User updated successfully');
       setIsSuccess(true);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to update user');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update user';
+      setMessage(errorMessage);
       setIsSuccess(false);
     } finally {
       setIsLoading((prev) => ({ ...prev, update: false }));
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!deleteUserId) return;
+    setIsLoading((prev) => ({ ...prev, delete: true }));
+    try {
+      await onDeleteUser(deleteUserId);
+      setMessage('User deleted successfully');
+      setIsSuccess(true);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
+      setMessage(errorMessage);
+      setIsSuccess(false);
+    } finally {
+      setIsLoading((prev) => ({ ...prev, delete: false }));
+      onCancel();
+    }
+  };
+
   const renderFieldErrors = (fieldName: string) => {
     const fieldErrors = formErrors[fieldName as keyof FormErrors];
     if (!fieldErrors || (Array.isArray(fieldErrors) ? fieldErrors.length === 0 : !fieldErrors)) return null;
-
     const errors = Array.isArray(fieldErrors) ? fieldErrors : [fieldErrors];
-
     return (
       <div className="mt-1 space-y-1">
         {errors.map((error, index) => (
@@ -373,25 +358,20 @@ const UserCrud: React.FC<UserCrudProps> = ({
   const renderForm = (isEdit: boolean) => {
     const data = isEdit ? editUser : newUser;
     const isSubmitting = isEdit ? isLoading.update : isLoading.create;
-
     return (
-      <div ref={formRef} className="rounded-lg p-6 mb-6 shadow-sm" style={{ backgroundColor: 'var(--background-secondary)' }}>
-        <div className="flex items-center justify-between mb-4">
+      <div ref={formRef} className="rounded-lg p-3 mb-3 shadow-sm" style={{ backgroundColor: 'var(--background-secondary)' }}>
+        <div className="flex items-center justify-between mb-2">
           <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>
             {isEdit ? 'Edit User' : 'Create New User'}
           </h3>
-          <button
-            onClick={resetForm}
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <XMarkIcon className="w-6 h-6" />
+          <button onClick={onCancel} style={{ color: 'var(--text-secondary)' }}>
+            <XMarkIcon className="w-4 h-4" />
           </button>
         </div>
-
-        <form onSubmit={isEdit ? handleEditUser : handleCreateUser} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <form onSubmit={isEdit ? handleEditUser : handleCreateUser} className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
-              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                 Name *
               </label>
               <input
@@ -400,28 +380,20 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 onChange={(e) => handleInputChange('name', e.target.value, isEdit)}
                 onFocus={() => handleFocus('name', isEdit)}
                 onBlur={() => handleBlur('name', isEdit)}
-                className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.name && (Array.isArray(formErrors.name) ? formErrors.name.length > 0 : formErrors.name)
-                    ? 'ring-1' // Classes for error state
-                    : ''
-                  }`}
+                className={`w-full p-2 text-sm rounded-lg border ${formErrors.name && (Array.isArray(formErrors.name) ? formErrors.name.length > 0 : formErrors.name) ? 'ring-1' : ''}`}
                 style={{
-                  borderColor: formErrors.name && (Array.isArray(formErrors.name) ? formErrors.name.length > 0 : formErrors.name)
-                    ? 'var(--error-color)'
-                    : 'var(--border-color)',
-                  backgroundColor: formErrors.name && (Array.isArray(formErrors.name) ? formErrors.name.length > 0 : formErrors.name)
-                    ? 'var(--error-color-light)' // Assuming you might want a lighter error background
-                    : 'var(--background-color)',
+                  borderColor: formErrors.name && (Array.isArray(formErrors.name) ? formErrors.name.length > 0 : formErrors.name) ? 'var(--error-color)' : 'var(--border-color)',
+                  backgroundColor: formErrors.name && (Array.isArray(formErrors.name) ? formErrors.name.length > 0 : formErrors.name) ? 'var(--error-color-light)' : 'var(--background-color)',
                   color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)' // This will be applied by the global focus style as well
+                  outlineColor: 'var(--focus-ring)',
                 }}
                 placeholder="Enter full name"
                 required
               />
               {renderFieldErrors('name')}
             </div>
-
             <div>
-              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                 Email *
               </label>
               <input
@@ -430,28 +402,20 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 onChange={(e) => handleInputChange('email', e.target.value, isEdit)}
                 onFocus={() => handleFocus('email', isEdit)}
                 onBlur={() => handleBlur('email', isEdit)}
-                className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.email && (Array.isArray(formErrors.email) ? formErrors.email.length > 0 : formErrors.email)
-                    ? 'ring-1'
-                    : ''
-                  }`}
+                className={`w-full p-2 text-sm rounded-lg border ${formErrors.email && (Array.isArray(formErrors.email) ? formErrors.email.length > 0 : formErrors.email) ? 'ring-1' : ''}`}
                 style={{
-                  borderColor: formErrors.email && (Array.isArray(formErrors.email) ? formErrors.email.length > 0 : formErrors.email)
-                    ? 'var(--error-color)'
-                    : 'var(--border-color)',
-                  backgroundColor: formErrors.email && (Array.isArray(formErrors.email) ? formErrors.email.length > 0 : formErrors.email)
-                    ? 'var(--error-color-light)'
-                    : 'var(--background-color)',
+                  borderColor: formErrors.email && (Array.isArray(formErrors.email) ? formErrors.email.length > 0 : formErrors.email) ? 'var(--error-color)' : 'var(--border-color)',
+                  backgroundColor: formErrors.email && (Array.isArray(formErrors.email) ? formErrors.email.length > 0 : formErrors.email) ? 'var(--error-color-light)' : 'var(--background-color)',
                   color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)'
+                  outlineColor: 'var(--focus-ring)',
                 }}
                 placeholder="Enter email address"
                 required
               />
               {renderFieldErrors('email')}
             </div>
-
             <div>
-              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                 {isEdit ? 'Password (Optional)' : 'Password *'}
               </label>
               <input
@@ -460,56 +424,47 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 onChange={(e) => handleInputChange('password', e.target.value, isEdit)}
                 onFocus={() => handleFocus('password', isEdit)}
                 onBlur={() => handleBlur('password', isEdit)}
-                className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.password && (Array.isArray(formErrors.password) ? formErrors.password.length > 0 : formErrors.password)
-                    ? 'ring-1'
-                    : ''
-                  }`}
+                className={`w-full p-2 text-sm rounded-lg border ${formErrors.password && (Array.isArray(formErrors.password) ? formErrors.password.length > 0 : formErrors.password) ? 'ring-1' : ''}`}
                 style={{
-                  borderColor: formErrors.password && (Array.isArray(formErrors.password) ? formErrors.password.length > 0 : formErrors.password)
-                    ? 'var(--error-color)'
-                    : 'var(--border-color)',
-                  backgroundColor: formErrors.password && (Array.isArray(formErrors.password) ? formErrors.password.length > 0 : formErrors.password)
-                    ? 'var(--error-color-light)'
-                    : 'var(--background-color)',
+                  borderColor: formErrors.password && (Array.isArray(formErrors.password) ? formErrors.password.length > 0 : formErrors.password) ? 'var(--error-color)' : 'var(--border-color)',
+                  backgroundColor: formErrors.password && (Array.isArray(formErrors.password) ? formErrors.password.length > 0 : formErrors.password) ? 'var(--error-color-light)' : 'var(--background-color)',
                   color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)'
+                  outlineColor: 'var(--focus-ring)',
                 }}
                 placeholder={isEdit ? 'Leave empty to keep current password' : 'Enter password'}
                 required={!isEdit}
               />
               {renderFieldErrors('password')}
             </div>
-
             <div>
-              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                 User Type
               </label>
               <input
                 type="text"
                 value="Worker"
-                className="w-full p-2.5 text-sm rounded-lg border cursor-not-allowed"
+                className="w-full p-2 text-sm rounded-lg border cursor-not-allowed"
                 style={{
                   borderColor: 'var(--border-color)',
-                  backgroundColor: 'var(--background-secondary)', // Use a themed background for disabled
-                  color: 'var(--text-secondary)' // Use a themed text color for disabled
+                  backgroundColor: 'var(--background-secondary)',
+                  color: 'var(--text-secondary)',
                 }}
                 disabled
               />
             </div>
-
             <div>
-              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                 Role (Optional)
               </label>
               <select
                 value={data?.role_id || ''}
                 onChange={(e) => handleInputChange('role_id', e.target.value, isEdit)}
-                className="w-full p-2.5 text-sm rounded-lg border"
+                className="w-full p-2 text-sm rounded-lg border"
                 style={{
                   borderColor: 'var(--border-color)',
                   backgroundColor: 'var(--background-color)',
                   color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)'
+                  outlineColor: 'var(--focus-ring)',
                 }}
               >
                 <option value="">Select Role</option>
@@ -518,9 +473,8 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 ))}
               </select>
             </div>
-
             <div>
-              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                 Phone Number (Optional)
               </label>
               <input
@@ -529,27 +483,19 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 onChange={(e) => handleInputChange('phone_number', e.target.value, isEdit)}
                 onFocus={() => handleFocus('phone_number', isEdit)}
                 onBlur={() => handleBlur('phone_number', isEdit)}
-                className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.phone_number && (Array.isArray(formErrors.phone_number) ? formErrors.phone_number.length > 0 : formErrors.phone_number)
-                    ? 'ring-1'
-                    : ''
-                  }`}
+                className={`w-full p-2 text-sm rounded-lg border ${formErrors.phone_number && (Array.isArray(formErrors.phone_number) ? formErrors.phone_number.length > 0 : formErrors.phone_number) ? 'ring-1' : ''}`}
                 style={{
-                  borderColor: formErrors.phone_number && (Array.isArray(formErrors.phone_number) ? formErrors.phone_number.length > 0 : formErrors.phone_number)
-                    ? 'var(--error-color)'
-                    : 'var(--border-color)',
-                  backgroundColor: formErrors.phone_number && (Array.isArray(formErrors.phone_number) ? formErrors.phone_number.length > 0 : formErrors.phone_number)
-                    ? 'var(--error-color-light)'
-                    : 'var(--background-color)',
+                  borderColor: formErrors.phone_number && (Array.isArray(formErrors.phone_number) ? formErrors.phone_number.length > 0 : formErrors.phone_number) ? 'var(--error-color)' : 'var(--border-color)',
+                  backgroundColor: formErrors.phone_number && (Array.isArray(formErrors.phone_number) ? formErrors.phone_number.length > 0 : formErrors.phone_number) ? 'var(--error-color-light)' : 'var(--background-color)',
                   color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)'
+                  outlineColor: 'var(--focus-ring)',
                 }}
                 placeholder="e.g., +1234567890"
               />
               {renderFieldErrors('phone_number')}
             </div>
-
             <div>
-              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                 Job Title (Optional)
               </label>
               <input
@@ -558,27 +504,19 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 onChange={(e) => handleInputChange('job_title', e.target.value, isEdit)}
                 onFocus={() => handleFocus('job_title', isEdit)}
                 onBlur={() => handleBlur('job_title', isEdit)}
-                className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.job_title && (Array.isArray(formErrors.job_title) ? formErrors.job_title.length > 0 : formErrors.job_title)
-                    ? 'ring-1'
-                    : ''
-                  }`}
+                className={`w-full p-2 text-sm rounded-lg border ${formErrors.job_title && (Array.isArray(formErrors.job_title) ? formErrors.job_title.length > 0 : formErrors.job_title) ? 'ring-1' : ''}`}
                 style={{
-                  borderColor: formErrors.job_title && (Array.isArray(formErrors.job_title) ? formErrors.job_title.length > 0 : formErrors.job_title)
-                    ? 'var(--error-color)'
-                    : 'var(--border-color)',
-                  backgroundColor: formErrors.job_title && (Array.isArray(formErrors.job_title) ? formErrors.job_title.length > 0 : formErrors.job_title)
-                    ? 'var(--error-color-light)'
-                    : 'var(--background-color)',
+                  borderColor: formErrors.job_title && (Array.isArray(formErrors.job_title) ? formErrors.job_title.length > 0 : formErrors.job_title) ? 'var(--error-color)' : 'var(--border-color)',
+                  backgroundColor: formErrors.job_title && (Array.isArray(formErrors.job_title) ? formErrors.job_title.length > 0 : formErrors.job_title) ? 'var(--error-color-light)' : 'var(--background-color)',
                   color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)'
+                  outlineColor: 'var(--focus-ring)',
                 }}
                 placeholder="e.g., Chef, Server, Manager"
               />
               {renderFieldErrors('job_title')}
             </div>
-
             <div>
-              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                 Shift Time (Optional)
               </label>
               <input
@@ -587,27 +525,19 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 onChange={(e) => handleInputChange('shift_time', e.target.value, isEdit)}
                 onFocus={() => handleFocus('shift_time', isEdit)}
                 onBlur={() => handleBlur('shift_time', isEdit)}
-                className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.shift_time && (Array.isArray(formErrors.shift_time) ? formErrors.shift_time.length > 0 : formErrors.shift_time)
-                    ? 'ring-1'
-                    : ''
-                  }`}
+                className={`w-full p-2 text-sm rounded-lg border ${formErrors.shift_time && (Array.isArray(formErrors.shift_time) ? formErrors.shift_time.length > 0 : formErrors.shift_time) ? 'ring-1' : ''}`}
                 style={{
-                  borderColor: formErrors.shift_time && (Array.isArray(formErrors.shift_time) ? formErrors.shift_time.length > 0 : formErrors.shift_time)
-                    ? 'var(--error-color)'
-                    : 'var(--border-color)',
-                  backgroundColor: formErrors.shift_time && (Array.isArray(formErrors.shift_time) ? formErrors.shift_time.length > 0 : formErrors.shift_time)
-                    ? 'var(--error-color-light)'
-                    : 'var(--background-color)',
+                  borderColor: formErrors.shift_time && (Array.isArray(formErrors.shift_time) ? formErrors.shift_time.length > 0 : formErrors.shift_time) ? 'var(--error-color)' : 'var(--border-color)',
+                  backgroundColor: formErrors.shift_time && (Array.isArray(formErrors.shift_time) ? formErrors.shift_time.length > 0 : formErrors.shift_time) ? 'var(--error-color-light)' : 'var(--background-color)',
                   color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)'
+                  outlineColor: 'var(--focus-ring)',
                 }}
                 placeholder="e.g., 9:00 AM - 5:00 PM"
               />
               {renderFieldErrors('shift_time')}
             </div>
-
             <div>
-              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                 Salary (Optional)
               </label>
               <input
@@ -616,19 +546,12 @@ const UserCrud: React.FC<UserCrudProps> = ({
                 onChange={(e) => handleInputChange('salary', e.target.value, isEdit)}
                 onFocus={() => handleFocus('salary', isEdit)}
                 onBlur={() => handleBlur('salary', isEdit)}
-                className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.salary && (Array.isArray(formErrors.salary) ? formErrors.salary.length > 0 : formErrors.salary)
-                    ? 'ring-1'
-                    : ''
-                  }`}
+                className={`w-full p-2 text-sm rounded-lg border ${formErrors.salary && (Array.isArray(formErrors.salary) ? formErrors.salary.length > 0 : formErrors.salary) ? 'ring-1' : ''}`}
                 style={{
-                  borderColor: formErrors.salary && (Array.isArray(formErrors.salary) ? formErrors.salary.length > 0 : formErrors.salary)
-                    ? 'var(--error-color)'
-                    : 'var(--border-color)',
-                  backgroundColor: formErrors.salary && (Array.isArray(formErrors.salary) ? formErrors.salary.length > 0 : formErrors.salary)
-                    ? 'var(--error-color-light)'
-                    : 'var(--background-color)',
+                  borderColor: formErrors.salary && (Array.isArray(formErrors.salary) ? formErrors.salary.length > 0 : formErrors.salary) ? 'var(--error-color)' : 'var(--border-color)',
+                  backgroundColor: formErrors.salary && (Array.isArray(formErrors.salary) ? formErrors.salary.length > 0 : formErrors.salary) ? 'var(--error-color-light)' : 'var(--background-color)',
                   color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)'
+                  outlineColor: 'var(--focus-ring)',
                 }}
                 placeholder="e.g., 50000"
                 min="0"
@@ -637,23 +560,21 @@ const UserCrud: React.FC<UserCrudProps> = ({
               {renderFieldErrors('salary')}
             </div>
           </div>
-
-          <div className="flex space-x-3 pt-4">
+          <div className="flex space-x-2 pt-2">
             <button
               type="submit"
               disabled={isSubmitting || !isFormValid(isEdit)}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200
-              ${isSubmitting || !isFormValid(isEdit) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white'}
-              `}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isSubmitting || !isFormValid(isEdit) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white'}`}
               style={{
-              backgroundColor: isSubmitting || !isFormValid(isEdit) ? undefined : 'var(--primary-color)',
-              cursor: isSubmitting || !isFormValid(isEdit) ? undefined : 'pointer',
-              '--tw-ring-color': 'var(--focus-ring)'
+                backgroundColor: isSubmitting || !isFormValid(isEdit) ? undefined : 'var(--primary-color)',
+                cursor: isSubmitting || !isFormValid(isEdit) ? undefined : 'pointer',
+                '--tw-ring-color': 'var(--focus-ring)',
+                width: '100px', // Equal width to match red-marked example
               } as React.CSSProperties}
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -665,13 +586,13 @@ const UserCrud: React.FC<UserCrudProps> = ({
             </button>
             <button
               type="button"
-              onClick={resetForm}
-              className="px-4 py-2 border rounded-lg text-sm font-medium transition-colors duration-200"
+              onClick={onCancel}
+              className="px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors duration-200"
               style={{
                 borderColor: 'var(--border-color)',
                 color: 'var(--text-secondary)',
                 backgroundColor: 'var(--background-color)',
-                // Hover and focus styles will be applied by global CSS and Tailwind utilities where applicable
+                width: '100px', // Equal width to match red-marked example
               }}
             >
               Cancel
@@ -682,35 +603,68 @@ const UserCrud: React.FC<UserCrudProps> = ({
     );
   };
 
-  return (
-    <div className="rounded-lg shadow-md border mt-6"
-      style={{
-        backgroundColor: 'var(--surface-color)',
-        borderColor: 'var(--border-color)'
-      }}>
-      <div className="p-6 border-b" style={{ borderColor: 'var(--border-color)' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <UserIcon className="w-6 h-6" style={{ color: 'var(--accent-color)' }} />
-            <h2 className="text-xl font-semibold" style={{ color: 'var(--text-color)' }}>User Management</h2>
-          </div>
-          {!showCreateForm && !editUser && (
+  const renderDeleteConfirmation = () => {
+    const userToDelete = users.find((user) => user._id === deleteUserId);
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-2">
+        <div className="rounded-lg p-2 w-full max-w-md mx-2 shadow-2xl border" style={{ backgroundColor: 'var(--surface-color)', borderColor: 'var(--border-color)' }}>
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>
+              Confirm Delete
+            </h3>
             <button
-              onClick={() => setShowCreateForm(true)}
-              className="flex items-center space-x-1 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200"
-              style={{
-                backgroundColor: 'var(--primary-color)',
-                '--tw-ring-color': 'var(--focus-ring)'
-              } as React.CSSProperties}
+              onClick={onCancel}
+              className="p-1 rounded-full hover:bg-opacity-10 transition-colors duration-200"
+              style={{ color: 'var(--text-tertiary)', backgroundColor: 'transparent' }}
             >
-              <PlusIcon className="w-5 h-5" />
-              <span>Add User</span>
+              <XMarkIcon className="w-4 h-4" />
             </button>
-          )}
+          </div>
+          <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+            Are you sure you want to delete {userToDelete?.name || 'this user'}? This action cannot be undone.
+          </p>
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={onCancel}
+              className="px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors duration-200"
+              style={{
+                borderColor: 'var(--border-color)',
+                color: 'var(--text-secondary)',
+                backgroundColor: 'var(--background-color)',
+                width: '100px', // Equal width to match red-marked example
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteUser}
+              disabled={isLoading.delete}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-colors duration-200 disabled:opacity-50"
+              style={{ backgroundColor: 'var(--error-color)', width: '100px' }} // Equal width to match red-marked example
+            >
+              {isLoading.delete ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Deleting...
+                </span>
+              ) : (
+                'Delete'
+              )}
+            </button>
+          </div>
         </div>
       </div>
+    );
+  };
+
+  return (
+    <>
       {(showCreateForm || editUser) && renderForm(!!editUser)}
-    </div>
+      {mode === 'delete' && renderDeleteConfirmation()}
+    </>
   );
 };
 
