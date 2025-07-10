@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExclamationCircleIcon, KeyIcon, UserGroupIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon, KeyIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import { fetchRoles } from '../../services/RoleService';
 import { fetchPermissions, deletePermission } from '../../services/PermissionService';
 import FlashMessage from '../FlashMessage';
@@ -85,22 +85,25 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
   };
 
   return (
-    <div className="space-y-6 p-6 bg-[--background-color] min-h-screen text-[--text-color]">
-      {message && (
-        <FlashMessage
-          message={message}
-          type={isSuccess ? 'success' : 'error'}
-          onClose={() => setMessage(null)}
-        />
-      )}
-      <div className="flex justify-between items-center border-b border-[--border-color]">
-        <div className="flex flex-col sm:flex-row sm:gap-4">
+    <div className="space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
+      <div className="min-h-[50px]">
+        {message && (
+          <FlashMessage
+            message={message}
+            type={isSuccess ? 'success' : 'error'}
+            onClose={() => setMessage(null)}
+          />
+        )}
+      </div>
+      <div className="flex justify-between items-center border-b" style={{ borderColor: 'var(--border-color)' }}>
+        <div className="flex flex-col sm:flex-row sm:gap-2">
           <button
-            className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
-              activeSection === 'list'
-                ? 'bg-[--primary-color] text-white border-b-2 border-[--primary-color]'
-                : 'bg-[--surface-color] text-[--text-secondary] hover:bg-[--background-secondary]'
-            }`}
+            className={`flex items-center space-x-1 px-2.5 py-1.5 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none`}
+            style={{
+              background: activeSection === 'list' ? 'var(--primary-color)' : 'var(--surface-color)',
+              color: activeSection === 'list' ? 'var(--surface-color)' : 'var(--text-secondary)',
+              borderBottom: activeSection === 'list' ? '2px solid var(--primary-color)' : '2px solid transparent',
+            }}
             onClick={() => {
               setActiveSection('list');
               setEditPermission(null);
@@ -109,15 +112,16 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
               setCurrentPage(1);
             }}
           >
-            <KeyIcon className="w-5 h-5" />
+            <KeyIcon className="w-4 h-4" />
             <span>Permission List</span>
           </button>
           <button
-            className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
-              activeSection === 'assign'
-                ? 'bg-[--primary-color] text-white border-b-2 border-[--primary-color]'
-                : 'bg-[--surface-color] text-[--text-secondary] hover:bg-[--background-secondary]'
-            }`}
+            className={`flex items-center space-x-1 px-2.5 py-1.5 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none`}
+            style={{
+              background: activeSection === 'assign' ? 'var(--primary-color)' : 'var(--surface-color)',
+              color: activeSection === 'assign' ? 'var(--surface-color)' : 'var(--text-secondary)',
+              borderBottom: activeSection === 'assign' ? '2px solid var(--primary-color)' : '2px solid transparent',
+            }}
             onClick={() => {
               setActiveSection('assign');
               setEditPermission(null);
@@ -126,13 +130,12 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
               setCurrentPage(1);
             }}
           >
-            <UserGroupIcon className="w-5 h-5" />
+            <UserGroupIcon className="w-4 h-4" />
             <span>Assign Role Permissions</span>
           </button>
         </div>
-
       </div>
-      {showCreateForm && (
+      {(showCreateForm || editPermission) && (
         <PermissionCrud
           token={token}
           logout={logout}
@@ -150,39 +153,19 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
           setActiveSection={setActiveSection}
         />
       )}
-      {activeSection === 'list' && (
-        <div className="space-y-6">
-          <PermissionList
-            permissions={permissions}
-            setEditPermission={setEditPermission}
-            handleDeletePermission={handleDeletePermission}
-            isLoading={isLoading}
-            setDeleteConfirm={setDeleteConfirm}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            setShowCreateForm={setShowCreateForm} // Add this prop
-          />
-          {editPermission && !showCreateForm && (
-            <PermissionCrud
-              token={token}
-              logout={logout}
-              permissions={permissions}
-              setPermissions={setPermissions}
-              editPermission={editPermission}
-              setEditPermission={setEditPermission}
-              showCreateForm={false}
-              setShowCreateForm={setShowCreateForm}
-              setMessage={setMessage}
-              setIsSuccess={setIsSuccess}
-              isLoading={isLoading}
-              setIsLoading={setIsLoading}
-              loadPermissions={loadPermissions}
-              setActiveSection={setActiveSection}
-            />
-          )}
-        </div>
+      {activeSection === 'list' && !showCreateForm && !editPermission && (
+        <PermissionList
+          permissions={permissions}
+          setEditPermission={setEditPermission}
+          handleDeletePermission={handleDeletePermission}
+          isLoading={isLoading}
+          setDeleteConfirm={setDeleteConfirm}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          setShowCreateForm={setShowCreateForm}
+        />
       )}
       {activeSection === 'assign' && (
         <RolePermissions
@@ -206,7 +189,7 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
         />
       )}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-[--surface-color] rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
             <div className="flex items-center space-x-2 mb-4">
               <ExclamationCircleIcon className="w-6 h-6 text-[--error-color]" />
@@ -219,13 +202,25 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
               <button
                 onClick={() => handleDeletePermission(deleteConfirm)}
                 disabled={isLoading.delete === deleteConfirm}
-                className="flex-1 bg-[--error-color] hover:bg-[--error-color-hover] disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isLoading.delete === deleteConfirm ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[--error-color] text-white hover:bg-opacity-90'}`}
+                style={{ '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
               >
-                {isLoading.delete === deleteConfirm ? 'Deleting...' : 'Delete'}
+                {isLoading.delete === deleteConfirm ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Deleting...
+                  </span>
+                ) : (
+                  'Delete'
+                )}
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 border border-[--border-color] text-[--text-secondary] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[--background-secondary] transition-colors duration-200"
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isLoading.delete === deleteConfirm ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}`}
+                style={{ backgroundColor: isLoading.delete === deleteConfirm ? undefined : 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
               >
                 Cancel
               </button>

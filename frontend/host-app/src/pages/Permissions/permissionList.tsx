@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { MagnifyingGlassIcon, PencilIcon, TrashIcon, KeyIcon, XMarkIcon, ChevronDownIcon, ChevronRightIcon,PlusIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PencilIcon, TrashIcon, KeyIcon, XMarkIcon, ChevronDownIcon, ChevronRightIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { Permission, PermissionListProps } from './permissionsTypes';
 
 interface GroupedPermission {
@@ -20,22 +20,18 @@ const PermissionList: React.FC<PermissionListProps> = ({
                                                          setSearchQuery,
                                                          currentPage,
                                                          setCurrentPage,
-                                                         setShowCreateForm, // Add this prop
+                                                         setShowCreateForm,
                                                        }) => {
-  // Changed from Set to string to track only one expanded group
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [selectedPermission, setSelectedPermission] = useState<Permission | null>(null);
   const permissionsPerPage = 6;
 
-  // Group permissions by parent (those with _access) and their sub-permissions
   const groupedPermissions = useMemo(() => {
     const groups: GroupedPermission[] = [];
     const ungroupedPermissions: Permission[] = [];
 
-    // Identify parent permissions (those containing '_access')
     const parentPermissions = permissions.filter(p => p.key && p.key.toLowerCase().includes('_access'));
 
-    // Create groups for parent permissions
     parentPermissions.forEach(parent => {
       const prefix = parent.key.toLowerCase().replace('_access', '');
       groups.push({
@@ -47,7 +43,6 @@ const PermissionList: React.FC<PermissionListProps> = ({
       });
     });
 
-    // Categorize remaining permissions as sub-permissions
     permissions.forEach(permission => {
       if (!permission.key || !permission.key.toLowerCase().includes('_access')) {
         let assigned = false;
@@ -65,7 +60,6 @@ const PermissionList: React.FC<PermissionListProps> = ({
       }
     });
 
-    // Add ungrouped permissions as a separate group
     if (ungroupedPermissions.length > 0) {
       groups.push({
         id: 'ungrouped',
@@ -79,7 +73,6 @@ const PermissionList: React.FC<PermissionListProps> = ({
     return groups;
   }, [permissions]);
 
-  // Filter grouped permissions based on search query
   const filteredPermissions = useMemo(() => {
     if (!searchQuery) return groupedPermissions;
 
@@ -105,20 +98,16 @@ const PermissionList: React.FC<PermissionListProps> = ({
       .filter(Boolean) as GroupedPermission[];
   }, [groupedPermissions, searchQuery]);
 
-  // Pagination logic for grouped permissions
   const indexOfLastGroup = currentPage * permissionsPerPage;
   const indexOfFirstGroup = indexOfLastGroup - permissionsPerPage;
   const currentGroups = filteredPermissions.slice(indexOfFirstGroup, indexOfLastGroup);
   const totalPages = Math.ceil(filteredPermissions.length / permissionsPerPage);
 
-  // Modified toggle function for single accordion behavior
   const toggleGroup = (groupId: string) => {
     setExpandedGroup(prev => {
-      // If clicking the same group that's already expanded, close it
       if (prev === groupId) {
         return null;
       }
-      // Otherwise, open the clicked group (this will close any other open group)
       return groupId;
     });
   };
@@ -132,7 +121,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
   };
 
   return (
-    <div className="p-6 bg-[--background-color] text-[--text-color] rounded-lg shadow-lg border border-[--border-color]">
+    <div className="rounded-lg shadow-lg" style={{ backgroundColor: 'var(--surface-color)' }}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="relative w-full sm:w-72">
           <label className="block text-sm font-medium text-[--text-secondary] mb-2">Search Permissions</label>
@@ -147,7 +136,6 @@ const PermissionList: React.FC<PermissionListProps> = ({
             <MagnifyingGlassIcon className="w-5 h-5 text-[--text-secondary] absolute left-3 top-1/2 transform -translate-y-1/2" />
           </div>
         </div>
-        {/* Add the Add Permission button here */}
         <button
           onClick={() => setShowCreateForm(true)}
           className="flex items-center space-x-1 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 self-end"
@@ -284,11 +272,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              className={`px-4 py-2 text-sm rounded-lg ${
-                currentPage === page
-                  ? 'bg-[--primary-color] text-white'
-                  : 'bg-[--background-secondary] text-[--text-color] hover:bg-[--border-hover]'
-              } transition-colors duration-200`}
+              className={`px-4 py-2 text-sm rounded-lg ${currentPage === page ? 'bg-[--primary-color] text-white' : 'bg-[--background-secondary] text-[--text-color] hover:bg-[--border-hover]'} transition-colors duration-200`}
             >
               {page}
             </button>

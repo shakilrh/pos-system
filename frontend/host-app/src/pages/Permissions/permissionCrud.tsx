@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, PlusIcon, KeyIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import { createPermission, updatePermission } from '../../services/PermissionService';
 import { PermissionCrudProps, FormData, FormErrors } from './permissionsTypes';
 
@@ -278,238 +278,163 @@ const PermissionCrud: React.FC<PermissionCrudProps> = ({
   );
 
   return (
-    <div
-      className="rounded-lg shadow-md border mt-6"
-      style={{
-        backgroundColor: 'var(--surface-color)',
-        borderColor: 'var(--border-color)',
-      }}
-    >
-      <div
-        className="p-6 border-b"
-        style={{
-          borderColor: 'var(--border-color)',
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <KeyIcon className="w-6 h-6" style={{ color: 'var(--primary-color)' }} />
-            <h2 className="text-xl font-semibold" style={{ color: 'var(--text-color)' }}>Permission Management</h2>
-          </div>
-          {!showCreateForm && !editPermission && (
-            <button
-              onClick={() => setShowCreateForm(true)}
-              style={{
-                backgroundColor: 'var(--primary-color)',
-                color: 'var(--surface-color)',
-              }}
-              className="flex items-center space-x-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200"
-            >
-              <PlusIcon className="w-5 h-5" />
-              <span>Add Permission</span>
-            </button>
-          )}
-        </div>
-      </div>
-      {(showCreateForm || editPermission) && (
-        <div
-          ref={formRef}
-          className="rounded-lg p-6 mb-6 shadow-sm"
-          style={{
-            backgroundColor: 'var(--background-secondary)',
-            color: 'var(--text-color)',
-          }}
+    <div ref={formRef} className="rounded-lg p-6 mb-6 shadow-sm" style={{ backgroundColor: 'var(--background-secondary)' }}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>
+          {editPermission ? 'Edit Permission' : 'Create New Permission'}
+        </h3>
+        <button
+          onClick={resetForm}
+          style={{ color: 'var(--text-tertiary)' }}
         >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>
-              {editPermission ? 'Edit Permission' : 'Create New Permission'}
-            </h3>
-            <button
-              onClick={resetForm}
+          <XMarkIcon className="w-6 h-6" />
+        </button>
+      </div>
+      <div className="mb-4 p-2 rounded-lg border" style={{ backgroundColor: 'var(--info-color-light)', borderColor: 'var(--info-color)' }}>
+        <p className="text-xs" style={{ color: 'var(--text-color)' }}>
+          Use format: <code className="px-1 rounded" style={{ backgroundColor: 'var(--surface-secondary)' }}>resource_action</code>
+          (e.g., orders_can_view, users_can_edit)
+        </p>
+      </div>
+      <form onSubmit={editPermission ? handleUpdatePermission : handleCreatePermission} className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+              Permission Type
+            </label>
+            <select
+              value={formData.isSubPermission ? 'sub' : 'parent'}
+              onChange={(e) => handleInputChange('isSubPermission', e.target.value === 'sub')}
+              onFocus={() => handleFocus('isSubPermission')}
+              onBlur={() => handleBlur('isSubPermission')}
+              className={`w-full p-2.5 text-sm rounded-lg border focus:ring-2 transition-colors duration-200`}
               style={{
-                color: 'var(--text-secondary)',
-              }}
-              className="hover:opacity-80"
+                borderColor: 'var(--border-color)',
+                backgroundColor: 'var(--surface-color)',
+                color: 'var(--text-color)',
+                '--tw-ring-color': 'var(--focus-ring)'
+              } as React.CSSProperties}
             >
-              <XMarkIcon className="w-6 h-6" />
-            </button>
+              <option value="parent">Main Permission</option>
+              <option value="sub">Sub Permission</option>
+            </select>
           </div>
-          <div
-            className="mb-4 p-2 rounded-lg border"
-            style={{
-              backgroundColor: 'var(--info-color-light)', // Assuming a light info color
-              borderColor: 'var(--info-color)',
-            }}
-          >
-            <p className="text-xs" style={{ color: 'var(--text-color)' }}>
-              Use format: <code className="px-1 rounded" style={{ backgroundColor: 'var(--surface-secondary)' }}>resource_action</code>
-              (e.g., orders_can_view, users_can_edit)
-            </p>
-          </div>
-          <form onSubmit={editPermission ? handleUpdatePermission : handleCreatePermission} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  Permission Type
-                </label>
-                <select
-                  value={formData.isSubPermission ? 'sub' : 'parent'}
-                  onChange={(e) => handleInputChange('isSubPermission', e.target.value === 'sub')}
-                  onFocus={() => handleFocus('isSubPermission')}
-                  onBlur={() => handleBlur('isSubPermission')}
-                  className={`w-full p-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500 transition-colors duration-200`}
-                  style={{
-                    borderColor: 'var(--border-color)',
-                    backgroundColor: 'var(--surface-color)',
-                    color: 'var(--text-color)',
-                  }}
-                >
-                  <option value="parent">Main Permission</option>
-                  <option value="sub">Sub Permission</option>
-                </select>
-              </div>
-              {formData.isSubPermission && (
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                    Parent Permission
-                  </label>
-                  <select
-                    value={formData.parentPermissionId}
-                    onChange={(e) => handleInputChange('parentPermissionId', e.target.value)}
-                    onFocus={() => handleFocus('parentPermissionId')}
-                    onBlur={() => handleBlur('parentPermissionId')}
-                    className={`w-full p-2.5 text-sm rounded-lg border ${
-                      formErrors.parentPermissionId && formErrors.parentPermissionId.length > 0
-                        ? 'ring-1'
-                        : ''
-                    } focus:ring-2 focus:ring-blue-500 transition-colors duration-200`}
-                    style={{
-                      borderColor: formErrors.parentPermissionId && formErrors.parentPermissionId.length > 0
-                        ? 'var(--error-color)'
-                        : 'var(--border-color)',
-                      backgroundColor: formErrors.parentPermissionId && formErrors.parentPermissionId.length > 0
-                        ? 'var(--error-background)' // Assuming an error background color
-                        : 'var(--surface-color)',
-                      color: 'var(--text-color)',
-                    }}
-                  >
-                    <option value="">Select parent permission</option>
-                    {mainPagePermissions.map((permission) => (
-                      <option key={permission._id} value={permission._id}>
-                        {permission.key}
-                      </option>
-                    ))}
-                  </select>
-                  {renderFieldErrors('parentPermissionId')}
-                </div>
-              )}
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  Permission Key *
-                </label>
-                <input
-                  type="text"
-                  value={formData.key}
-                  onChange={(e) => handleInputChange('key', e.target.value)}
-                  onFocus={() => handleFocus('key')}
-                  onBlur={() => handleBlur('key')}
-                  className={`w-full p-2.5 text-sm rounded-lg border ${
-                    formErrors.key && formErrors.key.length > 0
-                      ? 'ring-1'
-                      : ''
-                  } focus:ring-2 focus:ring-blue-500 transition-colors duration-200`}
-                  style={{
-                    borderColor: formErrors.key && formErrors.key.length > 0
-                      ? 'var(--error-color)'
-                      : 'var(--border-color)',
-                    backgroundColor: formErrors.key && formErrors.key.length > 0
-                      ? 'var(--error-background)' // Assuming an error background color
-                      : 'var(--surface-color)',
-                    color: 'var(--text-color)',
-                  }}
-                  placeholder="e.g., orders_can_view"
-                  maxLength={100}
-                  required
-                />
-                {renderFieldErrors('key')}
-                <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  {formData.key.length}/100
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  Description (Optional)
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  onFocus={() => handleFocus('description')}
-                  onBlur={() => handleBlur('description')}
-                  rows={3}
-                  className={`w-full p-2.5 text-sm rounded-lg border resize-none ${
-                    formErrors.description && formErrors.description.length > 0
-                      ? 'ring-1'
-                      : ''
-                  } focus:ring-2 focus:ring-blue-500 transition-colors duration-200`}
-                  style={{
-                    borderColor: formErrors.description && formErrors.description.length > 0
-                      ? 'var(--error-color)'
-                      : 'var(--border-color)',
-                    backgroundColor: formErrors.description && formErrors.description.length > 0
-                      ? 'var(--error-background)' // Assuming an error background color
-                      : 'var(--surface-color)',
-                    color: 'var(--text-color)',
-                  }}
-                  placeholder="Describe permission (optional)"
-                  maxLength={255}
-                />
-                {renderFieldErrors('description')}
-                <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  {formData.description.length}/255
-                </p>
-              </div>
-            </div>
-            <div className="flex space-x-3 pt-4">
-              <button
-                type="submit"
-                disabled={isLoading.create || isLoading.update || !isFormValid()}
-                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200
-                  ${isLoading.create || isLoading.update || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white'}
-                `}
+          {formData.isSubPermission && (
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                Parent Permission
+              </label>
+              <select
+                value={formData.parentPermissionId}
+                onChange={(e) => handleInputChange('parentPermissionId', e.target.value)}
+                onFocus={() => handleFocus('parentPermissionId')}
+                onBlur={() => handleBlur('parentPermissionId')}
+                className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.parentPermissionId && formErrors.parentPermissionId.length > 0 ? 'ring-1' : ''} focus:ring-2 transition-colors duration-200`}
                 style={{
-                  backgroundColor: isLoading.create || isLoading.update || !isFormValid() ? undefined : 'var(--primary-color)',
-                  cursor: isLoading.create || isLoading.update || !isFormValid() ? undefined : 'pointer',
+                  borderColor: formErrors.parentPermissionId && formErrors.parentPermissionId.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                  backgroundColor: formErrors.parentPermissionId && formErrors.parentPermissionId.length > 0 ? 'var(--error-background)' : 'var(--surface-color)',
+                  color: 'var(--text-color)',
                   '--tw-ring-color': 'var(--focus-ring)'
                 } as React.CSSProperties}
               >
-                {isLoading.create || isLoading.update ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" style={{ color: 'var(--surface-color)' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    {editPermission ? 'Updating...' : 'Creating...'}
-                  </span>
-                ) : (
-                  editPermission ? 'Update Permission' : 'Create Permission'
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="flex-1 border px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-200"
-                style={{
-                  borderColor: 'var(--border-color)',
-                  backgroundColor: 'var(--surface-color)',
-                  color: 'var(--text-color)',
-                }}
-              >
-                Cancel
-              </button>
+                <option value="">Select parent permission</option>
+                {mainPagePermissions.map((permission) => (
+                  <option key={permission._id} value={permission._id}>
+                    {permission.key}
+                  </option>
+                ))}
+              </select>
+              {renderFieldErrors('parentPermissionId')}
             </div>
-          </form>
+          )}
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+              Permission Key *
+            </label>
+            <input
+              type="text"
+              value={formData.key}
+              onChange={(e) => handleInputChange('key', e.target.value)}
+              onFocus={() => handleFocus('key')}
+              onBlur={() => handleBlur('key')}
+              className={`w-full p-2.5 text-sm rounded-lg border ${formErrors.key && formErrors.key.length > 0 ? 'ring-1' : ''} focus:ring-2 transition-colors duration-200`}
+              style={{
+                borderColor: formErrors.key && formErrors.key.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                backgroundColor: formErrors.key && formErrors.key.length > 0 ? 'var(--error-background)' : 'var(--surface-color)',
+                color: 'var(--text-color)',
+                '--tw-ring-color': 'var(--focus-ring)'
+              } as React.CSSProperties}
+              placeholder="e.g., orders_can_view"
+              maxLength={100}
+              required
+            />
+            {renderFieldErrors('key')}
+            <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+              {formData.key.length}/100
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+              Description (Optional)
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              onFocus={() => handleFocus('description')}
+              onBlur={() => handleBlur('description')}
+              rows={3}
+              className={`w-full p-2.5 text-sm rounded-lg border resize-none ${formErrors.description && formErrors.description.length > 0 ? 'ring-1' : ''} focus:ring-2 transition-colors duration-200`}
+              style={{
+                borderColor: formErrors.description && formErrors.description.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                backgroundColor: formErrors.description && formErrors.description.length > 0 ? 'var(--error-background)' : 'var(--surface-color)',
+                color: 'var(--text-color)',
+                '--tw-ring-color': 'var(--focus-ring)'
+              } as React.CSSProperties}
+              placeholder="Describe permission (optional)"
+              maxLength={255}
+            />
+            {renderFieldErrors('description')}
+            <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+              {formData.description.length}/255
+            </p>
+          </div>
         </div>
-      )}
+        <div className="flex space-x-3 pt-4">
+          <button
+            type="submit"
+            disabled={isLoading.create || isLoading.update || !isFormValid()}
+            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isLoading.create || isLoading.update || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white'}`}
+            style={{
+              backgroundColor: isLoading.create || isLoading.update || !isFormValid() ? undefined : 'var(--primary-color)',
+              cursor: isLoading.create || isLoading.update || !isFormValid() ? undefined : 'pointer',
+              '--tw-ring-color': 'var(--focus-ring)'
+            } as React.CSSProperties}
+          >
+            {isLoading.create || isLoading.update ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4" style={{ color: 'var(--surface-color)' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {editPermission ? 'Updating...' : 'Creating...'}
+              </span>
+            ) : (
+              editPermission ? 'Update Permission' : 'Create Permission'
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={resetForm}
+            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isLoading.create || isLoading.update ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}`}
+            style={{
+              backgroundColor: isLoading.create || isLoading.update ? undefined : 'var(--background-color)',
+              '--tw-ring-color': 'var(--focus-ring)'
+            } as React.CSSProperties}
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

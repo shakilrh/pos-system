@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExclamationCircleIcon, UserGroupIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import { fetchRoles, deleteRole } from '../../services/RoleService';
 import FlashMessage from '../FlashMessage';
 import RoleList from './roleList';
@@ -64,14 +64,16 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
   };
 
   return (
-    <div className="space-y-6 p-6" style={{ backgroundColor: 'var(--background-color)', color: 'var(--text-color)' }}>
-      {message && (
-        <FlashMessage
-          message={message}
-          type={isSuccess ? 'success' : 'error'}
-          onClose={() => setMessage(null)}
-        />
-      )}
+    <div className="space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
+      <div className="min-h-[50px]">
+        {message && (
+          <FlashMessage
+            message={message}
+            type={isSuccess ? 'success' : 'error'}
+            onClose={() => setMessage(null)}
+          />
+        )}
+      </div>
       <div className="flex justify-between items-center border-b" style={{ borderColor: 'var(--border-color)' }}>
         <button
           style={{
@@ -79,18 +81,17 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
             color: 'var(--surface-color)',
             borderBottom: '2px solid var(--primary-color)',
           }}
-          className="flex items-center space-x-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
+          className="flex items-center space-x-1 px-2.5 py-1.5 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
           onClick={() => {
             setEditRole(null);
             setShowCreateForm(false);
           }}
         >
-          <UserGroupIcon className="w-5 h-5" />
+          <UserGroupIcon className="w-4 h-4" />
           <span>Role List</span>
         </button>
-
       </div>
-      {showCreateForm && (
+      {(showCreateForm || editRole) && (
         <RoleCrud
           token={token}
           logout={logout}
@@ -107,27 +108,23 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
           loadRoles={loadRoles}
         />
       )}
-      <RoleList
-        roles={roles}
-        setEditRole={setEditRole}
-        handleDeleteRole={handleDeleteRole}
-        isLoading={isLoading}
-        setDeleteConfirm={setDeleteConfirm}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        setShowCreateForm={setShowCreateForm} // Add this prop
-      />
+      {!showCreateForm && !editRole && (
+        <RoleList
+          roles={roles}
+          setEditRole={setEditRole}
+          handleDeleteRole={handleDeleteRole}
+          isLoading={isLoading}
+          setDeleteConfirm={setDeleteConfirm}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          setShowCreateForm={setShowCreateForm}
+        />
+      )}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div
-            className="rounded-lg p-6 w-full max-w-md mx-4 shadow-xl"
-            style={{
-              backgroundColor: 'var(--surface-color)',
-              color: 'var(--text-color)',
-            }}
-          >
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-[--surface-color] rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
             <div className="flex items-center space-x-2 mb-4">
               <ExclamationCircleIcon className="w-6 h-6" style={{ color: 'var(--error-color)' }} />
               <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Confirm Delete</h3>
@@ -139,45 +136,36 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
               <button
                 onClick={() => handleDeleteRole(deleteConfirm)}
                 disabled={isLoading.delete}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isLoading.delete ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--error-color)] text-white hover:bg-opacity-90'}`}
                 style={{
-                  backgroundColor: 'var(--error-color)',
-                  color: 'var(--surface-color)',
-                }}
-                className="flex-1 hover:opacity-90 disabled:opacity-60 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                  '--tw-ring-color': 'var(--focus-ring)'
+                } as React.CSSProperties}
               >
-                {isLoading.delete ? 'Deleting...' : 'Delete'}
+                {isLoading.delete ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Deleting...
+                  </span>
+                ) : (
+                  'Delete'
+                )}
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isLoading.delete ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}`}
                 style={{
-                  borderColor: 'var(--border-color)',
-                  color: 'var(--text-secondary)',
-                  backgroundColor: 'var(--surface-color)',
-                }}
-                className="flex-1 border px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-colors duration-200"
+                  backgroundColor: isLoading.delete ? undefined : 'var(--background-color)',
+                  '--tw-ring-color': 'var(--focus-ring)'
+                } as React.CSSProperties}
               >
                 Cancel
               </button>
             </div>
           </div>
         </div>
-      )}
-      {editRole && !showCreateForm && (
-        <RoleCrud
-          token={token}
-          logout={logout}
-          roles={roles}
-          setRoles={setRoles}
-          editRole={editRole}
-          setEditRole={setEditRole}
-          showCreateForm={false}
-          setShowCreateForm={() => {}}
-          setMessage={setMessage}
-          setIsSuccess={setIsSuccess}
-          isLoading={isLoading}
-          setIsLoading={setIsLoading}
-          loadRoles={loadRoles}
-        />
       )}
     </div>
   );

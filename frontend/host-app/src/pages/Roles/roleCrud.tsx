@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, PlusIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import { createRole, updateRole } from '../../services/RoleService';
 import { RoleCrudProps, FormData, FormErrors } from './roleTypes';
 
@@ -238,138 +238,113 @@ const RoleCrud: React.FC<RoleCrudProps> = ({
   };
 
   return (
-    <div className="rounded-lg shadow-md border mt-6" style={{ backgroundColor: 'var(--surface-color)', borderColor: 'var(--border-color)' }}>
-      <div className="p-6 border-b" style={{ borderColor: 'var(--border-color)' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <UserGroupIcon className="w-6 h-6" style={{ color: 'var(--accent-color)' }} />
-            <h2 className="text-xl font-semibold" style={{ color: 'var(--text-color)' }}>Role Management</h2>
-          </div>
-          {!showCreateForm && !editRole && (
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="flex items-center space-x-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200"
-              style={{
-                backgroundColor: 'var(--primary-color)',
-                color: 'var(--text-on-primary)',
-                '--tw-ring-color': 'var(--focus-ring)'
-              } as React.CSSProperties}
-            >
-              <PlusIcon className="w-5 h-5" />
-              <span>Add Role</span>
-            </button>
-          )}
-        </div>
+    <div ref={formRef} className="rounded-lg p-6 mb-6 shadow-sm" style={{ backgroundColor: 'var(--background-secondary)' }}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>
+          {editRole ? 'Edit Role' : 'Create New Role'}
+        </h3>
+        <button
+          onClick={resetForm}
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          <XMarkIcon className="w-6 h-6" />
+        </button>
       </div>
-      {(showCreateForm || editRole) && (
-        <div ref={formRef} className="rounded-lg p-6 mb-6 shadow-sm" style={{ backgroundColor: 'var(--background-secondary)' }}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>
-              {editRole ? 'Edit Role' : 'Create New Role'}
-            </h3>
-            <button
-              onClick={resetForm}
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              <XMarkIcon className="w-6 h-6" />
-            </button>
+      <form onSubmit={editRole ? handleUpdateRole : handleCreateRole} className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+              Role Name *
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => handleInputChange('name', e.target.value)}
+              onFocus={() => handleFocus('name')}
+              onBlur={() => handleBlur('name')}
+              className={`w-full p-2.5 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200`}
+              style={{
+                borderColor: formErrors.name && formErrors.name.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                backgroundColor: formErrors.name && formErrors.name.length > 0 ? 'var(--error-background)' : 'var(--background-color)',
+                color: 'var(--text-color)',
+                '--tw-ring-color': formErrors.name && formErrors.name.length > 0 ? 'var(--error-color)' : 'var(--focus-ring)'
+              } as React.CSSProperties}
+              placeholder="e.g., Manager, Admin"
+              maxLength={50}
+              required
+            />
+            {renderFieldErrors('name')}
+            <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              {formData.name.length}/50
+            </p>
           </div>
-          <form onSubmit={editRole ? handleUpdateRole : handleCreateRole} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  Role Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  onFocus={() => handleFocus('name')}
-                  onBlur={() => handleBlur('name')}
-                  className={`w-full p-2.5 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200`}
-                  style={{
-                    borderColor: formErrors.name && formErrors.name.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
-                    backgroundColor: formErrors.name && formErrors.name.length > 0 ? 'var(--error-background)' : 'var(--background-color)',
-                    color: 'var(--text-color)',
-                    '--tw-ring-color': formErrors.name && formErrors.name.length > 0 ? 'var(--error-color)' : 'var(--focus-ring)'
-                  } as React.CSSProperties}
-                  placeholder="e.g., Manager, Admin"
-                  maxLength={50}
-                  required
-                />
-                {renderFieldErrors('name')}
-                <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  {formData.name.length}/50
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  Description (Optional)
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  onFocus={() => handleFocus('description')}
-                  onBlur={() => handleBlur('description')}
-                  rows={3}
-                  className={`w-full p-2.5 text-sm rounded-lg border resize-none focus:outline-none focus:ring-2 transition-colors duration-200`}
-                  style={{
-                    borderColor: formErrors.description && formErrors.description.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
-                    backgroundColor: formErrors.description && formErrors.description.length > 0 ? 'var(--error-background)' : 'var(--background-color)',
-                    color: 'var(--text-color)',
-                    '--tw-ring-color': formErrors.description && formErrors.description.length > 0 ? 'var(--error-color)' : 'var(--focus-ring)'
-                  } as React.CSSProperties}
-                  placeholder="Role responsibilities (optional)"
-                  maxLength={200}
-                />
-                {renderFieldErrors('description')}
-                <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  {formData.description.length}/200
-                </p>
-              </div>
-            </div>
-            <div className="flex space-x-3 pt-4">
-                <button
-                type="submit"
-                disabled={isLoading.create || isLoading.update || !isFormValid()}
-                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200
-                  ${isLoading.create || isLoading.update || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white'}
-                `}
-                style={{
-                  backgroundColor: isLoading.create || isLoading.update || !isFormValid() ? undefined : 'var(--primary-color)',
-                  cursor: isLoading.create || isLoading.update || !isFormValid() ? undefined : 'pointer',
-                  '--tw-ring-color': 'var(--focus-ring)'
-                } as React.CSSProperties}
-                >
-                {isLoading.create || isLoading.update ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--text-on-primary)' }}>
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    {editRole ? 'Updating...' : 'Creating...'}
-                  </span>
-                ) : (
-                  editRole ? 'Update Role' : 'Create Role'
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-4 py-2 border rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200"
-                style={{
-                  borderColor: 'var(--border-color)',
-                  backgroundColor: 'var(--background-secondary)',
-                  color: 'var(--text-secondary)',
-                  '--tw-ring-color': 'var(--focus-ring)'
-                } as React.CSSProperties}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+              Description (Optional)
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              onFocus={() => handleFocus('description')}
+              onBlur={() => handleBlur('description')}
+              rows={3}
+              className={`w-full p-2.5 text-sm rounded-lg border resize-none focus:outline-none focus:ring-2 transition-colors duration-200`}
+              style={{
+                borderColor: formErrors.description && formErrors.description.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                backgroundColor: formErrors.description && formErrors.description.length > 0 ? 'var(--error-background)' : 'var(--background-color)',
+                color: 'var(--text-color)',
+                '--tw-ring-color': formErrors.description && formErrors.description.length > 0 ? 'var(--error-color)' : 'var(--focus-ring)'
+              } as React.CSSProperties}
+              placeholder="Role responsibilities (optional)"
+              maxLength={200}
+            />
+            {renderFieldErrors('description')}
+            <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              {formData.description.length}/200
+            </p>
+          </div>
         </div>
-      )}
+        <div className="flex space-x-3 pt-4">
+          <button
+            type="submit"
+            disabled={isLoading.create || isLoading.update || !isFormValid()}
+            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200
+              ${isLoading.create || isLoading.update || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white'}
+            `}
+            style={{
+              backgroundColor: isLoading.create || isLoading.update || !isFormValid() ? undefined : 'var(--primary-color)',
+              cursor: isLoading.create || isLoading.update || !isFormValid() ? undefined : 'pointer',
+              '--tw-ring-color': 'var(--focus-ring)'
+            } as React.CSSProperties}
+          >
+            {isLoading.create || isLoading.update ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--text-on-primary)' }}>
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {editRole ? 'Updating...' : 'Creating...'}
+              </span>
+            ) : (
+              editRole ? 'Update Role' : 'Create Role'
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={resetForm}
+            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200
+              ${isLoading.create || isLoading.update ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}
+            `}
+            style={{
+              backgroundColor: isLoading.create || isLoading.update ? undefined : 'var(--background-color)',
+              cursor: isLoading.create || isLoading.update ? undefined : 'pointer',
+              '--tw-ring-color': 'var(--focus-ring)'
+            } as React.CSSProperties}
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

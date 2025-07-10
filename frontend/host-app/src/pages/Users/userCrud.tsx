@@ -1,5 +1,5 @@
 import React from 'react';
-import { XMarkIcon, PlusIcon, UserIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PlusIcon,ExclamationCircleIcon, UserIcon } from '@heroicons/react/24/outline';
 import { User, Role, FormData, FormErrors } from './userTypes';
 
 interface UserCrudProps {
@@ -563,18 +563,19 @@ const UserCrud: React.FC<UserCrudProps> = ({
           <div className="flex space-x-2 pt-2">
             <button
               type="submit"
-              disabled={isSubmitting || !isFormValid(isEdit)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isSubmitting || !isFormValid(isEdit) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white'}`}
+              disabled={isLoading.create || isLoading.update || !isFormValid(isEdit)}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200
+                ${isLoading.create || isLoading.update || !isFormValid(isEdit) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white'}
+              `}
               style={{
-                backgroundColor: isSubmitting || !isFormValid(isEdit) ? undefined : 'var(--primary-color)',
-                cursor: isSubmitting || !isFormValid(isEdit) ? undefined : 'pointer',
-                '--tw-ring-color': 'var(--focus-ring)',
-                width: '100px', // Equal width to match red-marked example
+                backgroundColor: isLoading.create || isLoading.update || !isFormValid(isEdit) ? undefined : 'var(--primary-color)',
+                cursor: isLoading.create || isLoading.update || !isFormValid(isEdit) ? undefined : 'pointer',
+                '--tw-ring-color': 'var(--focus-ring)'
               } as React.CSSProperties}
             >
-              {isSubmitting ? (
+              {isLoading.create || isLoading.update ? (
                 <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4" style={{ color: 'var(--surface-color)' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -587,13 +588,14 @@ const UserCrud: React.FC<UserCrudProps> = ({
             <button
               type="button"
               onClick={onCancel}
-              className="px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors duration-200"
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200
+                ${isLoading.create || isLoading.update ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}
+              `}
               style={{
-                borderColor: 'var(--border-color)',
-                color: 'var(--text-secondary)',
-                backgroundColor: 'var(--background-color)',
-                width: '100px', // Equal width to match red-marked example
-              }}
+                backgroundColor: isLoading.create || isLoading.update ? undefined : 'var(--background-color)',
+                cursor: isLoading.create || isLoading.update ? undefined : 'pointer',
+                '--tw-ring-color': 'var(--focus-ring)'
+              } as React.CSSProperties}
             >
               Cancel
             </button>
@@ -602,57 +604,52 @@ const UserCrud: React.FC<UserCrudProps> = ({
       </div>
     );
   };
-
   const renderDeleteConfirmation = () => {
     const userToDelete = users.find((user) => user._id === deleteUserId);
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-2">
-        <div className="rounded-lg p-2 w-full max-w-md mx-2 shadow-2xl border" style={{ backgroundColor: 'var(--surface-color)', borderColor: 'var(--border-color)' }}>
-          <div className="flex items-center justify-between mb-1">
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+        <div className="bg-[--surface-color] rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+          <div className="flex items-center space-x-2 mb-4">
+            <ExclamationCircleIcon className="w-6 h-6" style={{ color: 'var(--error-color)' }} />
             <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>
               Confirm Delete
             </h3>
-            <button
-              onClick={onCancel}
-              className="p-1 rounded-full hover:bg-opacity-10 transition-colors duration-200"
-              style={{ color: 'var(--text-tertiary)', backgroundColor: 'transparent' }}
-            >
-              <XMarkIcon className="w-4 h-4" />
-            </button>
           </div>
-          <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
             Are you sure you want to delete {userToDelete?.name || 'this user'}? This action cannot be undone.
           </p>
-          <div className="flex justify-end space-x-2">
-            <button
-              onClick={onCancel}
-              className="px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors duration-200"
-              style={{
-                borderColor: 'var(--border-color)',
-                color: 'var(--text-secondary)',
-                backgroundColor: 'var(--background-color)',
-                width: '100px', // Equal width to match red-marked example
-              }}
-            >
-              Cancel
-            </button>
+          <div className="flex space-x-3">
             <button
               onClick={handleDeleteUser}
               disabled={isLoading.delete}
-              className="px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-colors duration-200 disabled:opacity-50"
-              style={{ backgroundColor: 'var(--error-color)', width: '100px' }} // Equal width to match red-marked example
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${
+                isLoading.delete ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--error-color)] text-white hover:bg-opacity-90'
+              }`}
+              style={{ '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
             >
               {isLoading.delete ? (
                 <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Deleting...
-                </span>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Deleting...
+              </span>
               ) : (
                 'Delete'
               )}
+            </button>
+            <button
+              onClick={onCancel}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${
+                isLoading.delete ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'
+              }`}
+              style={{
+                backgroundColor: isLoading.delete ? undefined : 'var(--background-color)',
+                '--tw-ring-color': 'var(--focus-ring)'
+              } as React.CSSProperties}
+            >
+              Cancel
             </button>
           </div>
         </div>
