@@ -132,14 +132,13 @@ export default function Products({
 
   if (loading) {
     return (
-      <div className="lg:col-span-3 rounded-xl shadow-lg p-4 border h-full"
-           style={{ backgroundColor: 'var(--background-secondary)', borderColor: 'var(--border-color)' }}>
+      <div className="lg:col-span-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 rounded" style={{ backgroundColor: 'var(--surface-secondary)' }}></div>
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
           {Array(4)
             .fill(0)
             .map((_, idx) => (
-              <div key={idx} className="h-40 rounded-lg" style={{ backgroundColor: 'var(--surface-secondary)' }}></div>
+              <div key={idx} className="h-40 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
             ))}
         </div>
       </div>
@@ -148,13 +147,8 @@ export default function Products({
 
   return (
     <div
-      className="lg:col-span-3 rounded-xl shadow-lg p-4 border h-full relative"
-      style={{
-        backgroundColor: 'var(--background-secondary)',
-        borderColor: 'var(--border-color)',
-        opacity: isCategoryFormActive ? 0.5 : 1,
-        pointerEvents: isCategoryFormActive ? 'none' : 'auto'
-      }}
+      className="lg:col-span-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700 h-full relative"
+      style={{ opacity: isCategoryFormActive ? 0.5 : 1 }}
     >
       <Toaster position="top-right" />
 
