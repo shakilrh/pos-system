@@ -91,7 +91,7 @@ export default function Orders() {
   }
 
   return (
-    <div className="min-h-screen p-5">
+    <div className="min-h-screen p-5 bg-[var(--background-secondary)]">
       <div className="max-w-7xl mx-auto">
         <OrderList
           orders={orders}

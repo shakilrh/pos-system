@@ -642,14 +642,14 @@ const UserCrud: React.FC<UserCrudProps> = ({
             <button
               type="submit"
               disabled={isSubmitting || !isFormValid(isEdit)}
-              className={`flex-1 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200`}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200
+              ${isSubmitting || !isFormValid(isEdit) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white'}
+              `}
               style={{
-                backgroundColor: isSubmitting || !isFormValid(isEdit) ? 'var(--primary-600)' : 'var(--primary-color)',
-                cursor: isSubmitting || !isFormValid(isEdit) ? 'not-allowed' : 'pointer',
-                // Hover and active opacity are handled globally by styles.css
-                // Focus ring color is handled globally by styles.css
-                '--tw-ring-color': 'var(--focus-ring)' // Set ring color directly for Tailwind's ring utility
-              } as React.CSSProperties} // Cast to React.CSSProperties to allow custom CSS properties
+              backgroundColor: isSubmitting || !isFormValid(isEdit) ? undefined : 'var(--primary-color)',
+              cursor: isSubmitting || !isFormValid(isEdit) ? undefined : 'pointer',
+              '--tw-ring-color': 'var(--focus-ring)'
+              } as React.CSSProperties}
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center">
