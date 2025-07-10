@@ -329,17 +329,18 @@ const RoleCrud: React.FC<RoleCrudProps> = ({
               </div>
             </div>
             <div className="flex space-x-3 pt-4">
-              <button
+                <button
                 type="submit"
                 disabled={isLoading.create || isLoading.update || !isFormValid()}
-                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200`}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200
+                  ${isLoading.create || isLoading.update || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white'}
+                `}
                 style={{
-                  backgroundColor: isLoading.create || isLoading.update || !isFormValid() ? 'var(--primary-disabled)' : 'var(--primary-color)',
-                  color: 'var(--text-on-primary)',
-                  cursor: isLoading.create || isLoading.update || !isFormValid() ? 'not-allowed' : 'pointer',
+                  backgroundColor: isLoading.create || isLoading.update || !isFormValid() ? undefined : 'var(--primary-color)',
+                  cursor: isLoading.create || isLoading.update || !isFormValid() ? undefined : 'pointer',
                   '--tw-ring-color': 'var(--focus-ring)'
                 } as React.CSSProperties}
-              >
+                >
                 {isLoading.create || isLoading.update ? (
                   <span className="flex items-center justify-center">
                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--text-on-primary)' }}>
