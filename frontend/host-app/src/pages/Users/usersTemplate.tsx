@@ -140,7 +140,7 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
 
   return (
     <div className="space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
-      <div className="min-h-[50px]">
+
         {message && (
           <FlashMessage
             message={message}
@@ -148,7 +148,12 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
             onClose={() => setMessage(null)}
           />
         )}
-      </div>
+      <div className="rounded-lg p-3 mb-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <div className="flex items-center mb-4">
+          <button className="mr-2" style={{ color: 'var(--text-secondary)' }}>
+            <UserIcon className="w-5 h-5" />
+          </button>
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>User Management</h3></div></div>
       <div className="flex justify-between items-center border-b" style={{ borderColor: 'var(--border-color)' }}>
         <div className="flex flex-col sm:flex-row sm:gap-2">
           <button

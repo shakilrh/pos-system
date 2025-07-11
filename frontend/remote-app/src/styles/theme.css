@@ -19,6 +19,21 @@
   --text-color: #064e3b; /* Green-900 */
 }
 
+[data-theme="dark"] {
+  --primary-color: #3b82f6; /* Blue-500 */
+  --secondary-color: #6b7280; /* Gray-500 */
+  --background-color: #111827; /* Dark background */
+  --text-color: #ffffff; /* White text */
+}
+
+/* Dark Pro theme support */
+[data-theme="dark-pro"] {
+  --primary-color: #3b82f6; /* Blue-500 */
+  --secondary-color: #6b7280; /* Gray-500 */
+  --background-color: #0f172a; /* Even darker background */
+  --text-color: #ffffff; /* White text */
+}
+
 :root {
   background-color: var(--background-color);
   color: var(--text-color);

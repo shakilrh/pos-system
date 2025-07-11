@@ -1,5 +1,5 @@
 import React from 'react';
-import { XMarkIcon, PlusIcon,ExclamationCircleIcon, UserIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, UserIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { User, Role, FormData, FormErrors } from './userTypes';
 
 interface UserCrudProps {
@@ -167,7 +167,7 @@ const UserCrud: React.FC<UserCrudProps> = ({
       case 'phone_number': return validatePhoneNumber(data.phone_number || '');
       case 'job_title': return validateJobTitle(data.job_title || '');
       case 'shift_time': return validateShiftTime(data.shift_time || '');
-      case 'salary': return validateSalary(data.salary || '');
+      case 'salary':fdfdfd: return validateSalary(data.salary || '');
       default: return [];
     }
   };
@@ -177,12 +177,6 @@ const UserCrud: React.FC<UserCrudProps> = ({
     if (!isEdit) requiredFields.push('password');
     return requiredFields.every(field => getFieldErrors(field, isEdit).length === 0);
   };
-
-  React.useEffect(() => {
-    if (editUser && formRef.current) {
-      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [editUser]);
 
   const handleInputChange = (field: keyof FormData, value: string, isEdit: boolean) => {
     if (isEdit && editUser) {
@@ -339,12 +333,12 @@ const UserCrud: React.FC<UserCrudProps> = ({
 
   const renderFieldErrors = (fieldName: string) => {
     const fieldErrors = formErrors[fieldName as keyof FormErrors];
-    if (!fieldErrors || (Array.isArray(fieldErrors) ? fieldErrors.length === 0 : !fieldErrors)) return null;
-    const errors = Array.isArray(fieldErrors) ? fieldErrors : [fieldErrors];
+    if (!fieldErrors || fieldErrors.length === 0) return null;
+
     return (
       <div className="mt-1 space-y-1">
-        {errors.map((error, index) => (
-          <p key={index} className="text-[var(--error-color)] text-xs flex items-start">
+        {fieldErrors.map((error, index) => (
+          <p key={index} className="text-xs flex items-start" style={{ color: 'var(--error-color)' }}>
             <svg className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
@@ -359,251 +353,284 @@ const UserCrud: React.FC<UserCrudProps> = ({
     const data = isEdit ? editUser : newUser;
     const isSubmitting = isEdit ? isLoading.update : isLoading.create;
     return (
-      <div ref={formRef} className="rounded-lg p-3 mb-3 shadow-sm" style={{ backgroundColor: 'var(--background-secondary)' }}>
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>
-            {isEdit ? 'Edit User' : 'Create New User'}
-          </h3>
+      <div ref={formRef} className="rounded-lg p-3 mb-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <div className="flex items-center justify-between px-6 py-4" style={{ backgroundColor: 'var(--background-color)', borderBottom: '1px solid var(--border-color)', borderTopLeftRadius: '0.5rem', borderTopRightRadius: '0.5rem' }}>
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <UserIcon className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold" style={{ color: 'var(--text-color)' }}>
+                {isEdit ? 'Edit User' : 'Create New User'}
+              </h3>
+            </div>
+          </div>
           <button onClick={onCancel} style={{ color: 'var(--text-secondary)' }}>
-            <XMarkIcon className="w-4 h-4" />
+            <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
-        <form onSubmit={isEdit ? handleEditUser : handleCreateUser} className="space-y-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                Name *
-              </label>
-              <input
-                type="text"
-                value={data?.name || ''}
-                onChange={(e) => handleInputChange('name', e.target.value, isEdit)}
-                onFocus={() => handleFocus('name', isEdit)}
-                onBlur={() => handleBlur('name', isEdit)}
-                className={`w-full p-2 text-sm rounded-lg border ${formErrors.name && (Array.isArray(formErrors.name) ? formErrors.name.length > 0 : formErrors.name) ? 'ring-1' : ''}`}
-                style={{
-                  borderColor: formErrors.name && (Array.isArray(formErrors.name) ? formErrors.name.length > 0 : formErrors.name) ? 'var(--error-color)' : 'var(--border-color)',
-                  backgroundColor: formErrors.name && (Array.isArray(formErrors.name) ? formErrors.name.length > 0 : formErrors.name) ? 'var(--error-color-light)' : 'var(--background-color)',
-                  color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)',
-                }}
-                placeholder="Enter full name"
-                required
-              />
-              {renderFieldErrors('name')}
+        <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--background-secondary)', border: '1px solid var(--border-color)' }}>
+          <form onSubmit={isEdit ? handleEditUser : handleCreateUser} className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                  Name *
+                </label>
+                <input
+                  type="text"
+                  value={data?.name || ''}
+                  onChange={(e) => handleInputChange('name', e.target.value, isEdit)}
+                  onFocus={() => handleFocus('name', isEdit)}
+                  onBlur={() => handleBlur('name', isEdit)}
+                  className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${formErrors.name && formErrors.name.length > 0 ? 'ring-1' : ''}`}
+                  style={{
+                    borderColor: formErrors.name && formErrors.name.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                    backgroundColor: 'var(--background-color)',
+                    color: 'var(--text-color)',
+                    outlineColor: 'var(--focus-ring)',
+                  }}
+                  placeholder="Enter full name"
+                  maxLength={100}
+                  required
+                />
+                {renderFieldErrors('name')}
+                <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  {data?.name.length || 0}/100
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={data?.email || ''}
+                  onChange={(e) => handleInputChange('email', e.target.value, isEdit)}
+                  onFocus={() => handleFocus('email', isEdit)}
+                  onBlur={() => handleBlur('email', isEdit)}
+                  className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${formErrors.email && formErrors.email.length > 0 ? 'ring-1' : ''}`}
+                  style={{
+                    borderColor: formErrors.email && formErrors.email.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                    backgroundColor: 'var(--background-color)',
+                    color: 'var(--text-color)',
+                    outlineColor: 'var(--focus-ring)',
+                  }}
+                  placeholder="Enter email address"
+                  maxLength={255}
+                  required
+                />
+                {renderFieldErrors('email')}
+                <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  {data?.email.length || 0}/255
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                  {isEdit ? 'Password (Optional)' : 'Password *'}
+                </label>
+                <input
+                  type="password"
+                  value={data?.password || ''}
+                  onChange={(e) => handleInputChange('password', e.target.value, isEdit)}
+                  onFocus={() => handleFocus('password', isEdit)}
+                  onBlur={() => handleBlur('password', isEdit)}
+                  className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${formErrors.password && formErrors.password.length > 0 ? 'ring-1' : ''}`}
+                  style={{
+                    borderColor: formErrors.password && formErrors.password.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                    backgroundColor: 'var(--background-color)',
+                    color: 'var(--text-color)',
+                    outlineColor: 'var(--focus-ring)',
+                  }}
+                  placeholder={isEdit ? 'Leave empty to keep current password' : 'Enter password'}
+                  maxLength={100}
+                  required={!isEdit}
+                />
+                {renderFieldErrors('password')}
+                <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  {data?.password?.length || 0}/100
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                  User Type
+                </label>
+                <input
+                  type="text"
+                  value="Worker"
+                  className="w-full p-2 text-sm rounded-lg border cursor-not-allowed"
+                  style={{
+                    borderColor: 'var(--border-color)',
+                    backgroundColor: 'var(--background-secondary)',
+                    color: 'var(--text-secondary)',
+                  }}
+                  disabled
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                  Role (Optional)
+                </label>
+                <select
+                  value={data?.role_id || ''}
+                  onChange={(e) => handleInputChange('role_id', e.target.value, isEdit)}
+                  className="w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200"
+                  style={{
+                    borderColor: 'var(--border-color)',
+                    backgroundColor: 'var(--background-color)',
+                    color: 'var(--text-color)',
+                    outlineColor: 'var(--focus-ring)',
+                  }}
+                >
+                  <option value="">Select Role</option>
+                  {roles.map((role: Role) => (
+                    <option key={role._id} value={role._id}>{role.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                  Phone Number (Optional)
+                </label>
+                <input
+                  type="tel"
+                  value={data?.phone_number || ''}
+                  onChange={(e) => handleInputChange('phone_number', e.target.value, isEdit)}
+                  onFocus={() => handleFocus('phone_number', isEdit)}
+                  onBlur={() => handleBlur('phone_number', isEdit)}
+                  className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${formErrors.phone_number && formErrors.phone_number.length > 0 ? 'ring-1' : ''}`}
+                  style={{
+                    borderColor: formErrors.phone_number && formErrors.phone_number.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                    backgroundColor: 'var(--background-color)',
+                    color: 'var(--text-color)',
+                    outlineColor: 'var(--focus-ring)',
+                  }}
+                  placeholder="e.g., +1234567890"
+                  maxLength={20}
+                />
+                {renderFieldErrors('phone_number')}
+                <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  {data?.phone_number?.length || 0}/20
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                  Job Title (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={data?.job_title || ''}
+                  onChange={(e) => handleInputChange('job_title', e.target.value, isEdit)}
+                  onFocus={() => handleFocus('job_title', isEdit)}
+                  onBlur={() => handleBlur('job_title', isEdit)}
+                  className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${formErrors.job_title && formErrors.job_title.length > 0 ? 'ring-1' : ''}`}
+                  style={{
+                    borderColor: formErrors.job_title && formErrors.job_title.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                    backgroundColor: 'var(--background-color)',
+                    color: 'var(--text-color)',
+                    outlineColor: 'var(--focus-ring)',
+                  }}
+                  placeholder="e.g., Chef, Server, Manager"
+                  maxLength={100}
+                />
+                {renderFieldErrors('job_title')}
+                <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  {data?.job_title?.length || 0}/100
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                  Shift Time (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={data?.shift_time || ''}
+                  onChange={(e) => handleInputChange('shift_time', e.target.value, isEdit)}
+                  onFocus={() => handleFocus('shift_time', isEdit)}
+                  onBlur={() => handleBlur('shift_time', isEdit)}
+                  className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${formErrors.shift_time && formErrors.shift_time.length > 0 ? 'ring-1' : ''}`}
+                  style={{
+                    borderColor: formErrors.shift_time && formErrors.shift_time.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                    backgroundColor: 'var(--background-color)',
+                    color: 'var(--text-color)',
+                    outlineColor: 'var(--focus-ring)',
+                  }}
+                  placeholder="e.g., 9:00 AM - 5:00 PM"
+                  maxLength={100}
+                />
+                {renderFieldErrors('shift_time')}
+                <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  {data?.shift_time?.length || 0}/100
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                  Salary (Optional)
+                </label>
+                <input
+                  type="number"
+                  value={data?.salary || ''}
+                  onChange={(e) => handleInputChange('salary', e.target.value, isEdit)}
+                  onFocus={() => handleFocus('salary', isEdit)}
+                  onBlur={() => handleBlur('salary', isEdit)}
+                  className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${formErrors.salary && formErrors.salary.length > 0 ? 'ring-1' : ''}`}
+                  style={{
+                    borderColor: formErrors.salary && formErrors.salary.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                    backgroundColor: 'var(--background-color)',
+                    color: 'var(--text-color)',
+                    outlineColor: 'var(--focus-ring)',
+                  }}
+                  placeholder="e.g., 50000"
+                  min="0"
+                  step="0.01"
+                />
+                {renderFieldErrors('salary')}
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                Email *
-              </label>
-              <input
-                type="email"
-                value={data?.email || ''}
-                onChange={(e) => handleInputChange('email', e.target.value, isEdit)}
-                onFocus={() => handleFocus('email', isEdit)}
-                onBlur={() => handleBlur('email', isEdit)}
-                className={`w-full p-2 text-sm rounded-lg border ${formErrors.email && (Array.isArray(formErrors.email) ? formErrors.email.length > 0 : formErrors.email) ? 'ring-1' : ''}`}
+            <div className="flex space-x-2 pt-2">
+              <button
+                type="submit"
+                disabled={isLoading.create || isLoading.update || !isFormValid(isEdit)}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isLoading.create || isLoading.update || !isFormValid(isEdit) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white'}`}
                 style={{
-                  borderColor: formErrors.email && (Array.isArray(formErrors.email) ? formErrors.email.length > 0 : formErrors.email) ? 'var(--error-color)' : 'var(--border-color)',
-                  backgroundColor: formErrors.email && (Array.isArray(formErrors.email) ? formErrors.email.length > 0 : formErrors.email) ? 'var(--error-color-light)' : 'var(--background-color)',
-                  color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)',
-                }}
-                placeholder="Enter email address"
-                required
-              />
-              {renderFieldErrors('email')}
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                {isEdit ? 'Password (Optional)' : 'Password *'}
-              </label>
-              <input
-                type="password"
-                value={data?.password || ''}
-                onChange={(e) => handleInputChange('password', e.target.value, isEdit)}
-                onFocus={() => handleFocus('password', isEdit)}
-                onBlur={() => handleBlur('password', isEdit)}
-                className={`w-full p-2 text-sm rounded-lg border ${formErrors.password && (Array.isArray(formErrors.password) ? formErrors.password.length > 0 : formErrors.password) ? 'ring-1' : ''}`}
-                style={{
-                  borderColor: formErrors.password && (Array.isArray(formErrors.password) ? formErrors.password.length > 0 : formErrors.password) ? 'var(--error-color)' : 'var(--border-color)',
-                  backgroundColor: formErrors.password && (Array.isArray(formErrors.password) ? formErrors.password.length > 0 : formErrors.password) ? 'var(--error-color-light)' : 'var(--background-color)',
-                  color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)',
-                }}
-                placeholder={isEdit ? 'Leave empty to keep current password' : 'Enter password'}
-                required={!isEdit}
-              />
-              {renderFieldErrors('password')}
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                User Type
-              </label>
-              <input
-                type="text"
-                value="Worker"
-                className="w-full p-2 text-sm rounded-lg border cursor-not-allowed"
-                style={{
-                  borderColor: 'var(--border-color)',
-                  backgroundColor: 'var(--background-secondary)',
-                  color: 'var(--text-secondary)',
-                }}
-                disabled
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                Role (Optional)
-              </label>
-              <select
-                value={data?.role_id || ''}
-                onChange={(e) => handleInputChange('role_id', e.target.value, isEdit)}
-                className="w-full p-2 text-sm rounded-lg border"
-                style={{
-                  borderColor: 'var(--border-color)',
-                  backgroundColor: 'var(--background-color)',
-                  color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)',
+                  backgroundColor: isLoading.create || isLoading.update || !isFormValid(isEdit) ? undefined : 'var(--primary-color)',
+                  color: isLoading.create || isLoading.update || !isFormValid(isEdit) ? undefined : 'var(--text-on-primary)',
+                  cursor: isLoading.create || isLoading.update || !isFormValid(isEdit) ? 'not-allowed' : 'pointer',
+                  '--tw-ring-color': 'var(--focus-ring)',
                 }}
               >
-                <option value="">Select Role</option>
-                {roles.map((role: Role) => (
-                  <option key={role._id} value={role._id}>{role.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                Phone Number (Optional)
-              </label>
-              <input
-                type="tel"
-                value={data?.phone_number || ''}
-                onChange={(e) => handleInputChange('phone_number', e.target.value, isEdit)}
-                onFocus={() => handleFocus('phone_number', isEdit)}
-                onBlur={() => handleBlur('phone_number', isEdit)}
-                className={`w-full p-2 text-sm rounded-lg border ${formErrors.phone_number && (Array.isArray(formErrors.phone_number) ? formErrors.phone_number.length > 0 : formErrors.phone_number) ? 'ring-1' : ''}`}
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--text-on-primary)' }}>
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    {isEdit ? 'Updating...' : 'Creating...'}
+                  </span>
+                ) : (
+                  isEdit ? 'Update User' : 'Create User'
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isLoading.create || isLoading.update ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''}`}
                 style={{
-                  borderColor: formErrors.phone_number && (Array.isArray(formErrors.phone_number) ? formErrors.phone_number.length > 0 : formErrors.phone_number) ? 'var(--error-color)' : 'var(--border-color)',
-                  backgroundColor: formErrors.phone_number && (Array.isArray(formErrors.phone_number) ? formErrors.phone_number.length > 0 : formErrors.phone_number) ? 'var(--error-color-light)' : 'var(--background-color)',
-                  color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)',
+                  backgroundColor: 'var(--background-color)',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border-color)',
+                  cursor: isLoading.create || isLoading.update ? 'not-allowed' : 'pointer',
+                  '--tw-ring-color': 'var(--focus-ring)',
                 }}
-                placeholder="e.g., +1234567890"
-              />
-              {renderFieldErrors('phone_number')}
+              >
+                Cancel
+              </button>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                Job Title (Optional)
-              </label>
-              <input
-                type="text"
-                value={data?.job_title || ''}
-                onChange={(e) => handleInputChange('job_title', e.target.value, isEdit)}
-                onFocus={() => handleFocus('job_title', isEdit)}
-                onBlur={() => handleBlur('job_title', isEdit)}
-                className={`w-full p-2 text-sm rounded-lg border ${formErrors.job_title && (Array.isArray(formErrors.job_title) ? formErrors.job_title.length > 0 : formErrors.job_title) ? 'ring-1' : ''}`}
-                style={{
-                  borderColor: formErrors.job_title && (Array.isArray(formErrors.job_title) ? formErrors.job_title.length > 0 : formErrors.job_title) ? 'var(--error-color)' : 'var(--border-color)',
-                  backgroundColor: formErrors.job_title && (Array.isArray(formErrors.job_title) ? formErrors.job_title.length > 0 : formErrors.job_title) ? 'var(--error-color-light)' : 'var(--background-color)',
-                  color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)',
-                }}
-                placeholder="e.g., Chef, Server, Manager"
-              />
-              {renderFieldErrors('job_title')}
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                Shift Time (Optional)
-              </label>
-              <input
-                type="text"
-                value={data?.shift_time || ''}
-                onChange={(e) => handleInputChange('shift_time', e.target.value, isEdit)}
-                onFocus={() => handleFocus('shift_time', isEdit)}
-                onBlur={() => handleBlur('shift_time', isEdit)}
-                className={`w-full p-2 text-sm rounded-lg border ${formErrors.shift_time && (Array.isArray(formErrors.shift_time) ? formErrors.shift_time.length > 0 : formErrors.shift_time) ? 'ring-1' : ''}`}
-                style={{
-                  borderColor: formErrors.shift_time && (Array.isArray(formErrors.shift_time) ? formErrors.shift_time.length > 0 : formErrors.shift_time) ? 'var(--error-color)' : 'var(--border-color)',
-                  backgroundColor: formErrors.shift_time && (Array.isArray(formErrors.shift_time) ? formErrors.shift_time.length > 0 : formErrors.shift_time) ? 'var(--error-color-light)' : 'var(--background-color)',
-                  color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)',
-                }}
-                placeholder="e.g., 9:00 AM - 5:00 PM"
-              />
-              {renderFieldErrors('shift_time')}
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                Salary (Optional)
-              </label>
-              <input
-                type="number"
-                value={data?.salary || ''}
-                onChange={(e) => handleInputChange('salary', e.target.value, isEdit)}
-                onFocus={() => handleFocus('salary', isEdit)}
-                onBlur={() => handleBlur('salary', isEdit)}
-                className={`w-full p-2 text-sm rounded-lg border ${formErrors.salary && (Array.isArray(formErrors.salary) ? formErrors.salary.length > 0 : formErrors.salary) ? 'ring-1' : ''}`}
-                style={{
-                  borderColor: formErrors.salary && (Array.isArray(formErrors.salary) ? formErrors.salary.length > 0 : formErrors.salary) ? 'var(--error-color)' : 'var(--border-color)',
-                  backgroundColor: formErrors.salary && (Array.isArray(formErrors.salary) ? formErrors.salary.length > 0 : formErrors.salary) ? 'var(--error-color-light)' : 'var(--background-color)',
-                  color: 'var(--text-color)',
-                  outlineColor: 'var(--focus-ring)',
-                }}
-                placeholder="e.g., 50000"
-                min="0"
-                step="0.01"
-              />
-              {renderFieldErrors('salary')}
-            </div>
-          </div>
-          <div className="flex space-x-2 pt-2">
-            <button
-              type="submit"
-              disabled={isLoading.create || isLoading.update || !isFormValid(isEdit)}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200
-                ${isLoading.create || isLoading.update || !isFormValid(isEdit) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white'}
-              `}
-              style={{
-                backgroundColor: isLoading.create || isLoading.update || !isFormValid(isEdit) ? undefined : 'var(--primary-color)',
-                cursor: isLoading.create || isLoading.update || !isFormValid(isEdit) ? undefined : 'pointer',
-                '--tw-ring-color': 'var(--focus-ring)'
-              } as React.CSSProperties}
-            >
-              {isLoading.create || isLoading.update ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4" style={{ color: 'var(--surface-color)' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {isEdit ? 'Updating...' : 'Creating...'}
-                </span>
-              ) : (
-                isEdit ? 'Update User' : 'Create User'
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200
-                ${isLoading.create || isLoading.update ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}
-              `}
-              style={{
-                backgroundColor: isLoading.create || isLoading.update ? undefined : 'var(--background-color)',
-                cursor: isLoading.create || isLoading.update ? undefined : 'pointer',
-                '--tw-ring-color': 'var(--focus-ring)'
-              } as React.CSSProperties}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     );
   };
+
   const renderDeleteConfirmation = () => {
     const userToDelete = users.find((user) => user._id === deleteUserId);
     return (
@@ -622,31 +649,27 @@ const UserCrud: React.FC<UserCrudProps> = ({
             <button
               onClick={handleDeleteUser}
               disabled={isLoading.delete}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${
-                isLoading.delete ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--error-color)] text-white hover:bg-opacity-90'
-              }`}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isLoading.delete ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--error-color)] text-white hover:bg-opacity-90'}`}
               style={{ '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
             >
               {isLoading.delete ? (
                 <span className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Deleting...
-              </span>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Deleting...
+                </span>
               ) : (
                 'Delete'
               )}
             </button>
             <button
               onClick={onCancel}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${
-                isLoading.delete ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'
-              }`}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isLoading.delete ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}`}
               style={{
                 backgroundColor: isLoading.delete ? undefined : 'var(--background-color)',
-                '--tw-ring-color': 'var(--focus-ring)'
+                '--tw-ring-color': 'var(--focus-ring)',
               } as React.CSSProperties}
             >
               Cancel

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExclamationCircleIcon, KeyIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import {ExclamationCircleIcon, KeyIcon, UserGroupIcon, UserIcon} from '@heroicons/react/24/outline';
 import { fetchRoles } from '../../services/RoleService';
 import { fetchPermissions, deletePermission } from '../../services/PermissionService';
 import FlashMessage from '../FlashMessage';
@@ -86,7 +86,7 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
 
   return (
     <div className="space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
-      <div className="min-h-[50px]">
+
         {message && (
           <FlashMessage
             message={message}
@@ -94,9 +94,15 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
             onClose={() => setMessage(null)}
           />
         )}
-      </div>
-      <div className="flex justify-between items-center border-b" style={{ borderColor: 'var(--border-color)' }}>
-        <div className="flex flex-col sm:flex-row sm:gap-2">
+      <div className="rounded-lg p-3 mb-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <div className="flex items-center mb-4">
+          <button className="mr-2" style={{ color: 'var(--text-secondary)' }}>
+            <UserIcon className="w-5 h-5" />
+          </button>
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Permission Management</h3>
+        </div></div>
+        <div className="flex justify-between items-center border-b" style={{ borderColor: 'var(--border-color)' }}>
+          <div className="flex flex-col sm:flex-row sm:gap-2">
           <button
             className={`flex items-center space-x-1 px-2.5 py-1.5 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none`}
             style={{
