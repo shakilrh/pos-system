@@ -6,6 +6,7 @@ import ProductCrud from './productCrud';
 import { fetchProducts } from '../../services/productService';
 import { Category, Product } from './productTypes';
 import FlashMessage from '../FlashMessage';
+import { ShoppingBagIcon } from '@heroicons/react/24/outline';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000';
 
@@ -36,10 +37,9 @@ export default function Products({
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [flashMessage, setFlashMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const [activeSection, setActiveSection] = useState<'list' | 'add' | 'edit' | 'details'>('list');
+  const [activeSection, setActiveSection] = useState<'list' | 'add' | 'edit' | 'details' | 'delete'>('list');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -121,24 +121,31 @@ export default function Products({
     }
   };
 
+  const handleAddProduct = () => {
+    setActiveSection('add');
+    setFormMode('add');
+  };
+
   const resetForm = () => {
     setActiveSection('list');
     setSelectedProduct(null);
     setEditingProductId(null);
-    setIsDeleteModalOpen(false);
     setDeleteProductId(null);
     setFormMode(null);
   };
 
+  // Determine if list should be visible
+  const shouldShowList = activeSection === 'list' || activeSection === 'details' || activeSection === 'delete';
+
   if (loading) {
     return (
-      <div className="lg:col-span-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700">
+      <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-8 rounded" style={{ backgroundColor: 'var(--background-secondary)' }}></div>
           {Array(4)
             .fill(0)
             .map((_, idx) => (
-              <div key={idx} className="h-40 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+              <div key={idx} className="h-40 rounded-lg" style={{ backgroundColor: 'var(--background-secondary)' }}></div>
             ))}
         </div>
       </div>
@@ -146,52 +153,60 @@ export default function Products({
   }
 
   return (
-    <div
-      className="lg:col-span-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700 h-full relative"
-      style={{ opacity: isCategoryFormActive ? 0.5 : 1 }}
-    >
+    <div className="relative space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
       <Toaster position="top-right" />
+      {flashMessage && (
+        <FlashMessage
+          message={flashMessage.message}
+          type={flashMessage.type}
+          onClose={() => setFlashMessage(null)}
+        />
+      )}
 
-      <div className="h-10 mb-4">
-        {flashMessage && (
-          <FlashMessage
-            message={flashMessage.message}
-            type={flashMessage.type}
-            onClose={() => setFlashMessage(null)}
-          />
-        )}
+      {/* Header - Always visible */}
+      <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <div className="flex items-center mb-4">
+          <button className="mr-2" style={{ color: 'var(--text-secondary)' }}>
+            <ShoppingBagIcon className="w-5 h-5" />
+          </button>
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Product Management</h3>
+        </div>
       </div>
-      <ProductList
-        token={token}
-        isAuthenticated={isAuthenticated}
-        logout={logout}
-        categories={categories}
-        filterCategory={filterCategory}
-        handleFilterChange={handleFilterChange}
-        products={filteredProducts}
-        setProducts={setAllProducts}
-        isCategoryFormActive={isCategoryFormActive}
-        onAdd={() => {
-          setActiveSection('add');
-          setFormMode('add');
-        }}
-        onEdit={(product) => {
-          setSelectedProduct(product);
-          setEditingProductId(product._id);
-          setActiveSection('edit');
-          setFormMode('edit', product);
-        }}
-        onDelete={(id) => {
-          setDeleteProductId(id);
-          setIsDeleteModalOpen(true);
-        }}
-        onViewDetails={(product) => {
-          setSelectedProduct(product);
-          setActiveSection('details');
-        }}
-        onToggleActive={handleToggleActive}
-      />
-      {isFormActive && activeSection === 'add' && (
+
+      {/* Product List - Visible for list, details, and delete states */}
+      {shouldShowList && (
+        <ProductList
+          token={token}
+          isAuthenticated={isAuthenticated}
+          logout={logout}
+          categories={categories}
+          filterCategory={filterCategory}
+          handleFilterChange={handleFilterChange}
+          products={filteredProducts}
+          setProducts={setAllProducts}
+          isCategoryFormActive={isCategoryFormActive}
+          onAdd={handleAddProduct}
+          onEdit={(product) => {
+            setSelectedProduct(product);
+            setEditingProductId(product._id);
+            setActiveSection('edit');
+            setFormMode('edit', product);
+          }}
+          onDelete={(id) => {
+            setDeleteProductId(id);
+            setSelectedProduct(allProducts.find((p) => p._id === id) || null);
+            setActiveSection('delete');
+          }}
+          onViewDetails={(product) => {
+            setSelectedProduct(product);
+            setActiveSection('details');
+          }}
+          onToggleActive={handleToggleActive}
+        />
+      )}
+
+      {/* Add Form - Replaces list */}
+      {activeSection === 'add' && (
         <ProductCrud
           token={token}
           logout={logout}
@@ -204,7 +219,9 @@ export default function Products({
           setFlashMessageInParent={setFlashMessage}
         />
       )}
-      {isFormActive && activeSection === 'edit' && selectedProduct && editingProductId && (
+
+      {/* Edit Form - Replaces list */}
+      {activeSection === 'edit' && selectedProduct && editingProductId && (
         <ProductCrud
           token={token}
           logout={logout}
@@ -219,22 +236,34 @@ export default function Products({
           setFlashMessageInParent={setFlashMessage}
         />
       )}
+
+      {/* Details Modal - Overlays on list */}
       {activeSection === 'details' && selectedProduct && (
-        <ProductDetails product={selectedProduct} onCancel={resetForm} />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-2xl max-h-[90vh] overflow-y-auto" style={{ backgroundColor: 'var(--background-color)' }}>
+            <ProductDetails product={selectedProduct} onCancel={resetForm} />
+          </div>
+        </div>
       )}
-      {isDeleteModalOpen && deleteProductId && (
-        <ProductCrud
-          token={token}
-          logout={logout}
-          product={allProducts.find((p) => p._id === deleteProductId) || null}
-          deleteProductId={deleteProductId}
-          setProducts={setAllProducts}
-          products={allProducts}
-          onCancel={resetForm}
-          isCategoryFormActive={isCategoryFormActive}
-          mode="delete"
-          setFlashMessageInParent={setFlashMessage}
-        />
+
+      {/* Delete Modal - Overlays on list */}
+      {activeSection === 'delete' && deleteProductId && selectedProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-md" style={{ backgroundColor: 'var(--background-color)' }}>
+            <ProductCrud
+              token={token}
+              logout={logout}
+              product={selectedProduct}
+              deleteProductId={deleteProductId}
+              setProducts={setAllProducts}
+              products={allProducts}
+              onCancel={resetForm}
+              isCategoryFormActive={isCategoryFormActive}
+              mode="delete"
+              setFlashMessageInParent={setFlashMessage}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

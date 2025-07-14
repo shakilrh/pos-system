@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, PlusCircleIcon } from '@heroicons/react/24/solid';
+import { XMarkIcon, PlusCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { addProduct, updateProduct, deleteProduct } from '../../services/productService';
 import { Category, Product } from './productTypes';
 import FlashMessage from '../FlashMessage';
-
+import { ShoppingBagIcon } from '@heroicons/react/24/outline';
 interface ProductCrudProps {
   token: string | null;
   logout: () => void;
@@ -75,7 +75,6 @@ export default function ProductCrud({
     };
   }, [newProductPicturePreview]);
 
-  // Validation functions
   const validateName = (name: string): string[] => {
     const errors: string[] = [];
     if (!name.trim()) {
@@ -127,9 +126,9 @@ export default function ProductCrud({
     if (!allowedTypes.includes(file.type)) {
       errors.push('Image must be JPEG, PNG, or WebP');
     }
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) errors.push('Image size must be less than 5MB');
-    const minSize = 1024; // 1KB minimum
+    const minSize = 1024;
     if (file.size < minSize) errors.push('Image file is too small (minimum 1KB)');
     return errors;
   };
@@ -226,7 +225,7 @@ export default function ProductCrud({
     return (
       <div className="mt-1 space-y-1">
         {fieldErrors.map((error, index) => (
-          <p key={index} className="text-red-500 text-xs flex items-start">
+          <p key={index} className="text-xs flex items-start" style={{ color: 'var(--error-color)' }}>
             <svg className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
@@ -354,9 +353,9 @@ export default function ProductCrud({
     }
   };
 
-  if (mode === 'add') {
+  if (mode === 'add' || mode === 'edit') {
     return (
-      <div className="absolute inset-0 z-10 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-y-auto">
+      <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
         {flashMessage && (
           <FlashMessage
             message={flashMessage.message}
@@ -364,334 +363,204 @@ export default function ProductCrud({
             onClose={() => setFlashMessage(null)}
           />
         )}
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add Product</h3>
-          <button onClick={onCancel} className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+        <div className="flex items-center justify-between px-6 py-4" style={{ backgroundColor: 'var(--background-color)', borderBottom: '1px solid var(--border-color)', borderTopLeftRadius: '0.5rem', borderTopRightRadius: '0.5rem' }}>
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <ShoppingBagIcon className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold" style={{ color: 'var(--text-color)' }}>
+                {mode === 'edit' ? 'Edit Product' : 'Create New Product'}
+              </h3>
+            </div>
+          </div>
+          <button onClick={onCancel} className="hover:text-[var(--text-secondary)]" style={{ color: 'var(--text-secondary)' }}>
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
-        <form onSubmit={handleAddSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="productName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Product Name *</label>
-            <input
-              id="productName"
-              type="text"
-              value={newProductName}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              onFocus={() => handleFocus('name')}
-              onBlur={() => handleBlur('name')}
-              placeholder="Enter product name"
-              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
-                errors.name && errors.name.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
-              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
-            />
-            {renderFieldErrors('name')}
-          </div>
-          <div>
-            <label htmlFor="productPrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price *</label>
-            <input
-              id="productPrice"
-              type="number"
-              value={newProductPrice}
-              onChange={(e) => handleInputChange('price', e.target.value)}
-              onFocus={() => handleFocus('price')}
-              onBlur={() => handleBlur('price')}
-              placeholder="Price"
-              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
-                errors.price && errors.price.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
-              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
-              step="0.01"
-            />
-            {renderFieldErrors('price')}
-          </div>
-          <div>
-            <label htmlFor="productTimeRequired" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preparation Time (minutes) *</label>
-            <input
-              id="productTimeRequired"
-              type="number"
-              value={newProductTimeRequired}
-              onChange={(e) => handleInputChange('timeRequired', e.target.value)}
-              onFocus={() => handleFocus('timeRequired')}
-              onBlur={() => handleBlur('timeRequired')}
-              placeholder="Time required in minutes"
-              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
-                errors.timeRequired && errors.timeRequired.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
-              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
-              step="1"
-              min="0"
-            />
-            {renderFieldErrors('timeRequired')}
-          </div>
-          <div>
-            <label htmlFor="productCategory" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category *</label>
-            <select
-              id="productCategory"
-              value={newProductCategory}
-              onChange={(e) => handleInputChange('category', e.target.value)}
-              onFocus={() => handleFocus('category')}
-              onBlur={() => handleBlur('category')}
-              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
-                errors.category && errors.category.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
-              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
-              disabled={isCategoryFormActive}
-            >
-              <option value="">Select a category</option>
-              {categories.map((category) => (
-                <option key={category._id} value={category._id}>{category.name}</option>
-              ))}
-            </select>
-            {renderFieldErrors('category')}
-          </div>
-          <div>
-            <label htmlFor="productDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (Optional)</label>
-            <textarea
-              id="productDescription"
-              value={newProductDesc}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              onFocus={() => handleFocus('description')}
-              onBlur={() => handleBlur('description')}
-              placeholder="Product description (optional)"
-              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
-                errors.description && errors.description.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
-              } focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all duration-200`}
-              rows={3}
-            />
-            {renderFieldErrors('description')}
-          </div>
-          <div>
-            <label htmlFor="imageUpload" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload Image (Optional)</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="file"
-                onChange={handleImageChange}
-                className="hidden"
-                id="imageUpload"
-                accept="image/jpeg,image/png,image/webp"
-                disabled={isCategoryFormActive}
-              />
-              <label
-                htmlFor="imageUpload"
-                className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-1 ${
-                  isCategoryFormActive
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
-                }`}
-              >
-                <PlusCircleIcon className="w-4 h-4" />
-                <span>Upload</span>
-              </label>
-              {newProductPicturePreview ? (
-                <img src={newProductPicturePreview} alt="Preview" className="h-16 w-auto rounded" />
-              ) : (
-                <span className="text-sm text-gray-600 dark:text-gray-300">No image selected</span>
-              )}
+        <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--background-secondary)', border: '1px solid var(--border-color)' }}>
+          <form onSubmit={mode === 'edit' ? handleEditSubmit : handleAddSubmit} className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label htmlFor="productName" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Product Name *</label>
+                <input
+                  id="productName"
+                  type="text"
+                  value={newProductName}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  onFocus={() => handleFocus('name')}
+                  onBlur={() => handleBlur('name')}
+                  placeholder="Enter product name"
+                  className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${errors.name && errors.name.length > 0 ? 'ring-1' : ''}`}
+                  style={{
+                    borderColor: errors.name && errors.name.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                    backgroundColor: 'var(--background-color)',
+                    color: 'var(--text-color)',
+                    outlineColor: 'var(--focus-ring)',
+                  }}
+                  maxLength={100}
+                  required
+                />
+                {renderFieldErrors('name')}
+                <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>{newProductName.length}/100</p>
+              </div>
+              <div>
+                <label htmlFor="productPrice" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Price *</label>
+                <input
+                  id="productPrice"
+                  type="number"
+                  value={newProductPrice}
+                  onChange={(e) => handleInputChange('price', e.target.value)}
+                  onFocus={() => handleFocus('price')}
+                  onBlur={() => handleBlur('price')}
+                  placeholder="Price"
+                  className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${errors.price && errors.price.length > 0 ? 'ring-1' : ''}`}
+                  style={{
+                    borderColor: errors.price && errors.price.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                    backgroundColor: 'var(--background-color)',
+                    color: 'var(--text-color)',
+                    outlineColor: 'var(--focus-ring)',
+                  }}
+                  step="0.01"
+                  required
+                />
+                {renderFieldErrors('price')}
+              </div>
+              <div>
+                <label htmlFor="productTimeRequired" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Preparation Time (minutes) *</label>
+                <input
+                  id="productTimeRequired"
+                  type="number"
+                  value={newProductTimeRequired}
+                  onChange={(e) => handleInputChange('timeRequired', e.target.value)}
+                  onFocus={() => handleFocus('timeRequired')}
+                  onBlur={() => handleBlur('timeRequired')}
+                  placeholder="Time required in minutes"
+                  className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${errors.timeRequired && errors.timeRequired.length > 0 ? 'ring-1' : ''}`}
+                  style={{
+                    borderColor: errors.timeRequired && errors.timeRequired.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                    backgroundColor: 'var(--background-color)',
+                    color: 'var(--text-color)',
+                    outlineColor: 'var(--focus-ring)',
+                  }}
+                  step="1"
+                  min="0"
+                  required
+                />
+                {renderFieldErrors('timeRequired')}
+              </div>
+              <div>
+                <label htmlFor="productCategory" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Category *</label>
+                <select
+                  id="productCategory"
+                  value={newProductCategory}
+                  onChange={(e) => handleInputChange('category', e.target.value)}
+                  onFocus={() => handleFocus('category')}
+                  onBlur={() => handleBlur('category')}
+                  className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${errors.category && errors.category.length > 0 ? 'ring-1' : ''}`}
+                  style={{
+                    borderColor: errors.category && errors.category.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                    backgroundColor: 'var(--background-color)',
+                    color: 'var(--text-color)',
+                    outlineColor: 'var(--focus-ring)',
+                  }}
+                  disabled={isCategoryFormActive}
+                  required
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((category) => (
+                    <option key={category._id} value={category._id}>{category.name}</option>
+                  ))}
+                </select>
+                {renderFieldErrors('category')}
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="productDescription" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Description (Optional)</label>
+                <textarea
+                  id="productDescription"
+                  value={newProductDesc}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  onFocus={() => handleFocus('description')}
+                  onBlur={() => handleBlur('description')}
+                  placeholder="Product description (optional)"
+                  className={`w-full p-2 text-sm rounded-lg border resize-none focus:outline-none focus:ring-2 transition-colors duration-200 ${errors.description && errors.description.length > 0 ? 'ring-1' : ''}`}
+                  style={{
+                    borderColor: errors.description && errors.description.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                    backgroundColor: 'var(--background-color)',
+                    color: 'var(--text-color)',
+                    outlineColor: 'var(--focus-ring)',
+                  }}
+                  rows={3}
+                  maxLength={500}
+                />
+                {renderFieldErrors('description')}
+                <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>{newProductDesc.length}/500</p>
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="imageUpload" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Upload Image (Optional)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    onChange={handleImageChange}
+                    className="hidden"
+                    id="imageUpload"
+                    accept="image/jpeg,image/png,image/webp"
+                    disabled={isCategoryFormActive}
+                  />
+                  <label
+                    htmlFor="imageUpload"
+                    className={`flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isCategoryFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--background-color)]'}`}
+                    style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+                  >
+                    <PlusCircleIcon className="w-4 h-4 mr-1" />
+                    <span>Upload</span>
+                  </label>
+                  {newProductPicturePreview ? (
+                    <img src={newProductPicturePreview} alt="Preview" className="h-16 w-auto rounded" />
+                  ) : (
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>No image selected</span>
+                  )}
+                </div>
+                {renderFieldErrors('picture')}
+                {newProductPicture && (!errors.picture || errors.picture.length === 0) && (
+                  <p className="mt-1 text-xs flex items-center" style={{ color: 'var(--primary-color)' }}>
+                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    {newProductPicture.name} ({(newProductPicture.size / 1024).toFixed(1)} KB)
+                  </p>
+                )}
+              </div>
             </div>
-            {renderFieldErrors('picture')}
-            {newProductPicture && (!errors.picture || errors.picture.length === 0) && (
-              <p className="mt-1 text-xs text-green-600 dark:text-green-400 flex items-center">
-                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                {newProductPicture.name} ({(newProductPicture.size / 1024).toFixed(1)} KB)
-              </p>
-            )}
-          </div>
-          <div className="flex justify-end gap-x-3">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center ${
-                isCategoryFormActive || !isFormValid()
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
-              }`}
-              disabled={isCategoryFormActive || !isFormValid()}
-            >
-              Add Product
-            </button>
-          </div>
-        </form>
-      </div>
-    );
-  }
-
-  if (mode === 'edit') {
-    return (
-      <div className="absolute inset-0 z-10 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-y-auto">
-        {flashMessage && (
-          <FlashMessage
-            message={flashMessage.message}
-            type={flashMessage.type}
-            onClose={() => setFlashMessage(null)}
-          />
-        )}
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Product</h3>
-          <button onClick={onCancel} className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
-            <XMarkIcon className="w-6 h-6" />
-          </button>
+            <div className="flex space-x-2 pt-2">
+              <button
+                type="button"
+                onClick={onCancel}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isCategoryFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}`}
+                style={{ backgroundColor: 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' }}
+                disabled={isCategoryFormActive}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isCategoryFormActive || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--background-color)]'}`}
+                style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+                disabled={isCategoryFormActive || !isFormValid()}
+              >
+                {mode === 'edit' ? 'Update Product' : 'Create Product'}
+              </button>
+            </div>
+          </form>
         </div>
-        <form onSubmit={handleEditSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="productName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Product Name *</label>
-            <input
-              id="productName"
-              type="text"
-              value={newProductName}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              onFocus={() => handleFocus('name')}
-              onBlur={() => handleBlur('name')}
-              placeholder="Enter product name"
-              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
-                errors.name && errors.name.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
-              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
-            />
-            {renderFieldErrors('name')}
-          </div>
-          <div>
-            <label htmlFor="productPrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price *</label>
-            <input
-              id="productPrice"
-              type="number"
-              value={newProductPrice}
-              onChange={(e) => handleInputChange('price', e.target.value)}
-              onFocus={() => handleFocus('price')}
-              onBlur={() => handleBlur('price')}
-              placeholder="Price"
-              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
-                errors.price && errors.price.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
-              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
-              step="0.01"
-            />
-            {renderFieldErrors('price')}
-          </div>
-          <div>
-            <label htmlFor="productTimeRequired" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preparation Time (minutes) *</label>
-            <input
-              id="productTimeRequired"
-              type="number"
-              value={newProductTimeRequired}
-              onChange={(e) => handleInputChange('timeRequired', e.target.value)}
-              onFocus={() => handleFocus('timeRequired')}
-              onBlur={() => handleBlur('timeRequired')}
-              placeholder="Time required in minutes"
-              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
-                errors.timeRequired && errors.timeRequired.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
-              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
-              step="1"
-              min="0"
-            />
-            {renderFieldErrors('timeRequired')}
-          </div>
-          <div>
-            <label htmlFor="productCategory" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category *</label>
-            <select
-              id="productCategory"
-              value={newProductCategory}
-              onChange={(e) => handleInputChange('category', e.target.value)}
-              onFocus={() => handleFocus('category')}
-              onBlur={() => handleBlur('category')}
-              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
-                errors.category && errors.category.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
-              } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200`}
-              disabled={isCategoryFormActive}
-            >
-              <option value="">Select a category</option>
-              {categories.map((category) => (
-                <option key={category._id} value={category._id}>{category.name}</option>
-              ))}
-            </select>
-            {renderFieldErrors('category')}
-          </div>
-          <div>
-            <label htmlFor="productDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-            <textarea
-              id="productDescription"
-              value={newProductDesc}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              onFocus={() => handleFocus('description')}
-              onBlur={() => handleBlur('description')}
-              placeholder="Product description (optional)"
-              className={`w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border ${
-                errors.description && errors.description.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 dark:border-gray-600'
-              } focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all duration-200`}
-              rows={3}
-            />
-            {renderFieldErrors('description')}
-          </div>
-          <div>
-            <label htmlFor="imageUpload" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload Image (Optional)</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="file"
-                onChange={handleImageChange}
-                className="hidden"
-                id="imageUpload"
-                accept="image/jpeg,image/png,image/webp"
-                disabled={isCategoryFormActive}
-              />
-              <label
-                htmlFor="imageUpload"
-                className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-1 ${
-                  isCategoryFormActive
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
-                }`}
-              >
-                <PlusCircleIcon className="w-4 h-4" />
-                <span>Upload</span>
-              </label>
-              {newProductPicturePreview ? (
-                <img src={newProductPicturePreview} alt="Preview" className="h-16 w-auto rounded" />
-              ) : (
-                <span className="text-sm text-gray-600 dark:text-gray-300">No image selected</span>
-              )}
-            </div>
-            {renderFieldErrors('picture')}
-            {newProductPicture && (!errors.picture || errors.picture.length === 0) && (
-              <p className="mt-1 text-xs text-green-600 dark:text-green-400 flex items-center">
-                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                {newProductPicture.name} ({(newProductPicture.size / 1024).toFixed(1)} KB)
-              </p>
-            )}
-          </div>
-          <div className="flex justify-end gap-x-3">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center ${
-                isCategoryFormActive || !isFormValid()
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
-              }`}
-              disabled={isCategoryFormActive || !isFormValid()}
-            >
-              Save Changes
-            </button>
-          </div>
-        </form>
       </div>
     );
   }
 
   if (mode === 'delete') {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm">
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+        <div className="rounded-lg p-6 w-full max-w-md mx-4 shadow-xl" style={{ backgroundColor: 'var(--surface-color)' }}>
           {flashMessage && (
             <FlashMessage
               message={flashMessage.message}
@@ -699,30 +568,28 @@ export default function ProductCrud({
               onClose={() => setFlashMessage(null)}
             />
           )}
-          <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Confirm Deletion</h3>
-            <button onClick={onCancel} className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
-              <XMarkIcon className="w-6 h-6" />
-            </button>
+          <div className="flex items-center space-x-2 mb-4">
+            <ExclamationCircleIcon className="w-6 h-6" style={{ color: 'var(--error-color)' }} />
+            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Confirm Delete</h3>
           </div>
-          <div className="p-4">
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
-              Are you sure you want to delete the product "{product?.name}"?
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={onCancel}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteConfirm}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center"
-              >
-                Yes, Delete
-              </button>
-            </div>
+          <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+            Are you sure you want to delete the product "{product?.name}"? This action cannot be undone.
+          </p>
+          <div className="flex space-x-3">
+            <button
+              onClick={handleDeleteConfirm}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 bg-[var(--error-color)] text-[var(--text-on-primary)] hover:bg-opacity-90`}
+              style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+            >
+              Delete
+            </button>
+            <button
+              onClick={onCancel}
+              className="flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]"
+              style={{ backgroundColor: 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' }}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       </div>

@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { fetchCategories } from '../../services/categoryService';
 import { Category } from './categoryTypes';
 import FlashMessage from '../FlashMessage';
 import CategoryCrud from './categoryCrud';
 import CategoryList from './categoryList';
+import { TagIcon } from '@heroicons/react/24/outline';
 
 interface CategoriesProps {
   token: string | null;
@@ -17,14 +18,14 @@ interface CategoriesProps {
 }
 
 export default function Categories({
-  token,
-  isAuthenticated,
-  logout,
-  categories,
-  setCategories,
-  onFormActive,
-  isProductFormActive
-}: CategoriesProps) {
+                                     token,
+                                     isAuthenticated,
+                                     logout,
+                                     categories,
+                                     setCategories,
+                                     onFormActive,
+                                     isProductFormActive
+                                   }: CategoriesProps) {
   const [loading, setLoading] = useState(true);
   const [flashMessage, setFlashMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [activeSection, setActiveSection] = useState<'list' | 'add' | 'edit' | 'delete'>('list');
@@ -90,49 +91,59 @@ export default function Categories({
 
   if (loading) {
     return (
-      <div className="flex-1 bg-[var(--background-secondary)] rounded-xl shadow-lg p-4 border border-[var(--border-color)] h-full">
+      <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-[var(--surface-secondary)] rounded-lg"></div>
-          {Array(4).fill(0).map((_, idx) => (
-            <div key={idx} className="h-8 bg-[var(--surface-secondary)] rounded-lg"></div>
-          ))}
+          <div className="h-8 rounded" style={{ backgroundColor: 'var(--background-secondary)' }}></div>
+          {Array(4)
+            .fill(0)
+            .map((_, idx) => (
+              <div key={idx} className="h-40 rounded-lg" style={{ backgroundColor: 'var(--background-secondary)' }}></div>
+            ))}
         </div>
       </div>
     );
   }
 
-  const isFormActive = activeSection !== 'list';
-
   return (
-    <div className="flex-1 bg-[var(--background-secondary)] rounded-xl shadow-lg p-4 border border-[var(--border-color)] h-full relative" style={{ opacity: isProductFormActive ? 0.5 : 1, pointerEvents: isProductFormActive ? 'none' : 'auto' }}>
+    <div className="relative space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)', opacity: isProductFormActive ? 0.5 : 1, pointerEvents: isProductFormActive ? 'none' : 'auto' }}>
       <Toaster position="top-right" />
+      {flashMessage && (
+        <FlashMessage
+          message={flashMessage.message}
+          type={flashMessage.type}
+          onClose={() => setFlashMessage(null)}
+        />
+      )}
 
-      {/* Reserved space for flash messages - always present */}
-      <div className="h-10 mb-4">
-        {flashMessage && (
-          <FlashMessage
-            message={flashMessage.message}
-            type={flashMessage.type}
-            onClose={() => setFlashMessage(null)}
-          />
-        )}
+      {/* Header - Always visible */}
+      <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <div className="flex items-center mb-4">
+          <button className="mr-2" style={{ color: 'var(--text-secondary)' }}>
+            <TagIcon className="w-5 h-5" />
+          </button>
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Category Management</h3>
+        </div>
       </div>
 
-      <CategoryList
-        token={token}
-        isAuthenticated={isAuthenticated}
-        logout={logout}
-        categories={categories}
-        setCategories={setCategories}
-        isProductFormActive={isProductFormActive}
-        onAdd={handleAddCategory}
-        onEdit={handleEditCategory}
-        onDelete={handleDeleteCategory}
-        flashMessage={flashMessage}
-        setFlashMessage={setFlashMessage}
-      />
+      {/* Product List - Visible for list, details, and delete states */}
+      {activeSection === 'list' && (
+        <CategoryList
+          token={token}
+          isAuthenticated={isAuthenticated}
+          logout={logout}
+          categories={categories}
+          setCategories={setCategories}
+          isProductFormActive={isProductFormActive}
+          onAdd={handleAddCategory}
+          onEdit={handleEditCategory}
+          onDelete={handleDeleteCategory}
+          flashMessage={flashMessage}
+          setFlashMessage={setFlashMessage}
+        />
+      )}
 
-      {isFormActive && activeSection === 'add' && (
+      {/* Add Form - Replaces list */}
+      {activeSection === 'add' && (
         <CategoryCrud
           token={token}
           logout={logout}
@@ -145,7 +156,8 @@ export default function Categories({
         />
       )}
 
-      {isFormActive && activeSection === 'edit' && selectedCategory && editingCategoryId && (
+      {/* Edit Form - Replaces list */}
+      {activeSection === 'edit' && selectedCategory && editingCategoryId && (
         <CategoryCrud
           token={token}
           logout={logout}
@@ -160,19 +172,24 @@ export default function Categories({
         />
       )}
 
+      {/* Delete Modal - Overlays on list */}
       {isDeleteModalOpen && deleteCategoryId && (
-        <CategoryCrud
-          token={token}
-          logout={logout}
-          categories={categories}
-          setCategories={setCategories}
-          category={selectedCategory}
-          deleteCategoryId={deleteCategoryId}
-          onCancel={resetForm}
-          isProductFormActive={isProductFormActive}
-          mode="delete"
-          setFlashMessageInParent={setFlashMessage}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-md" style={{ backgroundColor: 'var(--background-color)' }}>
+            <CategoryCrud
+              token={token}
+              logout={logout}
+              categories={categories}
+              setCategories={setCategories}
+              category={selectedCategory}
+              deleteCategoryId={deleteCategoryId}
+              onCancel={resetForm}
+              isProductFormActive={isProductFormActive}
+              mode="delete"
+              setFlashMessageInParent={setFlashMessage}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

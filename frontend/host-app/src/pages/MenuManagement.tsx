@@ -11,6 +11,7 @@ export default function MenuManagement() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isCategoryFormActive, setIsCategoryFormActive] = useState<boolean>(false);
   const [isProductFormActive, setIsProductFormActive] = useState<boolean>(false);
+  const [currentTheme, setCurrentTheme] = useState<string>('default');
 
   const handleSetFormMode = (mode: 'add' | 'edit' | null, component: 'category' | 'product', product?: Product) => {
     if (component === 'category') {
@@ -21,16 +22,81 @@ export default function MenuManagement() {
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setClientLoaded(true);
+    setClientLoaded(true);
+    const theme = document.querySelector('html')?.getAttribute('data-theme') || 'default';
+    setCurrentTheme(theme);
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          const newTheme = document.querySelector('html')?.getAttribute('data-theme') || 'default';
+          setCurrentTheme(newTheme);
+        }
+      });
+    });
+
+    const htmlElement = document.querySelector('html');
+    if (htmlElement) {
+      observer.observe(htmlElement, {
+        attributes: true,
+        attributeFilter: ['data-theme']
+      });
     }
+
+    return () => observer.disconnect();
   }, []);
+
+  const getThemeColors = () => {
+    if (currentTheme === 'dark' || currentTheme === 'dark-pro') {
+      return {
+        cardBackground: '#1f2937',
+        cardBorder: '#374151',
+        cardText: '#ffffff',
+        headingText: '#ffffff',
+      };
+    }
+
+    switch (currentTheme) {
+      case 'blue':
+        return {
+          cardBackground: '#ffffff',
+          cardBorder: '#e5e7eb',
+          cardText: '#1e3a8a',
+          headingText: '#1e3a8a',
+        };
+      case 'green':
+        return {
+          cardBackground: '#ffffff',
+          cardBorder: '#e5e7eb',
+          cardText: '#064e3b',
+          headingText: '#064e3b',
+        };
+      default:
+        return {
+          cardBackground: '#ffffff',
+          cardBorder: '#e5e7eb',
+          cardText: '#111827',
+          headingText: '#111827',
+        };
+    }
+  };
+
+  const themeColors = getThemeColors();
 
   if (!clientLoaded) {
     return (
       <div className="flex justify-center items-center h-screen bg-[var(--background-color)]">
-        <div className="text-center p-6 max-w-md bg-[var(--background-secondary)] rounded-xl shadow-lg border border-[var(--border-color)]">
-          <div className="text-[var(--primary-color)] text-2xl mb-4">Loading...</div>
+        <div
+          className="text-center p-6 max-w-md rounded-lg shadow-md border"
+          style={{
+            backgroundColor: themeColors.cardBackground,
+            borderColor: themeColors.cardBorder,
+            color: themeColors.cardText,
+          }}
+        >
+          <div className="text-2xl mb-4" style={{ color: themeColors.headingText }}>
+            Loading...
+          </div>
         </div>
       </div>
     );
@@ -39,9 +105,18 @@ export default function MenuManagement() {
   if (!isAuthenticated) {
     return (
       <div className="flex justify-center items-center h-screen bg-[var(--background-color)]">
-        <div className="text-center p-6 max-w-md bg-[var(--background-secondary)] rounded-xl shadow-lg border border-[var(--border-color)]">
-          <h2 className="text-2xl font-bold text-[var(--text-color)] mb-4">Access Denied</h2>
-          <p className="text-[var(--text-secondary)] mb-6">
+        <div
+          className="text-center p-6 max-w-md rounded-lg shadow-md border"
+          style={{
+            backgroundColor: themeColors.cardBackground,
+            borderColor: themeColors.cardBorder,
+            color: themeColors.cardText,
+          }}
+        >
+          <h2 className="text-2xl font-bold mb-4" style={{ color: themeColors.headingText }}>
+            Access Denied
+          </h2>
+          <p className="mb-6" style={{ color: themeColors.cardText }}>
             Please log in to access the Menu Management Dashboard.
           </p>
           <button
@@ -56,31 +131,63 @@ export default function MenuManagement() {
   }
 
   return (
-    <div className="w-full min-h-screen pl-4 pr-4 py-4 bg-[var(--background-color)]">
-      <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 h-full">
-        <div className="lg:col-span-3 pl-2">
-          <Categories
-            token={token}
-            isAuthenticated={isAuthenticated}
-            logout={logout}
-            categories={categories}
-            setCategories={setCategories}
-            onFormActive={setIsCategoryFormActive}
-            isProductFormActive={isProductFormActive}
-          />
-        </div>
-        <div className="lg:col-span-7">
-          <Products
-            token={token}
-            isAuthenticated={isAuthenticated}
-            logout={logout}
-            categories={categories}
-            setFormMode={(mode, product) => handleSetFormMode(mode, 'product', product)}
-            filterCategory={filterCategory}
-            setFilterCategory={setFilterCategory}
-            isFormActive={isProductFormActive}
-            isCategoryFormActive={isCategoryFormActive}
-          />
+    <div className="w-full min-h-screen pr-4 py-4 bg-[var(--background-color)]">
+      <div
+        className="rounded-lg shadow-md border w-full mt-6"
+        style={{
+          backgroundColor: themeColors.cardBackground,
+          borderColor: themeColors.cardBorder,
+          color: themeColors.cardText,
+        }}
+      >
+        <div className="p-8">
+          <h1 className="text-2xl font-semibold mb-8" style={{ color: themeColors.headingText }}>
+            Menu Management
+          </h1>
+          <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+            <div className="lg:col-span-3">
+              <div
+                className="rounded-lg shadow-md border p-4"
+                style={{
+                  backgroundColor: themeColors.cardBackground,
+                  borderColor: themeColors.cardBorder,
+                  color: themeColors.cardText,
+                }}
+              >
+                <Categories
+                  token={token}
+                  isAuthenticated={isAuthenticated}
+                  logout={logout}
+                  categories={categories}
+                  setCategories={setCategories}
+                  onFormActive={setIsCategoryFormActive}
+                  isProductFormActive={isProductFormActive}
+                />
+              </div>
+            </div>
+            <div className="lg:col-span-7">
+              <div
+                className="rounded-lg shadow-md border p-4"
+                style={{
+                  backgroundColor: themeColors.cardBackground,
+                  borderColor: themeColors.cardBorder,
+                  color: themeColors.cardText,
+                }}
+              >
+                <Products
+                  token={token}
+                  isAuthenticated={isAuthenticated}
+                  logout={logout}
+                  categories={categories}
+                  setFormMode={(mode, product) => handleSetFormMode(mode, 'product', product)}
+                  filterCategory={filterCategory}
+                  setFilterCategory={setFilterCategory}
+                  isFormActive={isProductFormActive}
+                  isCategoryFormActive={isCategoryFormActive}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
