@@ -14,11 +14,9 @@ export default function RoleAndUserManagement() {
 
   useEffect(() => {
     setIsClient(true);
-    // Get initial theme
     const theme = document.querySelector('html')?.getAttribute('data-theme') || 'default';
     setCurrentTheme(theme);
 
-    // Listen for theme changes
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
@@ -50,10 +48,9 @@ export default function RoleAndUserManagement() {
   }
 
   const getThemeColors = () => {
-    // Handle both dark and dark-pro themes
     if (currentTheme === 'dark' || currentTheme === 'dark-pro') {
       return {
-        cardBackground: '#1f2937', // Dark gray for any dark theme
+        cardBackground: '#1f2937',
         cardBorder: '#374151',
         cardText: '#ffffff',
         headingText: '#ffffff',
@@ -65,7 +62,7 @@ export default function RoleAndUserManagement() {
     switch (currentTheme) {
       case 'blue':
         return {
-          cardBackground: '#ffffff', // White for blue theme
+          cardBackground: '#ffffff',
           cardBorder: '#e5e7eb',
           cardText: '#1e3a8a',
           headingText: '#1e3a8a',
@@ -74,7 +71,7 @@ export default function RoleAndUserManagement() {
         };
       case 'green':
         return {
-          cardBackground: '#ffffff', // White for green theme
+          cardBackground: '#ffffff',
           cardBorder: '#e5e7eb',
           cardText: '#064e3b',
           headingText: '#064e3b',
@@ -83,7 +80,7 @@ export default function RoleAndUserManagement() {
         };
       default:
         return {
-          cardBackground: '#ffffff', // White for default theme
+          cardBackground: '#ffffff',
           cardBorder: '#e5e7eb',
           cardText: '#111827',
           headingText: '#111827',
@@ -96,91 +93,68 @@ export default function RoleAndUserManagement() {
   const themeColors = getThemeColors();
 
   return (
-    <main
-      className="min-h-screen py-6 px-4 sm:px-6 lg:px-8"
-      style={{
-        backgroundColor: 'var(--background-color)',
-        color: 'var(--text-color)',
-      }}
-    >
+    <div className="w-full min-h-screen bg-[var(--background-color)]">
       <div
-        className="max-w-7xl mx-auto"
+        className="rounded-lg shadow-md border w-full mt-6"
         style={{
-          color: 'var(--text-color)',
+          backgroundColor: themeColors.cardBackground,
+          borderColor: themeColors.cardBorder,
+          color: themeColors.cardText,
         }}
       >
-        {/* Rounded Corner Card with Theme-Aware Colors */}
-        <div
-          className="rounded-lg shadow-lg border w-full mt-6"
-          style={{
-            backgroundColor: themeColors.cardBackground,
-            borderColor: themeColors.cardBorder,
-            color: themeColors.cardText,
-          }}
-        >
-          <div className="p-8">
-            <h1
-              className="text-2xl font-semibold mb-8"
-              style={{
-                color: themeColors.headingText
-              }}
-            >
-              Role & User Management
-            </h1>
-
-            {/* Tabs */}
-            <div
-              className="border-b mb-6 w-full"
-              style={{
-                borderColor: themeColors.cardBorder,
-              }}
-            >
-              <nav className="-mb-px flex space-x-6 w-full" aria-label="Tabs">
-                {['Users', 'Roles', 'Permissions'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    style={{
-                      borderBottomColor:
-                        activeTab === tab
-                          ? 'var(--primary-color)'
-                          : 'transparent',
-                      color:
-                        activeTab === tab
-                          ? 'var(--primary-color)'
-                          : themeColors.inactiveTabText,
-                      background: 'none',
-                    }}
-                    className={`
-                      py-3 px-4 text-sm font-medium border-b-2
-                      focus:outline-none transition-colors duration-150
-                    `}
-                    onMouseEnter={(e) => {
-                      if (activeTab !== tab) {
-                        e.currentTarget.style.color = themeColors.hoverTabText;
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (activeTab !== tab) {
-                        e.currentTarget.style.color = themeColors.inactiveTabText;
-                      }
-                    }}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </nav>
-            </div>
-
-            {/* Content with increased spacing */}
-            <div className="mt-6">
-              {activeTab === 'Users' && <UsersTemplate token={token} logout={logout} />}
-              {activeTab === 'Roles' && <RolesTemplate token={token} logout={logout} />}
-              {activeTab === 'Permissions' && <PermissionsTemplate token={token} logout={logout} />}
-            </div>
+        <div className="p-8">
+          <h1 className="text-2xl font-semibold mb-8" style={{ color: themeColors.headingText }}>
+            Role & User Management
+          </h1>
+          <div
+            className="border-b mb-6 w-full"
+            style={{
+              borderColor: themeColors.cardBorder,
+            }}
+          >
+            <nav className="flex space-x-6" aria-label="Tabs">
+              {['Users', 'Roles', 'Permissions'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  style={{
+                    borderBottomColor:
+                      activeTab === tab
+                        ? 'var(--primary-color)'
+                        : 'transparent',
+                    color:
+                      activeTab === tab
+                        ? 'var(--primary-color)'
+                        : themeColors.inactiveTabText,
+                    background: 'none',
+                  }}
+                  className="
+                    py-3 px-4 text-sm font-medium border-b-2
+                    focus:outline-none transition-colors duration-150
+                  "
+                  onMouseEnter={(e) => {
+                    if (activeTab !== tab) {
+                      e.currentTarget.style.color = themeColors.hoverTabText;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeTab !== tab) {
+                      e.currentTarget.style.color = themeColors.inactiveTabText;
+                    }
+                  }}
+                >
+                  {tab}
+                </button>
+              ))}
+            </nav>
+          </div>
+          <div>
+            {activeTab === 'Users' && <UsersTemplate token={token} logout={logout} />}
+            {activeTab === 'Roles' && <RolesTemplate token={token} logout={logout} />}
+            {activeTab === 'Permissions' && <PermissionsTemplate token={token} logout={logout} />}
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
