@@ -214,79 +214,48 @@ const RoleList: React.FC<RoleListProps> = ({
           </button>
         </div>
       )}
-
       {selectedRole && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="rounded-lg p-4 w-full max-w-md mx-4 shadow-2xl border max-h-[70vh] overflow-y-auto" style={{ backgroundColor: 'var(--surface-color)', borderColor: 'var(--border-color)' }}>
-            <div className="flex justify-between items-center mb-4 pb-3 border-b" style={{ borderColor: 'var(--border-color)' }}>
-              <h3 className="text-lg font-bold" style={{ color: 'var(--text-color)' }}>Role Details</h3>
-              <button
-                onClick={closeModal}
-                className="p-1 rounded-full hover:bg-opacity-10 transition-colors duration-200"
-                style={{ color: 'var(--text-tertiary)', backgroundColor: 'transparent' }}
-              >
-                <XMarkIcon className="w-5 h-5" />
+          <div className="bg-[--background-color] rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl border border-[--border-color]">
+            <div className="flex justify-between items-center mb-5 border-b border-[--border-color] pb-3">
+              <h3 className="text-xl font-bold text-[--text-color]">Role Details</h3>
+              <button onClick={closeModal} className="text-[--text-secondary] hover:text-[--error-color]">
+                <XMarkIcon className="w-6 h-6" />
               </button>
             </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  Role Name
-                </label>
-                <div className="p-2 rounded-md border" style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}>
-                  <span className="text-sm font-medium" style={{ color: 'var(--text-color)' }}>
-                    {selectedRole.name || 'N/A'}
-                  </span>
-                </div>
+            <div className="space-y-4 text-sm">
+              <div className="flex justify-between">
+                <span className="font-medium text-[--text-secondary]">Role Name:</span>
+                <span className="text-[--text-color]">{selectedRole.name || 'N/A'}</span>
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  Description
-                </label>
-                <div className="p-2 rounded-md border" style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}>
-                  <span className="text-sm" style={{ color: 'var(--text-color)' }}>
-                    {selectedRole.description || 'No description provided'}
-                  </span>
-                </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-[--text-secondary]">Description:</span>
+                <span className="text-[--text-color]">{selectedRole.description || 'No description provided'}</span>
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>
-                  Permissions ({selectedRole.permissions?.length || 0})
-                </label>
-                <div className="space-y-1 max-h-28 overflow-y-auto">
-                  {selectedRole.permissions?.length ? (
-                    selectedRole.permissions.map((permission, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center p-2 rounded-md border-l-2 transition-colors duration-150"
-                        style={{
-                          backgroundColor: 'var(--background-color)',
-                          borderColor: 'var(--border-color)',
-                          borderLeftColor: 'var(--primary-color)'
-                        }}
-                      >
-                        <div className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: 'var(--primary-color)' }}></div>
-                        <span className="text-xs font-medium" style={{ color: 'var(--text-color)' }}>
-                          {permission.key}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-3 text-center rounded-md border-2 border-dashed" style={{ borderColor: 'var(--border-color)' }}>
-                      <UserGroupIcon className="w-6 h-6 mx-auto mb-1" style={{ color: 'var(--text-tertiary)' }} />
-                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                        No permissions assigned
-                      </span>
-                    </div>
-                  )}
-                </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-[--text-secondary]">Permissions:</span>
+                {selectedRole.permissions && selectedRole.permissions.length > 0 && (
+                  <div>
+                    {(() => {
+                      const perms = selectedRole.permissions.map(p => p.key);
+                      const chunks = [];
+                      for (let i = 0; i < perms.length; i += 2) {
+                        chunks.push(perms.slice(i, i + 2));
+                      }
+                      return chunks.map((chunk, index) => (
+                        <div key={index} className="mt-1">
+                          <span className="text-[--text-color]">{chunk.join(' | ')}</span>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                )}
+                {!selectedRole.permissions?.length && (
+                  <span className="text-[--text-color]">No permissions assigned</span>
+                )}
               </div>
             </div>
-
-            <div className="mt-5 flex justify-end space-x-2 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
+            <div className="mt-6 flex justify-end">
 
             </div>
           </div>

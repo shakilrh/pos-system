@@ -1,5 +1,5 @@
 import React from 'react';
-import { MagnifyingGlassIcon, PencilIcon, TrashIcon, UserIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PencilIcon, TrashIcon, UserIcon, PlusIcon,XMarkIcon  } from '@heroicons/react/24/outline';
 import { User, Role } from './userTypes';
 import UserCrud from './userCrud';
 
@@ -253,112 +253,49 @@ const UserList: React.FC<UserListProps> = ({
 
       {selectedUser && !showCreateForm && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="rounded-lg p-4 w-full max-w-md mx-4 shadow-2xl border max-h-[70vh] overflow-y-auto" style={{ backgroundColor: 'var(--surface-color)', borderColor: 'var(--border-color)' }}>
-            <div className="flex justify-between items-center mb-4 pb-3 border-b" style={{ borderColor: 'var(--border-color)' }}>
-              <h3 className="text-lg font-bold" style={{ color: 'var(--text-color)' }}>User Details</h3>
-              <button
-                onClick={closeModal}
-                className="p-1 rounded-full hover:bg-opacity-10 transition-colors duration-200"
-                style={{ color: 'var(--text-tertiary)', backgroundColor: 'transparent' }}
-              >
-                <XMarkIcon className="w-5 h-5" />
+          <div className="bg-[--background-color] rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl border border-[--border-color]">
+            <div className="flex justify-between items-center mb-5 border-b border-[--border-color] pb-3">
+              <h3 className="text-xl font-bold text-[--text-color]">User Details</h3>
+              <button onClick={closeModal} className="text-[--text-secondary] hover:text-[--error-color]">
+                <XMarkIcon className="w-6 h-6" />
               </button>
             </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  Full Name
-                </label>
-                <div className="p-2 rounded-md border" style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}>
-                  <span className="text-sm font-medium" style={{ color: 'var(--text-color)' }}>
-                    {selectedUser.name || 'N/A'}
-                  </span>
-                </div>
+            <div className="space-y-4 text-sm">
+              <div className="flex justify-between">
+                <span className="font-medium text-[--text-secondary]">Full Name:</span>
+                <span className="text-[--text-color]">{selectedUser.name || 'N/A'}</span>
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  Email Address
-                </label>
-                <div className="p-2 rounded-md border" style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}>
-                  <span className="text-sm" style={{ color: 'var(--text-color)' }}>
-                    {selectedUser.email || 'N/A'}
-                  </span>
-                </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-[--text-secondary]">Email Address:</span>
+                <span className="text-[--text-color]">{selectedUser.email || 'N/A'}</span>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>
-                    User Type
-                  </label>
-                  <div className="p-2 rounded-md border" style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}>
-                    <span className="text-sm" style={{ color: 'var(--text-color)' }}>
-                      {selectedUser.user_type || 'N/A'}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>
-                    Role
-                  </label>
-                  <div className="p-2 rounded-md border" style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}>
-                    <span className="text-sm" style={{ color: 'var(--text-color)' }}>
-                      {roles.find((r) => r._id === selectedUser.role_id)?.name || 'N/A'}
-                    </span>
-                  </div>
-                </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-[--text-secondary]">User Type:</span>
+                <span className="text-[--text-color]">{selectedUser.user_type || 'N/A'}</span>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>
-                    Phone
-                  </label>
-                  <div className="p-2 rounded-md border" style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}>
-                    <span className="text-sm" style={{ color: 'var(--text-color)' }}>
-                      {selectedUser.phone_number || 'N/A'}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>
-                    Job Title
-                  </label>
-                  <div className="p-2 rounded-md border" style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}>
-                    <span className="text-sm" style={{ color: 'var(--text-color)' }}>
-                      {selectedUser.job_title || 'N/A'}
-                    </span>
-                  </div>
-                </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-[--text-secondary]">Role:</span>
+                <span className="text-[--text-color]">{roles.find((r) => r._id === selectedUser.role_id)?.name || 'N/A'}</span>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>
-                    Shift Time
-                  </label>
-                  <div className="p-2 rounded-md border" style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}>
-                    <span className="text-sm" style={{ color: 'var(--text-color)' }}>
-                      {selectedUser.shift_time || 'N/A'}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>
-                    Salary
-                  </label>
-                  <div className="p-2 rounded-md border" style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}>
-                    <span className="text-sm font-medium" style={{ color: 'var(--primary-color)' }}>
-                      {selectedUser.salary ? `$${selectedUser.salary.toFixed(2)}` : 'N/A'}
-                    </span>
-                  </div>
-                </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-[--text-secondary]">Phone:</span>
+                <span className="text-[--text-color]">{selectedUser.phone_number || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-[--text-secondary]">Job Title:</span>
+                <span className="text-[--text-color]">{selectedUser.job_title || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-[--text-secondary]">Shift Time:</span>
+                <span className="text-[--text-color]">{selectedUser.shift_time || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-[--text-secondary]">Salary:</span>
+                <span className="text-[--text-color]">{selectedUser.salary ? `$${selectedUser.salary.toFixed(2)}` : 'N/A'}</span>
               </div>
             </div>
-
-            <div className="mt-5 flex justify-end space-x-2 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}></div>
+            <div className="mt-6 flex justify-end">
+            </div>
           </div>
         </div>
       )}

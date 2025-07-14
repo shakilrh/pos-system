@@ -307,12 +307,6 @@ const PermissionList: React.FC<PermissionListProps> = ({
               </div>
             </div>
             <div className="mt-6 flex justify-end">
-              <button
-                onClick={closeModal}
-                className="px-4 py-2 bg-[--primary-color] text-white rounded-lg hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-[--focus-ring] transition-colors duration-200"
-              >
-                Close
-              </button>
             </div>
           </div>
         </div>
