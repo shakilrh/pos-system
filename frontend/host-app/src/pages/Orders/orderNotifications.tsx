@@ -57,7 +57,7 @@ const getNotificationMessage = (status: string, timestamp: Date): string => {
     cancelled: `Order cancelled`,
     completed: `Order completed`
   };
-  return `${messages[status] || 'Order updated'} <span class="text-xs text-gray-500">${timeStr}</span>`;
+  return `${messages[status] || 'Order updated'} <span class="text-xs text-[var(--text-secondary)]">${timeStr}</span>`;
 };
 
 const getStatusIcon = (status: string): string => {
@@ -74,14 +74,14 @@ const getStatusIcon = (status: string): string => {
 
 const getStatusColor = (status: string): string => {
   const colors: Record<string, string> = {
-    pending: 'border-gray-300 bg-gray-50',
-    processing: 'border-green-300 bg-green-50',
-    ready: 'border-blue-300 bg-blue-50',
-    served: 'border-purple-300 bg-purple-50',
-    cancelled: 'border-red-300 bg-red-50',
-    completed: 'border-orange-300 bg-orange-50'
+    pending: 'border-[var(--border-color)] bg-[var(--background-secondary)]',
+    processing: 'border-[var(--success-border)] bg-[var(--success-light)]',
+    ready: 'border-[var(--info-border)] bg-[var(--info-light)]',
+    served: 'border-[var(--primary-border)] bg-[var(--primary-light)]',
+    cancelled: 'border-[var(--error-border)] bg-[var(--error-light)]',
+    completed: 'border-[var(--warning-border)] bg-[var(--warning-light)]'
   };
-  return colors[status] || 'border-gray-300 bg-gray-50';
+  return colors[status] || 'border-[var(--border-color)] bg-[var(--background-secondary)]';
 };
 
 export default function OrderNotifications({
@@ -194,11 +194,11 @@ export default function OrderNotifications({
     const orderItems = queueOrder?.items || order.items || [];
 
     return (
-      <div className="p-4 bg-gray-50 rounded-lg mt-2">
-        <h3 className="text-lg font-bold mb-2">Order #{order.order_number} Details</h3>
+      <div className="p-4 rounded-lg mt-2" style={{ backgroundColor: 'var(--background-secondary)', border: '1px solid var(--border-color)' }}>
+        <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--text-color)' }}>Order #{order.order_number} Details</h3>
         <div className="space-y-3">
-          <p><strong>Customer:</strong> {order.customer_name || 'Guest'}</p>
-          <h4 className="font-semibold mt-2">Items:</h4>
+          <p><strong style={{ color: 'var(--text-secondary)' }}>Customer:</strong> {order.customer_name || 'Guest'}</p>
+          <h4 className="font-semibold mt-2" style={{ color: 'var(--text-color)' }}>Items:</h4>
           <ul className="list-disc pl-5 space-y-1">
             {orderItems.length > 0 ? (
               orderItems.map((item, index) => {
@@ -211,19 +211,23 @@ export default function OrderNotifications({
                     {pictureUrl ? (
                       <img src={pictureUrl} alt={productName} className="w-6 h-6 object-cover rounded-md" />
                     ) : (
-                      <div className="w-6 h-6 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 text-xs">📦</div>
+                      <div className="w-6 h-6 bg-[var(--background-secondary)] rounded-md flex items-center justify-center text-[var(--text-tertiary)] text-xs">📦</div>
                     )}
-                    <span className="text-sm">{productName} x{quantity}</span>
+                    <span className="text-sm" style={{ color: 'var(--text-color)' }}>{productName} x{quantity}</span>
                   </li>
                 );
               })
             ) : (
-              <li className="text-gray-500 text-sm">No items available</li>
+              <li className="text-[var(--text-tertiary)] text-sm">No items available</li>
             )}
           </ul>
           <button
             onClick={() => setSelectedOrderId(null)}
-            className="mt-3 flex items-center px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+            className="mt-3 flex items-center px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md"
+            style={{
+              backgroundColor: 'var(--primary-color)',
+              color: 'var(--text-on-primary)',
+            }}
           >
             <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
@@ -272,27 +276,28 @@ export default function OrderNotifications({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ display: showModal ? 'flex' : 'none' }}>
-      <div className="bg-white rounded-lg p-3 w-72 max-h-[50vh] flex flex-col">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-md font-bold">{tabs.find(t => t.key === activeTab)?.label} Notifications</h2>
+      <div className="rounded-lg p-3 w-72 max-h-[50vh] flex flex-col" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <div className="flex justify-between items-center mb-2 border-b border-[var(--border-color)] pb-2">
+          <h2 className="text-md font-bold" style={{ color: 'var(--text-color)' }}>{tabs.find(t => t.key === activeTab)?.label} Notifications</h2>
           <div>
-            <button onClick={clearNotifications} className="mr-2 text-red-500 hover:text-red-700 text-xs">Clear All</button>
-            <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-700 text-lg">×</button>
+            <button onClick={clearNotifications} className="mr-2 text-[var(--error-color)] hover:text-[var(--error-dark)] text-xs">Clear All</button>
+            <button onClick={() => setShowModal(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-lg">×</button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto pr-1" style={{ maxHeight: '40vh' }}>
+        <div className="flex-1 overflow-y-auto pr-1" style={{ maxHeight: '40vh', backgroundColor: 'var(--background-secondary)' }}>
           {!selectedOrderId && notifications
             .filter(n => n.tab === activeTab)
             .map(notification => (
               <div
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
-                className={`p-2 rounded border mb-1 cursor-pointer ${notification.isRead ? 'bg-gray-50 text-gray-700' : 'bg-white font-bold text-black'} ${getStatusColor(notification.status)}`}
+                className={`p-2 rounded border mb-1 cursor-pointer ${notification.isRead ? 'bg-[var(--background-secondary)] text-[var(--text-secondary)]' : 'bg-[var(--background-color)] font-bold text-[var(--text-color)]'} ${getStatusColor(notification.status)}`}
+                style={{ borderColor: 'var(--border-color)' }}
               >
                 <div className="flex items-start">
-                  <span className="mr-1 mt-0.5">{getStatusIcon(notification.status)}</span>
+                  <span className="mr-1 mt-0.5" style={{ color: 'var(--text-color)' }}>{getStatusIcon(notification.status)}</span>
                   <div>
-                    <span className="text-sm font-semibold">#{notification.orderNumber}</span>
+                    <span className="text-sm font-semibold" style={{ color: 'var(--text-color)' }}>#{notification.orderNumber}</span>
                     <div className="text-xs" dangerouslySetInnerHTML={{ __html: notification.message }}></div>
                   </div>
                 </div>
@@ -300,7 +305,7 @@ export default function OrderNotifications({
             ))}
           {selectedOrderId && renderOrderDetails(selectedOrderId)}
           {!selectedOrderId && notifications.filter(n => n.tab === activeTab).length === 0 && (
-            <div className="text-center py-3 text-gray-500 text-xs">No notifications yet</div>
+            <div className="text-center py-3 text-[var(--text-tertiary)] text-xs">No notifications yet</div>
           )}
         </div>
       </div>

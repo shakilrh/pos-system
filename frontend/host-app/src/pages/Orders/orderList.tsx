@@ -408,7 +408,7 @@ export default function OrderList({
   return (
     <div className="space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
       <div className="flex justify-between items-center">
-        <div className="text-sm" style={{ color: '#757575' }}>Total Orders: {filteredOrders.length}</div>
+        <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Total Orders: {filteredOrders.length}</div>
       </div>
 
       <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
@@ -502,6 +502,7 @@ export default function OrderList({
             searchTerm={preparationSearchTerm}
             setSearchTerm={setPreparationSearchTerm}
             statusFilter="processing"
+            style={{ backgroundColor: 'var(--background-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-color)', borderRadius: '0.375rem', padding: '0.5rem' }}
           />
         </div>
       )}
@@ -514,6 +515,7 @@ export default function OrderList({
             searchTerm={preparationSearchTerm}
             setSearchTerm={setPreparationSearchTerm}
             statusFilter="pending"
+            style={{ backgroundColor: 'var(--background-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-color)', borderRadius: '0.375rem', padding: '0.5rem' }}
           />
         </div>
       )}
@@ -527,6 +529,7 @@ export default function OrderList({
             searchTerm={paymentSearchTerm}
             setSearchTerm={setPaymentSearchTerm}
             statusFilter={activeTab === 'ready' ? 'ready' : 'served'}
+            style={{ backgroundColor: 'var(--background-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-color)', borderRadius: '0.375rem', padding: '0.5rem' }}
           />
         </div>
       )}
