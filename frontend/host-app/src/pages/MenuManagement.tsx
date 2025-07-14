@@ -131,7 +131,7 @@ export default function MenuManagement() {
   }
 
   return (
-    <div className="w-full min-h-screen pr-4 py-4 bg-[var(--background-color)]">
+    <div className="w-full min-h-screen py-4 bg-[var(--background-color)]">
       <div
         className="rounded-lg shadow-md border w-full mt-6"
         style={{

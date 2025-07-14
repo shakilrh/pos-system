@@ -20,6 +20,8 @@ export default function Orders() {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [preparationTime, setPreparationTime] = useState<number>(30);
   const [queueData, setQueueData] = useState<any[]>([]);
+  const [currentTheme, setCurrentTheme] = useState<string>('default');
+  const [clientLoaded, setClientLoaded] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -29,6 +31,68 @@ export default function Orders() {
       console.log('Orders page accessed, current token:', token);
     }
   }, [isAuthenticated, isLoading, router, token]);
+
+  useEffect(() => {
+    setClientLoaded(true);
+    const theme = document.querySelector('html')?.getAttribute('data-theme') || 'default';
+    setCurrentTheme(theme);
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          const newTheme = document.querySelector('html')?.getAttribute('data-theme') || 'default';
+          setCurrentTheme(newTheme);
+        }
+      });
+    });
+
+    const htmlElement = document.querySelector('html');
+    if (htmlElement) {
+      observer.observe(htmlElement, {
+        attributes: true,
+        attributeFilter: ['data-theme']
+      });
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  const getThemeColors = () => {
+    if (currentTheme === 'dark' || currentTheme === 'dark-pro') {
+      return {
+        cardBackground: '#1f2937',
+        cardBorder: '#374151',
+        cardText: '#ffffff',
+        headingText: '#ffffff',
+      };
+    }
+
+    switch (currentTheme) {
+      case 'blue':
+        return {
+          cardBackground: '#ffffff',
+          cardBorder: '#e5e7eb',
+          cardText: '#1e3a8a',
+          headingText: '#1e3a8a',
+        };
+      case 'green':
+        return {
+          cardBackground: '#ffffff',
+          cardBorder: '#e5e7eb',
+          cardText: '#064e3b',
+          headingText: '#064e3b',
+        };
+      default:
+        return {
+          cardBackground: '#ffffff',
+          cardBorder: '#e5e7eb',
+          cardText: '#111827',
+          headingText: '#111827',
+        };
+    }
+  };
+
+  const themeColors = getThemeColors();
 
   useEffect(() => {
     if (!isAuthenticated || !token) {
@@ -53,10 +117,8 @@ export default function Orders() {
         })));
         setTotalPages(Math.ceil(filteredOrders.length / itemsPerPage));
 
-        // Safe access to queue data with multiple fallbacks
         let queueArray = [];
         if (queue && typeof queue === 'object') {
-          // Handle different possible response structures
           if (Array.isArray(queue)) {
             queueArray = queue;
           } else if (queue.data && Array.isArray(queue.data.data)) {
@@ -74,7 +136,6 @@ export default function Orders() {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch orders';
         setMessage(errorMessage);
         console.error('Failed to fetch orders', error);
-        // Set empty queue data on error to prevent further errors
         setQueueData([]);
       }
     };
@@ -83,7 +144,7 @@ export default function Orders() {
   }, [isAuthenticated, token, logout, itemsPerPage]);
 
   if (isLoading) {
-    return null; // Global loading will handle this
+    return null;
   }
 
   if (!isAuthenticated) {
@@ -91,42 +152,54 @@ export default function Orders() {
   }
 
   return (
-    <div className="min-h-screen p-5 bg-[var(--background-secondary)]">
-      <div className="max-w-7xl mx-auto">
-        <OrderList
-          orders={orders}
-          page={page}
-          itemsPerPage={itemsPerPage}
-          totalPages={totalPages}
-          setPage={setPage}
-          setItemsPerPage={setItemsPerPage}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          sortConfig={sortConfig}
-          setSortConfig={setSortConfig}
-          preparationTime={preparationTime}
-          setPreparationTime={setPreparationTime}
-          message={message}
-          setMessage={setMessage}
-          token={token}
-          logout={logout}
-          onViewDetails={setSelectedOrder}
-          setOrders={setOrders}
-          queueData={queueData} // Pass queue data to OrderList
-        />
-        {selectedOrder && (
-          <OrderDetails
-            order={selectedOrder}
+    <div className="w-full min-h-screen py-4 bg-[var(--background-color)]">
+      <div
+        className="rounded-lg shadow-md border w-full mt-6"
+        style={{
+          backgroundColor: themeColors.cardBackground,
+          borderColor: themeColors.cardBorder,
+          color: themeColors.cardText,
+        }}
+      >
+        <div className="p-8">
+          <h1 className="text-2xl font-semibold mb-8" style={{ color: themeColors.headingText }}>
+            Order Management
+          </h1>
+          <OrderList
+            orders={orders}
+            page={page}
+            itemsPerPage={itemsPerPage}
+            totalPages={totalPages}
+            setPage={setPage}
+            setItemsPerPage={setItemsPerPage}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            sortConfig={sortConfig}
+            setSortConfig={setSortConfig}
+            preparationTime={preparationTime}
+            setPreparationTime={setPreparationTime}
+            message={message}
+            setMessage={setMessage}
             token={token}
             logout={logout}
-            onClose={() => setSelectedOrder(null)}
+            onViewDetails={setSelectedOrder}
             setOrders={setOrders}
-            orders={orders}
-            setMessage={setMessage}
+            queueData={queueData}
           />
-        )}
+          {selectedOrder && (
+            <OrderDetails
+              order={selectedOrder}
+              token={token}
+              logout={logout}
+              onClose={() => setSelectedOrder(null)}
+              setOrders={setOrders}
+              orders={orders}
+              setMessage={setMessage}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

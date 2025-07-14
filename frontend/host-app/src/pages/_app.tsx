@@ -36,16 +36,18 @@ const routePermissions: { [key: string]: string } = {
   '/Orders/orders': 'Orders_access',
   '/Orders/createOrder': 'Orders_can_create',
   '/RoleAndUserManagement': 'Roles_access',
+  'Tables/TableManagement': 'Tables_access',
 };
 
 // Map permission IDs to keys
 const permissionIdToKey: { [key: string]: string } = {
-  '6867aac3a50a9ccaa7143a05': 'Dashboard_access',
+  '686e549493afbada228ce59d': 'Dashboard_access',
   '6867ab13a50a9ccaa7143a0f': 'Orders_access',
   '6867adc7a50a9ccaa7143a48': 'Orders_can_create',
   '6867aaeca50a9ccaa7143a09': 'Menu_access',
   '6867ab5da50a9ccaa7143a13': 'Roles_access',
   '6867ab88a50a9ccaa7143a17': 'Settings_access',
+  '686e54c893afbada228ce5a1': 'Tables_access',
   // Add mappings for additional permissions if needed
 };
 
@@ -58,7 +60,6 @@ function AppContent({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Decode JWT token to extract role_id and permissions
   const decodeToken = (token: string) => {
     try {
       const base64Url = token.split('.')[1];
@@ -76,7 +77,6 @@ function AppContent({ Component, pageProps }: AppProps) {
     }
   };
 
-  // Extract permissions from token
   useEffect(() => {
     console.log('Permission extraction useEffect triggered', {
       isAuthenticated,
@@ -85,7 +85,6 @@ function AppContent({ Component, pageProps }: AppProps) {
       isLoading
     });
 
-    // Wait for authentication to be fully loaded
     if (isLoading) {
       console.log('Still loading auth, skipping permission extraction');
       return;
@@ -108,14 +107,12 @@ function AppContent({ Component, pageProps }: AppProps) {
 
     console.log('Decoded token:', decodedToken);
 
-    // Check if user is admin - if so, grant all permissions
     if (decodedToken.user_type === 'isadmin') {
       const allPermissions = Object.values(permissionIdToKey);
       console.log('User is admin, granting all permissions:', allPermissions);
       setUserPermissions(allPermissions);
       setPermissionsLoaded(true);
 
-      // Log admin access
       console.log('Admin User:', {
         role_id: decodedToken.role_id,
         name: user?.name || 'Unknown',
@@ -125,7 +122,6 @@ function AppContent({ Component, pageProps }: AppProps) {
       return;
     }
 
-    // Map permission IDs to keys for non-admin users
     const permissions = Array.isArray(decodedToken.permissions)
       ? decodedToken.permissions
         .map((id: string) => permissionIdToKey[id])
@@ -136,7 +132,6 @@ function AppContent({ Component, pageProps }: AppProps) {
     setUserPermissions(permissions);
     setPermissionsLoaded(true);
 
-    // Log role and permissions for debugging
     console.log('Regular User Role:', {
       role_id: decodedToken.role_id,
       name: user?.name || 'Unknown',
@@ -146,7 +141,6 @@ function AppContent({ Component, pageProps }: AppProps) {
     console.log('Assigned Permissions:', permissions);
   }, [isAuthenticated, user, token, isLoading]);
 
-  // Authentication and permission check
   useEffect(() => {
     console.log('Route protection useEffect triggered', {
       isLoading,
@@ -174,7 +168,6 @@ function AppContent({ Component, pageProps }: AppProps) {
     }
 
     if (isAuthenticated && !publicRoutes.includes(pathname)) {
-      // Wait for permissions to be loaded before checking access
       if (!permissionsLoaded) {
         console.log('Permissions not loaded yet, waiting...');
         return;
@@ -191,7 +184,6 @@ function AppContent({ Component, pageProps }: AppProps) {
     }
   }, [isAuthenticated, isLoading, pathname, router, userPermissions, permissionsLoaded]);
 
-  // Page loading effect
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     const handleRouteChange = () => {
@@ -229,7 +221,7 @@ function AppContent({ Component, pageProps }: AppProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
       </div>
     );
@@ -243,10 +235,9 @@ function AppContent({ Component, pageProps }: AppProps) {
     return null;
   }
 
-  // Show loading while permissions are being loaded
   if (isAuthenticated && !permissionsLoaded) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
         <div className="flex flex-col items-center">
           <div className="w-16 h-16 border-t-4 border-b-4 border-orange-500 rounded-full animate-spin"></div>
           <p className="mt-4 text-lg font-semibold text-gray-700">Loading permissions...</p>
@@ -260,8 +251,12 @@ function AppContent({ Component, pageProps }: AppProps) {
     return <div>Sidebar failed to load</div>;
   }
 
+  // Fixed: Ensure proper sidebar positioning and content margin
+  const sidebarWidth = sidebarOpen ? 'w-64' : 'w-20'; // Increased collapsed width
+  const contentMargin = sidebarOpen ? 'ml-64' : 'ml-20'; // Increased collapsed margin
+
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
       <Header
         onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
         onLogout={handleLogout}
@@ -269,14 +264,14 @@ function AppContent({ Component, pageProps }: AppProps) {
         token={token}
         user={user}
       />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden" style={{ backgroundColor: 'var(--background-color)' }}>
         <Sidebar
-          className={`top-16 z-40 ${sidebarOpen ? 'w-64' : 'w-16'} bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-2xl`}
+          className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 ${sidebarWidth} bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-2xl transition-all duration-300 ease-in-out`}
           setSidebarOpen={setSidebarOpen}
           sidebarOpen={sidebarOpen}
           userPermissions={userPermissions}
         />
-        <main className={`flex-1 mt-16 bg-gray-100 overflow-auto ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
+        <main className={`flex-1 mt-16 ${contentMargin} overflow-auto p-4 transition-all duration-300 ease-in-out`} style={{ backgroundColor: 'var(--background-color)' }}>
           {isPageLoading ? (
             <div className="flex items-center justify-center min-h-screen">
               <div className="flex flex-col items-center">
