@@ -251,9 +251,10 @@ function AppContent({ Component, pageProps }: AppProps) {
     return <div>Sidebar failed to load</div>;
   }
 
-  // Fixed: Ensure proper sidebar positioning and content margin
-  const sidebarWidth = sidebarOpen ? 'w-64' : 'w-20'; // Increased collapsed width
-  const contentMargin = sidebarOpen ? 'ml-64' : 'ml-20'; // Increased collapsed margin
+  // Adjusted: Match header and sidebar spacing to a small consistent value
+  const sidebarWidth = sidebarOpen ? 'w-64' : 'w-20';
+  const contentMargin = sidebarOpen ? 'ml-64' : 'ml-20';
+  const headerHeight = 'h-16'; // Small consistent height
 
   return (
     <div className="flex flex-col min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
@@ -263,15 +264,16 @@ function AppContent({ Component, pageProps }: AppProps) {
         onNavigate={(path: string) => router.push(path)}
         token={token}
         user={user}
+        className={headerHeight}
       />
-      <div className="flex flex-1 overflow-hidden" style={{ backgroundColor: 'var(--background-color)' }}>
+      <div className="flex flex-1 overflow-hidden mt-10" style={{ backgroundColor: 'var(--background-color)' }}> {/* Reduced margin-top to 4px */}
         <Sidebar
           className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 ${sidebarWidth} bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-2xl transition-all duration-300 ease-in-out`}
           setSidebarOpen={setSidebarOpen}
           sidebarOpen={sidebarOpen}
           userPermissions={userPermissions}
         />
-        <main className={`flex-1 mt-16 ${contentMargin} overflow-auto p-4 transition-all duration-300 ease-in-out`} style={{ backgroundColor: 'var(--background-color)' }}>
+        <main className={`flex-1 ${contentMargin} overflow-auto p-4 transition-all duration-300 ease-in-out`} style={{ backgroundColor: 'var(--background-color)' }}>
           {isPageLoading ? (
             <div className="flex items-center justify-center min-h-screen">
               <div className="flex flex-col items-center">
