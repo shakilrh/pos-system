@@ -63,7 +63,6 @@ const OrderDetails = ({
   const totalAmount = calculateTotalOrderAmount();
   const showPayment = serviceType === 'take_away';
 
-  // Validation functions
   const validateCustomerName = (name: string): string[] => {
     const errors: string[] = [];
     if (!name.trim()) {
@@ -109,7 +108,6 @@ const OrderDetails = ({
     if (!items || items.length === 0) {
       errors.push('At least one item must be added to the order');
     } else {
-      // Check for items with invalid quantities
       const invalidItems = items.filter(item => !item.quantity || item.quantity <= 0);
       if (invalidItems.length > 0) {
         errors.push('All items must have a valid quantity');
@@ -118,7 +116,6 @@ const OrderDetails = ({
     return errors;
   };
 
-  // Get field errors
   const getFieldErrors = (fieldName: string): string[] => {
     switch (fieldName) {
       case 'customerName':
@@ -134,29 +131,24 @@ const OrderDetails = ({
     }
   };
 
-  // Check if form is valid
   const isFormValid = (): boolean => {
     const customerNameValid = validateCustomerName(customerName).length === 0;
     const orderItemsValid = validateOrderItems(orderItems).length === 0;
 
     if (!showPayment) {
-      // For dine-in, only customer name and order items are required
       return customerNameValid && orderItemsValid;
     }
 
-    // For takeaway, all fields including payment are required
     const receivedAmountValid = validateReceivedAmount(receivedAmount).length === 0;
     const paymentMethodValid = validatePaymentMethod(paymentMethod).length === 0;
 
     return customerNameValid && orderItemsValid && receivedAmountValid && paymentMethodValid;
   };
 
-  // Handle input changes with validation
   const handleCustomerNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
     setCustomerName(value);
 
-    // Only validate if field is touched
     if (touchedFields.has('customerName')) {
       setErrors(prev => ({
         ...prev,
@@ -169,7 +161,6 @@ const OrderDetails = ({
     const value = Number(e.target.value);
     setReceivedAmount(value);
 
-    // Only validate if field is touched
     if (touchedFields.has('receivedAmount')) {
       setErrors(prev => ({
         ...prev,
@@ -179,11 +170,9 @@ const OrderDetails = ({
   };
 
   const handlePaymentMethodChange = (method: string) => {
-    // Clear previous payment method if same method is clicked
     const newMethod = paymentMethod === method ? '' : method;
     setPaymentMethod(newMethod);
 
-    // Only validate if field is touched
     if (touchedFields.has('paymentMethod')) {
       setErrors(prev => ({
         ...prev,
@@ -192,17 +181,14 @@ const OrderDetails = ({
     }
   };
 
-  // Handle field focus - mark as touched
   const handleFocus = (fieldName: string) => {
     setTouchedFields(prev => new Set(prev).add(fieldName));
-    // Show validation errors when field is focused
     setErrors(prev => ({
       ...prev,
       [fieldName]: getFieldErrors(fieldName)
     }));
   };
 
-  // Handle field blur - validate if touched
   const handleBlur = (fieldName: string) => {
     if (touchedFields.has(fieldName)) {
       setErrors(prev => ({
@@ -212,9 +198,7 @@ const OrderDetails = ({
     }
   };
 
-  // Update order items validation when items change, but only if touched
   useEffect(() => {
-    // Only validate order items if they've been interacted with
     if (touchedFields.has('orderItems')) {
       setErrors(prev => ({
         ...prev,
@@ -223,7 +207,6 @@ const OrderDetails = ({
     }
   }, [orderItems, touchedFields]);
 
-  // Clear payment-related errors when switching to dine-in
   useEffect(() => {
     if (serviceType === 'dine_in') {
       setErrors(prev => ({
@@ -231,9 +214,7 @@ const OrderDetails = ({
         receivedAmount: [],
         paymentMethod: []
       }));
-      // Clear payment method when switching to dine-in
       setPaymentMethod('');
-      // Remove payment fields from touched state
       setTouchedFields(prev => {
         const newSet = new Set(prev);
         newSet.delete('receivedAmount');
@@ -243,9 +224,7 @@ const OrderDetails = ({
     }
   }, [serviceType, setPaymentMethod]);
 
-  // Enhanced order creation with validation
   const handleEnhancedCreateOrder = () => {
-    // Mark all relevant fields as touched
     const fieldsToValidate = ['customerName', 'orderItems'];
     if (showPayment) {
       fieldsToValidate.push('receivedAmount', 'paymentMethod');
@@ -253,7 +232,6 @@ const OrderDetails = ({
 
     setTouchedFields(new Set(fieldsToValidate));
 
-    // Validate all fields
     const allErrors: any = {};
     fieldsToValidate.forEach(field => {
       allErrors[field] = getFieldErrors(field);
@@ -261,7 +239,6 @@ const OrderDetails = ({
 
     setErrors(allErrors);
 
-    // Check if there are any errors
     const hasErrors = Object.values(allErrors).some((fieldErrors: any) => fieldErrors.length > 0);
 
     if (!hasErrors) {
@@ -269,12 +246,10 @@ const OrderDetails = ({
     }
   };
 
-  // Handle order items interaction - mark as touched
   const handleOrderItemsInteraction = () => {
     setTouchedFields(prev => new Set(prev).add('orderItems'));
   };
 
-  // Render field errors
   const renderFieldErrors = (fieldName: string) => {
     const fieldErrors = errors[fieldName as keyof typeof errors] || [];
     if (fieldErrors.length === 0) return null;
@@ -294,155 +269,173 @@ const OrderDetails = ({
   };
 
   return (
-    <div className="lg:w-1/3 w-full bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Order Details</h2>
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
-          <input
-            type="text"
-            placeholder="Enter customer name"
-            value={customerName}
-            onChange={handleCustomerNameChange}
-            onFocus={() => handleFocus('customerName')}
-            onBlur={() => handleBlur('customerName')}
-            className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 ${
-              errors.customerName && errors.customerName.length > 0
-                ? 'border-red-500 ring-1 ring-red-500'
-                : 'border-gray-300'
-            }`}
-          />
-          {renderFieldErrors('customerName')}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Service Type</label>
-          <select
-            value={serviceType}
-            onChange={(e) => setServiceType(e.target.value as 'dine_in' | 'take_away')}
-            className="w-full p-2 border rounded-lg focus:ring-2 transition-all duration-200 product-crud-input focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)]"
+    <div className="min-h-screen bg-[var(--background-color)] py-4">
+      <div className="lg:grid lg:grid-cols-10 lg:gap-6">
+        <div className="lg:col-span-10">
+          <div
+            className="rounded-lg shadow-md border w-full mx-auto p-6"
             style={{
-              backgroundColor: 'var(--background-secondary)',
-              color: 'var(--text-color)',
-              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--cardBackground)',
+              borderColor: '#4a4a4a',
+              color: 'var(--cardText)',
             }}
           >
-            <option value="dine_in">Dine-In</option>
-            <option value="take_away">Takeaway</option>
-          </select>
-        </div>
-
-        {showPayment && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Received Amount *</label>
-              <input
-                type="number"
-                value={receivedAmount || ''}
-                onChange={handleReceivedAmountChange}
-                onFocus={() => handleFocus('receivedAmount')}
-                onBlur={() => handleBlur('receivedAmount')}
-                min={totalAmount}
-                step="0.01"
-                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 ${
-                  errors.receivedAmount && errors.receivedAmount.length > 0
-                    ? 'border-red-500 ring-1 ring-red-500'
-                    : 'border-gray-300'
-                }`}
-                placeholder={`Minimum: $${totalAmount.toFixed(2)}`}
-              />
-              {renderFieldErrors('receivedAmount')}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">Payment Method *</label>
-              <div className="flex gap-4">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={paymentMethod === 'cash'}
-                    onChange={() => handlePaymentMethodChange('cash')}
-                    onFocus={() => handleFocus('paymentMethod')}
-                    className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Cash</span>
-                </label>
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={paymentMethod === 'card'}
-                    onChange={() => handlePaymentMethodChange('card')}
-                    onFocus={() => handleFocus('paymentMethod')}
-                    className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Card</span>
-                </label>
+            <h1 className="text-2xl font-semibold mb-6" style={{ color: 'var(--headingText)' }}>
+              Order Details
+            </h1>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--cardText)' }}>Customer Name *</label>
+                <input
+                  type="text"
+                  placeholder="Enter customer name"
+                  value={customerName}
+                  onChange={handleCustomerNameChange}
+                  onFocus={() => handleFocus('customerName')}
+                  onBlur={() => handleBlur('customerName')}
+                  className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-[var(--primary-color)] transition-all duration-200 ${
+                    errors.customerName && errors.customerName.length > 0
+                      ? 'border-[var(--error-color)] ring-1 ring-[var(--error-color)]'
+                      : 'border-[var(--border-color)]'
+                  }`}
+                  style={{ backgroundColor: 'var(--background-secondary)', color: 'var(--text-color)' }}
+                />
+                {renderFieldErrors('customerName')}
               </div>
-              {renderFieldErrors('paymentMethod')}
+
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--cardText)' }}>Service Type</label>
+                <select
+                  value={serviceType}
+                  onChange={(e) => setServiceType(e.target.value as 'dine_in' | 'take_away')}
+                  className="w-full p-2 border rounded-lg focus:ring-2 transition-all duration-200 focus:ring-[var(--primary-color)]"
+                  style={{
+                    backgroundColor: 'var(--background-secondary)',
+                    color: 'var(--text-color)',
+                    borderColor: 'var(--border-color)',
+                  }}
+                >
+                  <option value="dine_in">Dine-In</option>
+                  <option value="take_away">Takeaway</option>
+                </select>
+              </div>
+
+              {showPayment && (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--cardText)' }}>Received Amount *</label>
+                    <input
+                      type="number"
+                      value={receivedAmount || ''}
+                      onChange={handleReceivedAmountChange}
+                      onFocus={() => handleFocus('receivedAmount')}
+                      onBlur={() => handleBlur('receivedAmount')}
+                      min={totalAmount}
+                      step="0.01"
+                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-[var(--primary-color)] transition-all duration-200 ${
+                        errors.receivedAmount && errors.receivedAmount.length > 0
+                          ? 'border-[var(--error-color)] ring-1 ring-[var(--error-color)]'
+                          : 'border-[var(--border-color)]'
+                      }`}
+                      placeholder={`Minimum: $${totalAmount.toFixed(2)}`}
+                      style={{ backgroundColor: 'var(--background-secondary)', color: 'var(--text-color)' }}
+                    />
+                    {renderFieldErrors('receivedAmount')}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--cardText)' }}>Payment Method *</label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={paymentMethod === 'cash'}
+                          onChange={() => handlePaymentMethodChange('cash')}
+                          onFocus={() => handleFocus('paymentMethod')}
+                          className="mr-2 h-4 w-4 text-[var(--primary-color)] focus:ring-[var(--primary-color)] border-[var(--border-color)] rounded"
+                        />
+                        <span className="text-sm font-medium" style={{ color: 'var(--cardText)' }}>Cash</span>
+                      </label>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={paymentMethod === 'card'}
+                          onChange={() => handlePaymentMethodChange('card')}
+                          onFocus={() => handleFocus('paymentMethod')}
+                          className="mr-2 h-4 w-4 text-[var(--primary-color)] focus:ring-[var(--primary-color)] border-[var(--border-color)] rounded"
+                        />
+                        <span className="text-sm font-medium" style={{ color: 'var(--cardText)' }}>Card</span>
+                      </label>
+                    </div>
+                    {renderFieldErrors('paymentMethod')}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <h3 className="font-semibold mb-4" style={{ color: 'var(--cardText)' }}>Order Summary</h3>
+                {orderItems.length === 0 ? (
+                  <div onClick={handleOrderItemsInteraction}>
+                    <p style={{ color: 'var(--cardText)' }}>No items added to the order</p>
+                    {renderFieldErrors('orderItems')}
+                  </div>
+                ) : (
+                  <>
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b" style={{ borderColor: '#4a4a4a' }}>
+                          <th className="py-2 px-4" style={{ color: 'var(--cardText)' }}>Item</th>
+                          <th className="py-2 px-4" style={{ color: 'var(--cardText)' }}>Qty</th>
+                          <th className="py-2 px-4" style={{ color: 'var(--cardText)' }}>Price</th>
+                          <th className="py-2 px-4" style={{ color: 'var(--cardText)' }}>Total</th>
+                          <th className="py-2 px-4" style={{ color: 'var(--cardText)' }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {orderItems.map((item, index) => (
+                          <tr key={item.product_id} className="border-b" style={{ borderColor: '#4a4a4a' }}>
+                            <td className="py-2 px-4" style={{ color: 'var(--cardText)' }}>{item.product?.name || `Product ${item.product_id}`}</td>
+                            <td className="py-2 px-4" style={{ color: 'var(--cardText)' }}>{item.quantity}</td>
+                            <td className="py-2 px-4" style={{ color: 'var(--cardText)' }}>${(item.product?.price || 0).toFixed(2)}</td>
+                            <td className="py-2 px-4" style={{ color: 'var(--cardText)' }}>${(item.sub_total || 0).toFixed(2)}</td>
+                            <td className="py-2 px-4">
+                              <XMarkIcon
+                                onClick={() => {
+                                  handleOrderItemsInteraction();
+                                  setOrderItems(orderItems.filter((_, i) => i !== index));
+                                }}
+                                className="h-5 w-5 cursor-pointer hover:text-[var(--error-color-hover)]"
+                                style={{ color: 'var(--error-color)' }}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="font-bold">
+                          <td colSpan={3} className="py-2 px-4 text-right" style={{ color: 'var(--cardText)' }}>Total</td>
+                          <td className="py-2 px-4" style={{ color: 'var(--cardText)' }}>${totalAmount.toFixed(2)}</td>
+                          <td></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    {renderFieldErrors('orderItems')}
+                  </>
+                )}
+              </div>
+
+              <button
+                onClick={handleEnhancedCreateOrder}
+                disabled={localLoading || !isFormValid()}
+                className={`w-full py-2 rounded-lg transition-all duration-200 ${
+                  localLoading || !isFormValid()
+                    ? 'bg-[var(--background-secondary)] text-[var(--text-secondary)] cursor-not-allowed'
+                    : 'bg-[var(--primary-color)] text-[var(--sidebar-text)] hover:bg-[var(--primary-700)]'
+                }`}
+              >
+                {localLoading ? 'Processing Order...' : showPayment ? 'Confirm Order & Process Payment' : 'Confirm Order'}
+              </button>
             </div>
           </div>
-        )}
-
-        <div className="mt-4">
-          <h3 className="font-semibold">Order Summary</h3>
-          {orderItems.length === 0 ? (
-            <div onClick={handleOrderItemsInteraction}>
-              <p className="text-gray-500">No items added to the order</p>
-              {renderFieldErrors('orderItems')}
-            </div>
-          ) : (
-            <>
-              <table className="w-full text-left border-collapse">
-                <thead>
-                <tr className="border-b">
-                  <th className="py-2 px-4">Item</th>
-                  <th className="py-2 px-4">Qty</th>
-                  <th className="py-2 px-4">Price</th>
-                  <th className="py-2 px-4">Total</th>
-                  <th className="py-2 px-4">Action</th>
-                </tr>
-                </thead>
-                <tbody>
-                {orderItems.map((item, index) => (
-                  <tr key={item.product_id} className="border-b">
-                    <td className="py-2 px-4">{item.product?.name || `Product ${item.product_id}`}</td>
-                    <td className="py-2 px-4">{item.quantity}</td>
-                    <td className="py-2 px-4">${(item.product?.price || 0).toFixed(2)}</td>
-                    <td className="py-2 px-4">${(item.sub_total || 0).toFixed(2)}</td>
-                    <td className="py-2 px-4">
-                      <XMarkIcon
-                        onClick={() => {
-                          handleOrderItemsInteraction();
-                          setOrderItems(orderItems.filter((_, i) => i !== index));
-                        }}
-                        className="h-5 w-5 text-red-500 cursor-pointer hover:text-red-700"
-                      />
-                    </td>
-                  </tr>
-                ))}
-                <tr className="font-bold">
-                  <td colSpan={3} className="py-2 px-4 text-right">Total</td>
-                  <td className="py-2 px-4">${totalAmount.toFixed(2)}</td>
-                  <td></td>
-                </tr>
-                </tbody>
-              </table>
-              {renderFieldErrors('orderItems')}
-            </>
-          )}
         </div>
-
-        <button
-          onClick={handleEnhancedCreateOrder}
-          disabled={localLoading || !isFormValid()}
-          className={`w-full py-2 rounded-lg transition-all duration-200 ${
-            localLoading || !isFormValid()
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white'
-          }`}
-        >
-          {localLoading ? 'Processing Order...' : showPayment ? 'Confirm Order & Process Payment' : 'Confirm Order'}
-        </button>
       </div>
     </div>
   );
