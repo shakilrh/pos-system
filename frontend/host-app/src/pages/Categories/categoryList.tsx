@@ -68,7 +68,7 @@ export default function CategoryList({
   };
 
   return (
-    <div className="relative z-50">
+    <div className="relative">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="w-full sm:w-72">
           <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Search Categories</label>
@@ -92,16 +92,16 @@ export default function CategoryList({
 
         <button
           onClick={onAdd}
-          className={`flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isProductFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''}`}
+          className={`flex items-center px-2.5 py-1.5 mt-4 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isProductFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''}`}
           style={{
             backgroundColor: isProductFormActive ? undefined : 'var(--primary-color)',
-            color: isProductFormActive ? undefined : 'var(--text-on-primary)',
-            '--tw-ring-color': 'var(--focus-ring)',
+            color: 'var(--text-color-button)',
+
           }}
           disabled={isProductFormActive}
         >
           <PlusCircleIcon className="w-4 h-4 mr-1" />
-          <span>Add Category</span>
+          <span>Add</span>
         </button>
       </div>
 
@@ -163,12 +163,18 @@ export default function CategoryList({
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1 || isProductFormActive}
-                className="px-4 py-2 text-sm rounded-lg disabled:opacity-50 transition-colors duration-200"
+                className="flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none"
                 style={{
+                    backgroundColor: currentPage===1?'var(--bg-gray)':'var(--primary-color)',
+                    color: currentPage===1?'var(--text-color-gray)':'var(--text-color-button)',
+                    borderColor: 'var(--border-color)',
+                }}
+
+                  /*style={{//bg-gray-300 text-gray-500
                   backgroundColor: 'var(--background-secondary)',
                   color: 'var(--text-secondary)',
                   borderColor: 'var(--border-color)',
-                }}
+                }}*/
               >
                 Previous
               </button>
@@ -179,7 +185,7 @@ export default function CategoryList({
                   className={`px-4 py-2 text-sm rounded-lg transition-colors duration-200 ${currentPage === page ? 'text-white' : ''}`}
                   style={{
                     backgroundColor: currentPage === page ? 'var(--primary-color)' : 'var(--background-secondary)',
-                    color: currentPage === page ? 'var(--text-on-primary)' : 'var(--text-secondary)',
+                    color: currentPage === page ? 'var(--text-color-button)' : 'var(--text-secondary)',
                     borderColor: 'var(--border-color)',
                   }}
                 >
@@ -191,9 +197,9 @@ export default function CategoryList({
                 disabled={currentPage === totalPages || isProductFormActive}
                 className="px-4 py-2 text-sm rounded-lg disabled:opacity-50 transition-colors duration-200"
                 style={{
-                  backgroundColor: 'var(--background-secondary)',
-                  color: 'var(--text-secondary)',
-                  borderColor: 'var(--border-color)',
+                    backgroundColor: currentPage===totalPages?'var(--bg-gray)':'var(--primary-color)',
+                    color: currentPage===totalPages?'var(--text-color-gray)':'var(--text-color-button)',
+                    borderColor: 'var(--border-color)',
                 }}
               >
                 Next

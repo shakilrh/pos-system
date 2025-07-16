@@ -509,7 +509,8 @@ export default function ProductCrud({
                   />
                   <label
                     htmlFor="imageUpload"
-                    className={`flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isCategoryFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--background-color)]'}`}
+                    //className={`flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isCategoryFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--background-color)]'}`}
+                    className={`cursor-pointer flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isCategoryFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-color-button)] hover:bg-[var(--primary-color)]'}`}
                     style={{ '--tw-ring-color': 'var(--focus-ring)' }}
                   >
                     <PlusCircleIcon className="w-4 h-4 mr-1" />
@@ -544,7 +545,8 @@ export default function ProductCrud({
               </button>
               <button
                 type="submit"
-                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isCategoryFormActive || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--background-color)]'}`}
+                /*className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isCategoryFormActive || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--background-color)]'}`}*/
+                className={`flex-1 items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isCategoryFormActive || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-color-button)] hover:bg-[var(--primary-color)]'}`}
                 style={{ '--tw-ring-color': 'var(--focus-ring)' }}
                 disabled={isCategoryFormActive || !isFormValid()}
               >

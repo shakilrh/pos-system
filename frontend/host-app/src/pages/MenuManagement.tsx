@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Categories from './Categories/categories';
 import Products from './Products/products';
@@ -62,7 +62,7 @@ export default function MenuManagement() {
           cardBackground: '#ffffff',
           cardBorder: '#e5e7eb',
           cardText: '#1e3a8a',
-          headingText: '#1e3a8a',
+          headingText: '#000',
         };
       case 'green':
         return {
@@ -133,63 +133,64 @@ export default function MenuManagement() {
   return (
     <div className="w-full min-h-screen py-4 bg-[var(--background-color)]">
       <div
-        className="rounded-lg shadow-md border w-full mt-6"
+        className="rounded-lg shadow-md border w-full p-4 mb-6"
         style={{
           backgroundColor: themeColors.cardBackground,
           borderColor: themeColors.cardBorder,
           color: themeColors.cardText,
         }}
       >
-        <div className="p-8">
-          <h1 className="text-2xl font-semibold mb-8" style={{ color: themeColors.headingText }}>
-            Menu Management
-          </h1>
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
+          <div className="mb-3 lg:mb-0">
+          <h1 className="text-2xl font-bold" style={{color: themeColors.headingText}}>Menu Management</h1>
+          </div>
+        </div>
+      </div>
           <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
             <div className="lg:col-span-3">
               <div
-                className="rounded-lg shadow-md border p-4"
-                style={{
-                  backgroundColor: themeColors.cardBackground,
-                  borderColor: themeColors.cardBorder,
-                  color: themeColors.cardText,
-                }}
+                  className="rounded-lg shadow-md border p-4"
+                  style={{
+                    backgroundColor: themeColors.cardBackground,
+                    borderColor: themeColors.cardBorder,
+                    color: themeColors.cardText,
+                  }}
               >
                 <Categories
-                  token={token}
-                  isAuthenticated={isAuthenticated}
-                  logout={logout}
-                  categories={categories}
-                  setCategories={setCategories}
-                  onFormActive={setIsCategoryFormActive}
-                  isProductFormActive={isProductFormActive}
+                    token={token}
+                    isAuthenticated={isAuthenticated}
+                    logout={logout}
+                    categories={categories}
+                    setCategories={setCategories}
+                    onFormActive={setIsCategoryFormActive}
+                    isProductFormActive={isProductFormActive}
                 />
               </div>
             </div>
             <div className="lg:col-span-7">
               <div
-                className="rounded-lg shadow-md border p-4"
-                style={{
-                  backgroundColor: themeColors.cardBackground,
-                  borderColor: themeColors.cardBorder,
-                  color: themeColors.cardText,
-                }}
+                  className="rounded-lg shadow-md border p-4"
+                  style={{
+                    backgroundColor: themeColors.cardBackground,
+                    borderColor: themeColors.cardBorder,
+                    color: themeColors.cardText,
+                  }}
               >
                 <Products
-                  token={token}
-                  isAuthenticated={isAuthenticated}
-                  logout={logout}
-                  categories={categories}
-                  setFormMode={(mode, product) => handleSetFormMode(mode, 'product', product)}
-                  filterCategory={filterCategory}
-                  setFilterCategory={setFilterCategory}
-                  isFormActive={isProductFormActive}
-                  isCategoryFormActive={isCategoryFormActive}
+                    token={token}
+                    isAuthenticated={isAuthenticated}
+                    logout={logout}
+                    categories={categories}
+                    setFormMode={(mode, product) => handleSetFormMode(mode, 'product', product)}
+                    filterCategory={filterCategory}
+                    setFilterCategory={setFilterCategory}
+                    isFormActive={isProductFormActive}
+                    isCategoryFormActive={isCategoryFormActive}
                 />
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+
   );
 }

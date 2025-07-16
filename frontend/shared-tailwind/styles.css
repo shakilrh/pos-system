@@ -38,13 +38,16 @@
 
 /* DEFAULT THEME - Orange Primary */
 [data-theme="default"] {
-  --primary-color: #c2410c; /* Orange-700 - 4.51:1 on white */
+  --primary-color: #ea580c; /* Orange-700 - 4.51:1 on white */
   --primary-600: #ea580c; /* Orange-600 - 3.55:1 - for backgrounds only */
   --primary-700: #9a3412; /* Orange-800 - 6.71:1 - for high contrast */
   --secondary-color: #475569; /* Slate-600 - 4.51:1 on white */
   --background-color: #ffffff; /* Pure white */
   --background-secondary: #f8fafc; /* Slate-50 */
   --text-color: #0f172a; /* Slate-900 - 16.83:1 on white */
+  --text-color-button: #fff ; /*Button colors*/
+  --text-color-gray: #6B7280; /*text-gray-500*/
+  --bg-gray: #D1D5DB;/*bg-gray-300*/
   --text-secondary: #475569; /* Slate-600 - 4.51:1 on white */
   --sidebar-bg: #1e293b; /* Slate-800 */
   --sidebar-bg-hover: #334155; /* Slate-700 - Clear hover difference */
@@ -68,6 +71,9 @@
   --background-color: #ffffff; /* Pure white */
   --background-secondary: #f8fafc; /* Slate-50 */
   --text-color: #0f172a; /* Slate-900 - 16.83:1 on white */
+  --text-color-button: #fff ; /*Button colors*/
+  --text-color-gray: #6B7280; /*text-gray-500*/
+  --bg-gray: #D1D5DB;/*bg-gray-300*/
   --text-secondary: #475569; /* Slate-600 - 4.51:1 on white */
   --sidebar-bg: #1e3a8a; /* Blue-800 */
   --sidebar-bg-hover: #1e40af; /* Blue-700 - Clear hover difference */
@@ -91,6 +97,9 @@
   --background-color: #ffffff; /* Pure white */
   --background-secondary: #f8fafc; /* Slate-50 */
   --text-color: #0f172a; /* Slate-900 - 16.83:1 on white */
+  --text-color-button: #fff ; /*Button colors*/
+  --text-color-gray: #6B7280; /*text-gray-500*/
+  --bg-gray: #D1D5DB;/*bg-gray-300*/
   --text-secondary: #475569; /* Slate-600 - 4.51:1 on white */
   --sidebar-bg: #064e3b; /* Emerald-900 */
   --sidebar-bg-hover: #047857; /* Emerald-700 - Clear hover difference */

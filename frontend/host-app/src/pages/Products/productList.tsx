@@ -125,8 +125,7 @@ export default function ProductList({
           className={`flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isCategoryFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''}`}
           style={{
             backgroundColor: isCategoryFormActive ? undefined : 'var(--primary-color)',
-            color: isCategoryFormActive ? undefined : 'var(--text-on-primary)',
-            '--tw-ring-color': 'var(--focus-ring)',
+            color: 'var(--text-color-button)',
           }}
           disabled={isCategoryFormActive}
         >
@@ -140,14 +139,14 @@ export default function ProductList({
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleFilterChange('all')}
-            className={`px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${filterCategory === 'all' || filterCategory === null ? 'bg-[var(--primary-color)] text-[var(--text-on-primary)]' : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--background-color)]'}`}
+            className={`px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${filterCategory === 'all' || filterCategory === null ? 'bg-[var(--primary-color)] text-[var(--text-color-button)]' : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--background-color)]'}`}
             style={{ '--tw-ring-color': 'var(--focus-ring)' }}
           >
             All Products
           </button>
           <button
             onClick={() => handleFilterChange('inactive')}
-            className={`px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${filterCategory === 'inactive' ? 'bg-[var(--primary-color)] text-[var(--text-on-primary)]' : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--background-color)]'}`}
+            className={`px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${filterCategory === 'inactive' ? 'bg-[var(--primary-color)] text-[var(--text-color-button)]' : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--background-color)]'}`}
             style={{ '--tw-ring-color': 'var(--focus-ring)' }}
           >
             Inactive Products
@@ -156,7 +155,7 @@ export default function ProductList({
             <button
               key={category._id}
               onClick={() => handleFilterChange(category._id)}
-              className={`px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${filterCategory === category._id ? 'bg-[var(--primary-color)] text-[var(--text-on-primary)]' : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--background-color)]'}`}
+              className={`px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${filterCategory === category._id ? 'bg-[var(--primary-color)] text-[var(--text-color-button)]' : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--background-color)]'}`}
               style={{ '--tw-ring-color': 'var(--focus-ring)' }}
             >
               {category.name}
@@ -248,7 +247,7 @@ export default function ProductList({
           <button
             onClick={() => !isCategoryFormActive && setCurrentProductPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentProductPage === 1 || isCategoryFormActive}
-            className={`flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${currentProductPage === 1 || isCategoryFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--background-color)]'}`}
+            className={`flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${currentProductPage === 1 || isCategoryFormActive ? 'bg-[var(--bg-gray)] text-[var(--text-color-gray)] cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-color-button)] hover:bg-[var(--primary-color)]'}`}
             style={{ '--tw-ring-color': 'var(--focus-ring)' }}
           >
             <ArrowLeftIcon className="w-4 h-4 mr-1" />
@@ -260,7 +259,7 @@ export default function ProductList({
           <button
             onClick={() => !isCategoryFormActive && setCurrentProductPage((prev) => Math.min(prev + 1, totalProductPages))}
             disabled={currentProductPage === totalProductPages || isCategoryFormActive}
-            className={`flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${currentProductPage === totalProductPages || isCategoryFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--background-color)]'}`}
+            className={`flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${currentProductPage === totalProductPages || isCategoryFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-color-button)] hover:bg-[var(--primary-color)]'}`}
             style={{ '--tw-ring-color': 'var(--focus-ring)' }}
           >
             Next
