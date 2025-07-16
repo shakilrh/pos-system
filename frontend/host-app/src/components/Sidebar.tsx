@@ -6,6 +6,7 @@ import {
   Bars3Icon,
   XMarkIcon,
   PlusCircleIcon,
+  TableCellsIcon, Square3Stack3DIcon, ViewColumnsIcon
 } from '@heroicons/react/24/outline';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
@@ -39,13 +40,15 @@ interface User {
   store_logo?: string;
 }
 
-// --- Navigation Structure ---
+// --- Navigation Structure ---Tables/TableManagement
 const navItems = [
   { name: 'Dashboard', icon: HomeIcon || FallbackIcon, href: '/Dashboard/dashboard', description: 'Overview of your account', permission: 'Dashboard_access' },
   { name: 'Menu Management', icon: ShoppingBagIcon || FallbackIcon, href: '/MenuManagement', description: 'Manage your menu items', permission: 'Menu_access' },
   { name: 'Orders', icon: ChartBarIcon || FallbackIcon, href: '/Orders/orders', description: 'View and manage orders', permission: 'Orders_access' },
   { name: 'Create Orders', icon: PlusCircleIcon || FallbackIcon, href: '/Orders/createOrder', description: 'Create new orders', permission: 'Orders_can_create' },
   { name: 'Roles Management', icon: UsersIcon || FallbackIcon, href: '/RoleAndUserManagement', description: 'Control user roles', permission: 'Roles_access' },
+  { name: 'Tables Management', icon: Square3Stack3DIcon || FallbackIcon, href: '/Tables/FloorTableManagement', description: 'Control Tables | Floors', permission: 'Tables_access' }
+
 ];
 
 // --- Component Props ---
