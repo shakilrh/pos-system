@@ -273,7 +273,7 @@ const AssignTable: React.FC<AssignTableProps> = ({
         {/* Header Section */}
         <div className="mb-8">
           <div className="text-center mb-6">
-            <h1 className="text-4xl font-bold mb-2" style={{ color: themeColors.headingText }}>
+            <h1 className="text-4xl font-bold mb-2" >
               🍽️ Table Assignment Center
             </h1>
             <p className="text-lg opacity-75" style={{ color: themeColors.inactiveTabText }}>
