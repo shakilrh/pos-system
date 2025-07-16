@@ -30,7 +30,7 @@ const AssignTable: React.FC<AssignTableProps> = ({
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [selectedTableId, setSelectedTableId] = useState<string | null>(null); // Changed to table_id
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [assigning, setAssigning] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -74,7 +74,11 @@ const AssignTable: React.FC<AssignTableProps> = ({
       try {
         setLoading(true);
         const fetchedOrders = await getAllOrders(token, logout);
-        setOrders(fetchedOrders.filter(order => order.service_type === 'dine_in' && !order.table_number));
+        setOrders(fetchedOrders.filter(order =>
+          order.service_type === 'dine_in' &&
+          (order.table_id === null || order.table_id === undefined) && // Match table_id from your data
+          ['processing', 'ready'].includes(order.status.toLowerCase()) // Case-insensitive match
+        ));
       } catch (err) {
         setFlashMessage({
           message: err instanceof Error ? err.message : 'Failed to fetch orders',
@@ -148,8 +152,10 @@ const AssignTable: React.FC<AssignTableProps> = ({
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
 
   const handleAssignTable = (order: Order) => {
-    setSelectedOrder(order);
-    setSelectedTableId(null);
+    if (['processing', 'ready'].includes(order.status.toLowerCase())) {
+      setSelectedOrder(order);
+      setSelectedTableId(null);
+    }
   };
 
   const handleConfirmAssign = async () => {
@@ -244,7 +250,7 @@ const AssignTable: React.FC<AssignTableProps> = ({
                 No Orders Available
               </h3>
               <p className="text-sm" style={{ color: themeColors.inactiveTabText }}>
-                {searchQuery ? 'No orders match your search criteria.' : 'No dine-in orders are currently available for table assignment.'}
+                {searchQuery ? 'No orders match your search criteria.' : 'No processing or ready dine-in orders are available for table assignment.'}
               </p>
             </div>
           ) : (
@@ -293,7 +299,7 @@ const AssignTable: React.FC<AssignTableProps> = ({
                     <td className="px-6 py-4 text-right text-sm font-medium">
                       <button
                         onClick={() => handleAssignTable(order)}
-                        disabled={isProductFormActive || assigning === order.order_number}
+                        disabled={isProductFormActive || assigning === order.order_number || !['processing', 'ready'].includes(order.status.toLowerCase())}
                         className="p-2 rounded-lg hover:bg-opacity-10 transition-colors duration-200 disabled:opacity-50"
                         style={{
                           color: 'var(--primary-color)',
