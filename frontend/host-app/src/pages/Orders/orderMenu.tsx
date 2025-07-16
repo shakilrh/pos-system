@@ -39,68 +39,90 @@ const OrderMenu = ({
                      addProductToOrder,
                    }: OrderMenuProps) => {
   return (
-    <div className="lg:w-2/3 w-full bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Menu Items</h2>
-      <div className="relative mb-4">
-        <input
-          type="text"
-          placeholder="Search products..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
-        />
-        {searchTerm && (
-          <XMarkIcon
-            onClick={() => setSearchTerm('')}
-            className="absolute right-3 top-3 h-5 w-5 text-gray-500 cursor-pointer hover:text-gray-700"
-          />
-        )}
-      </div>
-      <div className="flex flex-wrap gap-2 mb-4">
-        <button
-          onClick={() => setSelectedCategory('')}
-          className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-            selectedCategory === '' ? 'bg-[var(--primary-color)] text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-          }`}
-        >
-          All Products
-        </button>
-        {categories.map((category) => (
-          <button
-            key={category._id}
-            onClick={() => setSelectedCategory(category._id)}
-            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-              selectedCategory === category._id
-                ? 'bg-[var(--primary-color)] text-white'
-                : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-            }`}
-          >
-            {category.name}
-          </button>
-        ))}
-      </div>
-      <div className="grid grid-cols-5 gap-4 max-h-96 overflow-y-auto">
-        {filteredProducts.map((product) => (
+    <div className="min-h-screen bg-[var(--background-color)] py-4">
+      <div className="lg:grid lg:grid-cols-10 lg:gap-6">
+        <div className="lg:col-span-10">
           <div
-            key={product._id}
-            onClick={() => addProductToOrder(product)}
-            className="bg-white rounded-lg p-2 flex flex-col items-center cursor-pointer border border-gray-200 hover:border-2 hover:border-indigo-500 hover:shadow-md transition-all duration-200 relative"
-            style={{ minHeight: '90px', minWidth: '120px' }}
+            className="rounded-lg shadow-md border w-full mx-auto p-6"
+            style={{
+              backgroundColor: 'var(--cardBackground)',
+              borderColor: '#4a4a4a',
+              color: 'var(--cardText)',
+            }}
           >
-            <img
-              src={product.pictureUrl || 'https://via.placeholder.com/96'}
-              alt={product.name}
-              className="w-14 h-14 object-cover rounded-md mb-1"
-            />
-            {product.time_required && (
-              <span className="absolute top-0.5 right-0.5 text-[7px] text-blue-700 bg-blue-50 px-1 py-0.5 rounded border border-blue-200 font-medium leading-none">
-                {product.time_required}m
-              </span>
-            )}
-            <span className="text-[10px] font-semibold text-gray-800 text-center leading-tight px-1">{product.name}</span>
-            <span className="text-[10px] text-green-600 mt-0.5 font-medium">${product.price.toFixed(2)}</span>
+            <h1 className="text-2xl font-semibold mb-6" style={{ color: 'var(--headingText)' }}>
+              Menu Items
+            </h1>
+            <div className="space-y-6">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[var(--primary-color)] transition-all duration-200"
+                  style={{ backgroundColor: 'var(--background-secondary)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}
+                />
+                {searchTerm && (
+                  <XMarkIcon
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-3 h-5 w-5 cursor-pointer hover:text-[var(--text-secondary)]"
+                    style={{ color: 'var(--text-secondary)' }}
+                  />
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSelectedCategory('')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    selectedCategory === ''
+                      ? 'bg-[var(--primary-color)] text-[var(--sidebar-text)]'
+                      : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--border-hover)]'
+                  }`}
+                >
+                  All Products
+                </button>
+                {categories.map((category) => (
+                  <button
+                    key={category._id}
+                    onClick={() => setSelectedCategory(category._id)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                      selectedCategory === category._id
+                        ? 'bg-[var(--primary-color)] text-[var(--sidebar-text)]'
+                        : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--border-hover)]'
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-5 gap-4 max-h-96 overflow-y-auto">
+                {filteredProducts.map((product) => (
+                  <div
+                    key={product._id}
+                    onClick={() => addProductToOrder(product)}
+                    className="rounded-lg p-2 flex flex-col items-center cursor-pointer border hover:border-2 hover:shadow-md transition-all duration-200"
+                    style={{ minHeight: '90px', minWidth: '120px', borderColor: '#4a4a4a', backgroundColor: 'var(--cardBackground)' }}
+                  >
+                    <img
+                      src={product.pictureUrl || 'https://via.placeholder.com/96'}
+                      alt={product.name}
+                      className="w-14 h-14 object-cover rounded-md mb-1"
+                    />
+                    {product.time_required && (
+                      <span className="absolute top-0.5 right-0.5 text-[7px] px-1 py-0.5 rounded border font-medium leading-none"
+                            style={{ color: 'var(--info-color)', backgroundColor: 'var(--surface-secondary)', borderColor: 'var(--border-color)' }}>
+                        {product.time_required}m
+                      </span>
+                    )}
+                    <span className="text-[10px] font-semibold text-center leading-tight px-1" style={{ color: 'var(--cardText)' }}>{product.name}</span>
+                    <span className="text-[10px] mt-0.5 font-medium" style={{ color: 'var(--success-color)' }}>${product.price.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );
