@@ -193,6 +193,34 @@ export const updateOrder = async (
   }
 };
 
+export const assignTable = async (
+  token: string,
+  logout: () => void,
+  order_number: string,
+  table_id: string // Changed from table_number to table_id
+): Promise<Order> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/api/v1/assign-table`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ order_number, table_id }), // Send table_id
+    });
+
+    const data: ApiResponse<Order> = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || handleApiError(data, logout));
+    }
+
+    return 'data' in data.data ? data.data.data : data.data;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to assign table';
+    toast.error(message);
+    throw new Error(message);
+  }
+};
 export const confirmOrder = async (
   token: string,
   logout: () => void,
@@ -293,7 +321,7 @@ export const markOrderAsCompleted = async (
     }
 
     return 'data' in data.data ? data.data.data : data.data;
-  } catch (err) {
+  }  catch (err) {
     throw new Error(err instanceof Error ? err.message : 'Failed to mark order as completed');
   }
 };

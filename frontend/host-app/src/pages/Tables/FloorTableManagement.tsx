@@ -9,6 +9,7 @@ import FloorCrud from './FloorCrud';
 import TableList from './TableList';
 import FloorList from './FloorList';
 import TableCrud from './TableCrud';
+import AssignTable from './AssignTable';
 import { UserGroupIcon } from '@heroicons/react/24/outline';
 
 interface FloorTableManagementProps {
@@ -28,7 +29,7 @@ export default function FloorTableManagement({
   const [loading, setLoading] = useState(true);
   const [itemBeingDeleted, setItemBeingDeleted] = useState<string | null>(null);
   const [flashMessage, setFlashMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const [activeSection, setActiveSection] = useState<'list' | 'addFloor' | 'editFloor' | 'addTable' | 'editTable'>('list');
+  const [activeSection, setActiveSection] = useState<'list' | 'addFloor' | 'editFloor' | 'addTable' | 'editTable' | 'assignTable'>('list');
   const [selectedFloor, setSelectedFloor] = useState<Floor | null>(null);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [editingFloorId, setEditingFloorId] = useState<string | null>(null);
@@ -36,7 +37,7 @@ export default function FloorTableManagement({
   const [deleteFloorConfirm, setDeleteFloorConfirm] = useState<string | null>(null);
   const [deleteTableConfirm, setDeleteTableConfirm] = useState<string | null>(null);
   const [activeFloor, setActiveFloor] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'tables' | 'floors'>('tables');
+  const [activeTab, setActiveTab] = useState<'tables' | 'floors' | 'assignTable'>('assignTable'); // Temporarily set to 'assignTable'
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [isClient, setIsClient] = useState<boolean>(false);
@@ -88,6 +89,7 @@ export default function FloorTableManagement({
         setTables(tableList);
         setFreeTables(freeTableList);
         if (floorList.length > 0 && activeFloor === null) setActiveFloor(null);
+        console.log('Fetched floors:', floorList.length, 'tables:', tableList.length, 'freeTables:', freeTableList.length); // Debug log
       } catch (err) {
         setFlashMessage({
           message: err instanceof Error ? err.message : 'Failed to fetch data',
@@ -256,8 +258,8 @@ export default function FloorTableManagement({
           color: themeColors.cardText,
         }}
       >
-        <div className="p-8">
-          <h1 className="text-2xl font-semibold mb-8" style={{ color: themeColors.headingText }}>
+        <div className="p-6">
+          <h1 className="text-2xl font-semibold mb-6" style={{ color: themeColors.headingText }}>
             Floor & Table Management
           </h1>
           <div
@@ -267,17 +269,17 @@ export default function FloorTableManagement({
             }}
           >
             <nav className="flex space-x-6" aria-label="Tabs">
-              {['Tables', 'Floors'].map((tab) => (
+              {['Tables', 'Floors', 'Assign Table'].map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab.toLowerCase() as 'tables' | 'floors')}
+                  onClick={() => setActiveTab(tab.toLowerCase().replace(' ', '') as 'tables' | 'floors' | 'assignTable')}
                   style={{
                     borderBottomColor:
-                      activeTab === tab.toLowerCase()
+                      activeTab === tab.toLowerCase().replace(' ', '')
                         ? 'var(--primary-color)'
                         : 'transparent',
                     color:
-                      activeTab === tab.toLowerCase()
+                      activeTab === tab.toLowerCase().replace(' ', '')
                         ? 'var(--primary-color)'
                         : themeColors.inactiveTabText,
                     background: 'none',
@@ -287,12 +289,12 @@ export default function FloorTableManagement({
                     focus:outline-none transition-colors duration-150
                   "
                   onMouseEnter={(e) => {
-                    if (activeTab !== tab.toLowerCase()) {
+                    if (activeTab !== tab.toLowerCase().replace(' ', '')) {
                       e.currentTarget.style.color = themeColors.hoverTabText;
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (activeTab !== tab.toLowerCase()) {
+                    if (activeTab !== tab.toLowerCase().replace(' ', '')) {
                       e.currentTarget.style.color = themeColors.inactiveTabText;
                     }
                   }}
@@ -345,6 +347,18 @@ export default function FloorTableManagement({
                 setSearchQuery={setSearchQuery}
                 currentPage={currentPage}
                 setCurrentPage={setCurrentPage}
+              />
+            )}
+            {activeSection === 'list' && activeTab === 'assignTable' && (
+              <AssignTable
+                token={token}
+                isAuthenticated={isAuthenticated}
+                logout={logout}
+                tables={tables}
+                freeTables={freeTables}
+                setTables={setTables}
+                setFlashMessage={setFlashMessage}
+                isProductFormActive={isProductFormActive}
               />
             )}
           </div>
@@ -454,7 +468,7 @@ export default function FloorTableManagement({
 
       {deleteFloorConfirm && selectedFloor && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[var(--surface-color)] rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+          <div className="bg-[var(--surface-color)] rounded-lg p-3 w-full max-w-md mx-4 shadow-xl">
             <div className="flex items-center space-x-2 mb-4">
               <svg className="w-6 h-6" fill="currentColor" style={{ color: 'var(--error-color)' }} viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
