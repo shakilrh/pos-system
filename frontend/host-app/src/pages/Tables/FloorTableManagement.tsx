@@ -29,7 +29,6 @@ export default function FloorTableManagement({
   const [loading, setLoading] = useState(true);
   const [itemBeingDeleted, setItemBeingDeleted] = useState<string | null>(null);
   const [flashMessage, setFlashMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const [activeSection, setActiveSection] = useState<'list' | 'addFloor' | 'editFloor' | 'addTable' | 'editTable' | 'assignTable'>('list');
   const [selectedFloor, setSelectedFloor] = useState<Floor | null>(null);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [editingFloorId, setEditingFloorId] = useState<string | null>(null);
@@ -37,7 +36,7 @@ export default function FloorTableManagement({
   const [deleteFloorConfirm, setDeleteFloorConfirm] = useState<string | null>(null);
   const [deleteTableConfirm, setDeleteTableConfirm] = useState<string | null>(null);
   const [activeFloor, setActiveFloor] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'tables' | 'floors' | 'assignTable'>('assignTable'); // Temporarily set to 'assignTable'
+  const [activeTab, setActiveTab] = useState<'tables' | 'floors' | 'assignTable'>('tables');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [isClient, setIsClient] = useState<boolean>(false);
@@ -89,7 +88,6 @@ export default function FloorTableManagement({
         setTables(tableList);
         setFreeTables(freeTableList);
         if (floorList.length > 0 && activeFloor === null) setActiveFloor(null);
-        console.log('Fetched floors:', floorList.length, 'tables:', tableList.length, 'freeTables:', freeTableList.length); // Debug log
       } catch (err) {
         setFlashMessage({
           message: err instanceof Error ? err.message : 'Failed to fetch data',
@@ -100,28 +98,27 @@ export default function FloorTableManagement({
       }
     };
     fetchData();
-  }, [isClient, isAuthenticated, token, logout, activeFloor]);
+  }, [isClient, isAuthenticated, token, logout]);
 
   useEffect(() => {
-    const isFormActive = activeSection !== 'list';
+    const isFormActive = !!editingFloorId || !!editingTableId;
     if (onFormActive) {
       onFormActive(isFormActive);
     }
-  }, [activeSection, onFormActive]);
+  }, [editingFloorId, editingTableId, onFormActive]);
 
   if (!isClient || !isAuthenticated) {
     return null;
   }
 
   const handleAddFloor = () => {
-    setActiveSection('addFloor');
     setSelectedFloor(null);
+    setEditingFloorId('add');
   };
 
   const handleEditFloor = (floor: Floor) => {
     setSelectedFloor(floor);
     setEditingFloorId(floor._id);
-    setActiveSection('editFloor');
   };
 
   const handleDeleteFloor = (floorId: string) => {
@@ -154,14 +151,13 @@ export default function FloorTableManagement({
   };
 
   const handleAddTable = () => {
-    setActiveSection('addTable');
     setSelectedTable(null);
+    setEditingTableId('add');
   };
 
   const handleEditTable = (table: Table) => {
     setSelectedTable(table);
     setEditingTableId(table._id);
-    setActiveSection('editTable');
   };
 
   const handleDeleteTable = (tableId: string) => {
@@ -189,20 +185,23 @@ export default function FloorTableManagement({
     } finally {
       setItemBeingDeleted(null);
       setDeleteTableConfirm(null);
+      setSelectedTable(null);
     }
   };
 
-  const resetForm = () => {
-    setActiveSection('list');
-    setSelectedFloor(null);
+  const resetTableForm = () => {
     setSelectedTable(null);
-    setEditingFloorId(null);
     setEditingTableId(null);
   };
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  const resetFloorForm = () => {
+    setSelectedFloor(null);
+    setEditingFloorId(null);
+  };
+
+  const handleTabChange = (tab: 'tables' | 'floors' | 'assignTable') => {
+    setActiveTab(tab);
+  };
 
   const getThemeColors = () => {
     if (currentTheme === 'dark' || currentTheme === 'dark-pro') {
@@ -248,6 +247,10 @@ export default function FloorTableManagement({
 
   const themeColors = getThemeColors();
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="w-full min-h-screen bg-[var(--background-color)]">
       <div
@@ -269,19 +272,19 @@ export default function FloorTableManagement({
             }}
           >
             <nav className="flex space-x-6" aria-label="Tabs">
-              {['Tables', 'Floors', 'Assign Table'].map((tab) => (
+              {[
+                { label: 'Tables', key: 'tables' },
+                { label: 'Floors', key: 'floors' },
+                { label: 'Assign Table', key: 'assignTable' },
+              ].map(({ label, key }) => (
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab.toLowerCase().replace(' ', '') as 'tables' | 'floors' | 'assignTable')}
+                  key={key}
+                  onClick={() => handleTabChange(key as 'tables' | 'floors' | 'assignTable')}
                   style={{
                     borderBottomColor:
-                      activeTab === tab.toLowerCase().replace(' ', '')
-                        ? 'var(--primary-color)'
-                        : 'transparent',
+                      activeTab === key ? 'var(--primary-color)' : 'transparent',
                     color:
-                      activeTab === tab.toLowerCase().replace(' ', '')
-                        ? 'var(--primary-color)'
-                        : themeColors.inactiveTabText,
+                      activeTab === key ? 'var(--primary-color)' : themeColors.inactiveTabText,
                     background: 'none',
                   }}
                   className="
@@ -289,17 +292,17 @@ export default function FloorTableManagement({
                     focus:outline-none transition-colors duration-150
                   "
                   onMouseEnter={(e) => {
-                    if (activeTab !== tab.toLowerCase().replace(' ', '')) {
+                    if (activeTab !== key) {
                       e.currentTarget.style.color = themeColors.hoverTabText;
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (activeTab !== tab.toLowerCase().replace(' ', '')) {
+                    if (activeTab !== key) {
                       e.currentTarget.style.color = themeColors.inactiveTabText;
                     }
                   }}
                 >
-                  {tab}
+                  {label}
                 </button>
               ))}
             </nav>
@@ -312,44 +315,81 @@ export default function FloorTableManagement({
                 onClose={() => setFlashMessage(null)}
               />
             )}
-            {activeSection === 'list' && activeTab === 'tables' && (
-              <TableList
-                token={token}
-                isAuthenticated={isAuthenticated}
-                logout={logout}
-                tables={tables}
-                floors={floors}
-                freeTables={freeTables}
-                activeFloor={activeFloor}
-                setActiveFloor={setActiveFloor}
-                onAdd={handleAddTable}
-                onEdit={handleEditTable}
-                onDelete={handleDeleteTable}
-                isLoading={{ fetch: loading, delete: !!itemBeingDeleted }}
-                itemBeingDeleted={itemBeingDeleted}
-                flashMessage={flashMessage}
-                setFlashMessage={setFlashMessage}
-                isProductFormActive={isProductFormActive}
-              />
+
+            {/* Tables Tab */}
+            {activeTab === 'tables' && (
+              editingTableId ? (
+                <TableCrud
+                  token={token}
+                  logout={logout}
+                  tables={tables}
+                  setTables={setTables}
+                  floors={floors}
+                  table={selectedTable}
+                  editingTableId={editingTableId}
+                  onCancel={resetTableForm}
+                  isProductFormActive={isProductFormActive}
+                  mode={editingTableId === 'add' ? 'add' : 'edit'}
+                  setFlashMessageInParent={setFlashMessage}
+                />
+              ) : (
+                <TableList
+                  token={token}
+                  isAuthenticated={isAuthenticated}
+                  logout={logout}
+                  tables={tables}
+                  floors={floors}
+                  freeTables={freeTables}
+                  activeFloor={activeFloor}
+                  setActiveFloor={setActiveFloor}
+                  onAdd={handleAddTable}
+                  onEdit={handleEditTable}
+                  onDelete={handleDeleteTable}
+                  isLoading={{ fetch: loading, delete: !!itemBeingDeleted }}
+                  itemBeingDeleted={itemBeingDeleted}
+                  flashMessage={flashMessage}
+                  setFlashMessage={setFlashMessage}
+                  isProductFormActive={isProductFormActive}
+                />
+              )
             )}
-            {activeSection === 'list' && activeTab === 'floors' && (
-              <FloorList
-                floors={floors}
-                activeFloor={activeFloor}
-                setActiveFloor={setActiveFloor}
-                onAdd={handleAddFloor}
-                onEdit={handleEditFloor}
-                onDelete={handleDeleteFloor}
-                isLoading={{ fetch: loading, delete: !!itemBeingDeleted }}
-                itemBeingDeleted={itemBeingDeleted}
-                setDeleteConfirm={setDeleteFloorConfirm}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-              />
+
+            {/* Floors Tab */}
+            {activeTab === 'floors' && (
+              editingFloorId ? (
+                <FloorCrud
+                  token={token}
+                  logout={logout}
+                  floors={floors}
+                  setFloors={setFloors}
+                  floor={selectedFloor}
+                  editingFloorId={editingFloorId}
+                  onCancel={resetFloorForm}
+                  isProductFormActive={isProductFormActive}
+                  mode={editingFloorId === 'add' ? 'add' : 'edit'}
+                  setFlashMessageInParent={setFlashMessage}
+                />
+              ) : (
+                <FloorList
+                  floors={floors}
+                  activeFloor={activeFloor}
+                  setActiveFloor={setActiveFloor}
+                  onAdd={handleAddFloor}
+                  onEdit={handleEditFloor}
+                  onDelete={handleDeleteFloor}
+                  isLoading={{ fetch: loading, delete: !!itemBeingDeleted }}
+                  itemBeingDeleted={itemBeingDeleted}
+                  setDeleteConfirm={setDeleteFloorConfirm}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  currentPage={currentPage}
+                  setCurrentPage={setCurrentPage}
+                />
+              )
             )}
-            {activeSection === 'list' && activeTab === 'assignTable' && (
+
+            {/* Assign Table Tab */}
+            {activeTab === 'assignTable' && (
               <AssignTable
                 token={token}
                 isAuthenticated={isAuthenticated}
@@ -365,64 +405,7 @@ export default function FloorTableManagement({
         </div>
       </div>
 
-      {activeSection === 'addFloor' && (
-        <FloorCrud
-          token={token}
-          logout={logout}
-          floors={floors}
-          setFloors={setFloors}
-          onCancel={resetForm}
-          isProductFormActive={isProductFormActive}
-          mode="add"
-          setFlashMessageInParent={setFlashMessage}
-        />
-      )}
-
-      {activeSection === 'editFloor' && selectedFloor && editingFloorId && (
-        <FloorCrud
-          token={token}
-          logout={logout}
-          floors={floors}
-          setFloors={setFloors}
-          floor={selectedFloor}
-          editingFloorId={editingFloorId}
-          onCancel={resetForm}
-          isProductFormActive={isProductFormActive}
-          mode="edit"
-          setFlashMessageInParent={setFlashMessage}
-        />
-      )}
-
-      {activeSection === 'addTable' && (
-        <TableCrud
-          token={token}
-          logout={logout}
-          tables={tables}
-          setTables={setTables}
-          floors={floors}
-          onCancel={resetForm}
-          isProductFormActive={isProductFormActive}
-          mode="add"
-          setFlashMessageInParent={setFlashMessage}
-        />
-      )}
-
-      {activeSection === 'editTable' && selectedTable && editingTableId && (
-        <TableCrud
-          token={token}
-          logout={logout}
-          tables={tables}
-          setTables={setTables}
-          floors={floors}
-          table={selectedTable}
-          editingTableId={editingTableId}
-          onCancel={resetForm}
-          isProductFormActive={isProductFormActive}
-          mode="edit"
-          setFlashMessageInParent={setFlashMessage}
-        />
-      )}
-
+      {/* Delete Confirmation Modals */}
       {deleteTableConfirm && selectedTable && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="bg-[var(--surface-color)] rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
@@ -500,7 +483,7 @@ export default function FloorTableManagement({
               <button
                 onClick={() => setDeleteFloorConfirm(null)}
                 className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${itemBeingDeleted === deleteFloorConfirm ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}`}
-                style={{ backgroundColor: itemBeingDeleted === deleteFloorConfirm ? undefined : 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' }}
+                style={{ backgroundColor: itemBeingDeleted === deleteTableConfirm ? undefined : 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' }}
               >
                 Cancel
               </button>
