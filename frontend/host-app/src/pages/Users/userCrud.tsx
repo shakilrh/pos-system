@@ -55,7 +55,7 @@ const UserCrud: React.FC<UserCrudProps> = ({
     name: '',
     email: '',
     password: '',
-    user_type: 'worker',
+    user_type: 'worker', // Default value remains for initialization
     role_id: null,
     phone_number: '',
     job_title: '',
@@ -157,6 +157,15 @@ const UserCrud: React.FC<UserCrudProps> = ({
     return errors;
   };
 
+  const validateUserType = (userType: string): string[] => {
+    const errors: string[] = [];
+    if (!userType.trim()) errors.push('User type is required');
+    else if (!['worker', 'waiter'].includes(userType.toLowerCase())) {
+      errors.push('User type must be either Worker or Waiter');
+    }
+    return errors;
+  };
+
   const getFieldErrors = (fieldName: string, isEdit: boolean = false): string[] => {
     const data = isEdit ? editUser : newUser;
     if (!data) return [];
@@ -167,13 +176,14 @@ const UserCrud: React.FC<UserCrudProps> = ({
       case 'phone_number': return validatePhoneNumber(data.phone_number || '');
       case 'job_title': return validateJobTitle(data.job_title || '');
       case 'shift_time': return validateShiftTime(data.shift_time || '');
-      case 'salary':fdfdfd: return validateSalary(data.salary || '');
+      case 'salary': return validateSalary(data.salary || '');
+      case 'user_type': return validateUserType(data.user_type || '');
       default: return [];
     }
   };
 
   const isFormValid = (isEdit: boolean = false): boolean => {
-    const requiredFields = ['name', 'email'];
+    const requiredFields = ['name', 'email', 'user_type'];
     if (!isEdit) requiredFields.push('password');
     return requiredFields.every(field => getFieldErrors(field, isEdit).length === 0);
   };
@@ -221,8 +231,8 @@ const UserCrud: React.FC<UserCrudProps> = ({
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    const requiredFields = ['name', 'email', 'password'];
-    const allFields = ['name', 'email', 'password', 'phone_number', 'job_title', 'shift_time', 'salary'];
+    const requiredFields = ['name', 'email', 'password', 'user_type'];
+    const allFields = ['name', 'email', 'password', 'user_type', 'phone_number', 'job_title', 'shift_time', 'salary'];
     setTouchedFields(new Set(allFields));
     const allErrors: any = {};
     allFields.forEach(field => {
@@ -272,7 +282,7 @@ const UserCrud: React.FC<UserCrudProps> = ({
   const handleEditUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editUser) return;
-    const allFields = ['name', 'email', 'password', 'phone_number', 'job_title', 'shift_time', 'salary'];
+    const allFields = ['name', 'email', 'password', 'user_type', 'phone_number', 'job_title', 'shift_time', 'salary'];
     setTouchedFields(new Set(allFields));
     const allErrors: any = {};
     allFields.forEach(field => {
@@ -452,19 +462,26 @@ const UserCrud: React.FC<UserCrudProps> = ({
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  User Type
+                  User Type *
                 </label>
-                <input
-                  type="text"
-                  value="Worker"
-                  className="w-full p-2 text-sm rounded-lg border cursor-not-allowed"
+                <select
+                  value={data?.user_type || 'worker'}
+                  onChange={(e) => handleInputChange('user_type', e.target.value, isEdit)}
+                  onFocus={() => handleFocus('user_type', isEdit)}
+                  onBlur={() => handleBlur('user_type', isEdit)}
+                  className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${formErrors.user_type && formErrors.user_type.length > 0 ? 'ring-1' : ''}`}
                   style={{
-                    borderColor: 'var(--border-color)',
-                    backgroundColor: 'var(--background-secondary)',
-                    color: 'var(--text-secondary)',
+                    borderColor: formErrors.user_type && formErrors.user_type.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                    backgroundColor: 'var(--background-color)',
+                    color: 'var(--text-color)',
+                    outlineColor: 'var(--focus-ring)',
                   }}
-                  disabled
-                />
+                  required
+                >
+                  <option value="worker">Worker</option>
+                  <option value="waiter">Waiter</option>
+                </select>
+                {renderFieldErrors('user_type')}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
