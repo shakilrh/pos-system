@@ -1,9 +1,4 @@
-interface Category {
-  _id: string;
-  name: string;
-}
-
-interface Product {
+export interface Product {
   _id: string;
   name: string;
   price: number;
@@ -18,5 +13,3 @@ interface Product {
   isActive: boolean;
   time_required: number;
 }
-
-export { Category, Product };

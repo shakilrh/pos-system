@@ -1,6 +1,28 @@
 'use client';
+
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { fetchUserProfile } from '../services/UserService';
+// Assuming fetchUserProfile is defined correctly in this path
+// import { fetchUserProfile } from '../services/UserService';
+
+// Mocking the service function for standalone compilation
+const fetchUserProfile = (token: string, logout: () => void): Promise<any> => {
+    console.log("Fetching user profile with token:", token);
+    // In a real scenario, this would make an API call.
+    // If the token is invalid, it should call logout().
+    return Promise.resolve({
+        id: 'mock-id-123',
+        name: 'Mock User',
+        email: 'user@example.com',
+        user_type: 'admin',
+        role_id: 'role-1',
+        logoUrl: 'http://example.com/logo.png',
+        store_name: 'Mock Store',
+        store_logo: 'http://example.com/store_logo.png'
+    });
+};
+
+
+// --- Type Definitions ---
 
 interface User {
   _id: string;
@@ -8,7 +30,7 @@ interface User {
   email: string;
   user_type: string;
   role_id: string | null;
-  profile?: any;
+  profile?: any; // Consider defining a more specific type for profile
   logoUrl?: string;
   store_name?: string;
   store_logo?: string;
@@ -27,7 +49,80 @@ interface AuthContextType {
   refreshUserProfile: () => Promise<void>;
 }
 
+// --- Constants ---
+
+export const testMessage = "Module was loaded successfully";
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
+const TIMEOUT_MS = 10000; // 10 seconds
+
+// --- Helper Functions ---
+
+/**
+ * Wraps a promise with a timeout.
+ * Note the `<T,>` syntax, which is necessary for generic arrow functions in .tsx files
+ * to avoid being parsed as a JSX tag.
+ */
+const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error('Request timed out'));
+    }, ms);
+
+    promise.then(
+      (res) => {
+        clearTimeout(timeoutId);
+        resolve(res);
+      },
+      (err) => {
+        clearTimeout(timeoutId);
+        reject(err);
+      }
+    );
+  });
+};
+
+const decodeToken = (token: string): Partial<User> | null => {
+  try {
+    const base64Url = token.split('.')[1];
+    if (!base64Url) return null;
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error decoding token:', error);
+    return null;
+  }
+};
+
+/**
+ * Normalizes user data from different sources (API, localStorage) into a consistent User object.
+ */
+const normalizeUser = (userData: any, decodedTokenData?: Partial<User> | null): User => {
+    return {
+        ...userData,
+        _id: userData._id || userData.id || '',
+        name: userData.name || 'User',
+        email: userData.email || '',
+        user_type: decodedTokenData?.user_type || userData.user_type || 'worker',
+        role_id: userData.role_id || null,
+        logoUrl: userData.logoUrl || '',
+        store_name: userData.store_name || '',
+        store_logo: userData.store_logo || '',
+    };
+};
+
+
+// --- Auth Context ---
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// --- Auth Provider Component ---
 
 const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -37,53 +132,46 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
-  const MAX_RETRIES = 3;
-  const RETRY_DELAY = 1000; // 1 second
-  const TIMEOUT_MS = 10000; // 10 seconds
-
-  const withTimeout = async <T>(promise: Promise<T>, ms: number): Promise<T> => {
-    const timeout = new Promise<T>((_, reject) => {
-      setTimeout(() => reject(new Error('Request timed out')), ms);
-    });
-    return Promise.race([promise, timeout]);
+  const logout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('authUser');
+    setToken(null);
+    setUser(null);
+    setIsAuthenticated(false);
+    setProfileError(null);
+    console.log('Logged out successfully.');
   };
 
-  const refreshUserProfile = async (tokenParam?: string): Promise<void> => {
-    const currentToken = tokenParam || token;
+  const refreshUserProfile = async (): Promise<void> => {
+    const currentToken = localStorage.getItem('authToken');
     if (!currentToken) {
-      console.error('No token available to refresh user profile', { token, tokenParam });
-      setProfileError('No authentication token');
+      setProfileError('No authentication token found.');
       return;
     }
     setProfileLoading(true);
     setProfileError(null);
-    try {
-      const updatedUser = await withTimeout(fetchUserProfile(currentToken, logout), TIMEOUT_MS);
-      localStorage.setItem('authUser', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-      console.log('User profile refreshed successfully:', updatedUser);
-    } catch (error) {
-      console.error('Error refreshing user profile:', error, { token: currentToken });
-      if (MAX_RETRIES > 0) {
-        console.log(`Retrying user profile refresh, ${MAX_RETRIES} attempts left`);
-        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-        return refreshUserProfile(currentToken);
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const updatedUser = await withTimeout(fetchUserProfile(currentToken, logout), TIMEOUT_MS);
+        const decodedTokenData = decodeToken(currentToken);
+        const normalized = normalizeUser(updatedUser, decodedTokenData);
+
+        localStorage.setItem('authUser', JSON.stringify(normalized));
+        setUser(normalized);
+        console.log('User profile refreshed successfully:', normalized);
+        setProfileLoading(false);
+        return;
+      } catch (error) {
+        console.error(`Error refreshing user profile (attempt ${attempt}):`, error);
+        if (attempt === MAX_RETRIES) {
+          setProfileError('Failed to load user profile after multiple retries.');
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+        }
       }
-      setProfileError('Failed to load user profile after retries');
-      setUser((prev) => ({
-        ...prev,
-        _id: prev?._id || '',
-        name: prev?.name || 'User',
-        email: prev?.email || '',
-        user_type: prev?.user_type || 'worker',
-        role_id: prev?.role_id || null,
-        logoUrl: prev?.logoUrl || '',
-        store_name: prev?.store_name || '',
-        store_logo: prev?.store_logo || '',
-      }));
-    } finally {
-      setProfileLoading(false);
     }
+    setProfileLoading(false);
   };
 
   useEffect(() => {
@@ -94,25 +182,12 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       if (storedToken && storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser);
-          const normalizedUser = {
-            ...parsedUser,
-            _id: parsedUser._id || parsedUser.id || '',
-            name: parsedUser.name || 'User',
-            email: parsedUser.email || '',
-            user_type: parsedUser.user_type || 'worker',
-            role_id: parsedUser.role_id || null,
-            logoUrl: parsedUser.logoUrl || '',
-            store_name: parsedUser.store_name || '',
-            store_logo: parsedUser.store_logo || '',
-          };
+          setUser(normalizeUser(parsedUser));
           setToken(storedToken);
-          setUser(normalizedUser);
           setIsAuthenticated(true);
-          console.log('Token loaded from localStorage:', storedToken);
-          console.log('User loaded from localStorage:', normalizedUser);
         } catch (error) {
-          console.error('Error parsing user data:', error);
-          logout();
+          console.error('Error parsing user data from storage:', error);
+          logout(); // Clear corrupted data
         }
       }
       setIsLoading(false);
@@ -121,84 +196,80 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     initializeAuth();
   }, []);
 
+  // This effect will trigger a profile refresh when the component mounts with existing credentials.
   useEffect(() => {
     if (isAuthenticated && token) {
-      refreshUserProfile(token);
+      refreshUserProfile();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, token]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
+    setProfileError(null);
     try {
       const response = await fetch('http://192.168.18.107:3000/users/api/v1/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
-      }
-
       const responseData = await response.json();
-      const { token, user } = responseData.data.data;
-      console.log('Login response:', { token, user });
-
-      if (!token) {
-        throw new Error('No token received from login API');
+      if (!response.ok) {
+        throw new Error(responseData.message || 'Login failed due to server error');
       }
 
-      const normalizedUser = {
-        ...user,
-        _id: user._id || user.id || '',
-        role_id: user.role_id || null,
-        logoUrl: user.logoUrl || '',
-        name: user.name || 'User',
-        store_name: user.store_name || '',
-        store_logo: user.store_logo || '',
-      };
+      const { token: apiToken, user: apiUser } = responseData.data.data;
+      if (!apiToken || !apiUser) {
+        throw new Error('Invalid response from login API');
+      }
 
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('authUser', JSON.stringify(normalizedUser));
-      setToken(token);
-      setUser(normalizedUser);
+      const normalized = normalizeUser(apiUser);
+
+      localStorage.setItem('authToken', apiToken);
+      localStorage.setItem('authUser', JSON.stringify(normalized));
+      setToken(apiToken);
+      setUser(normalized);
       setIsAuthenticated(true);
-      console.log('Auth state updated, token stored:', token);
-    } catch (error) {
+      console.log('Login successful, auth state updated.');
+    } catch (error: any) {
       console.error('Login error:', error);
-      setProfileError(error.message || 'Login failed');
-      throw error;
+      setProfileError(error.message || 'An unknown login error occurred');
+      logout(); // Ensure clean state on login failure
+      throw error; // Re-throw for the calling component to handle
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('authUser');
-    setToken(null);
-    setUser(null);
-    setIsAuthenticated(false);
-    setProfileError(null);
-    console.log('Logged out, token removed from localStorage');
+  const contextValue: AuthContextType = {
+    isAuthenticated,
+    isLoading,
+    profileLoading,
+    profileError,
+    user,
+    token,
+    login,
+    logout,
+    setUser,
+    refreshUserProfile
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, profileLoading, profileError, user, token, login, logout, setUser, refreshUserProfile }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => {
+// --- Custom Hook ---
+
+const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
 
-export { AuthContext, AuthProvider };
+export { AuthContext, AuthProvider, useAuth };

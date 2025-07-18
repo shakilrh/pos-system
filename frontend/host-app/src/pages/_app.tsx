@@ -1,32 +1,56 @@
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 import { AppProps } from 'next/app';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/router';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import 'shared-tailwind/styles';
 import '@fontsource/nunito';
 
+export interface User {
+  role_id?: string | null;
+  name?: string | null;
+  store_name?: string | null;
+  store_logo?: string | null;
+  logoUrl?: string | null;
+  email?: string | null;
+}
+
+// Define the Header's props locally
+export interface HeaderProps {
+  onSidebarToggle: () => void;
+  onLogout: () => Promise<void>;
+  onNavigate: (path: string) => void;
+  token: string | null;
+  user: User | null;
+  className?: string; // <-- CHANGE THIS to be optional
+}
+
 const FallbackHeader = () => <div>Header failed to load</div>;
 const FallbackFooter = () => <div>Footer failed to load</div>;
 
-const Header = dynamic(
-  () => import('remoteApp/Header').catch((err) => {
-    console.error('Header load error:', err);
-    return () => FallbackHeader;
-  }),
+const Header = dynamic<HeaderProps>(
+  () =>
+    import('remoteApp/Header').catch((err) => {
+      console.error('Header load error:', err);
+      // You might need to adjust the fallback to satisfy the props type
+      return { default: () => <FallbackHeader /> };
+    }),
   { ssr: false }
 );
 
 import Sidebar from '../components/Sidebar';
+import { Head } from 'next/document';
 
+// Corrected Footer dynamic import
 const Footer = dynamic(
-  () => import('remoteApp/Footer').catch((err) => {
-    console.error('Footer load error:', err);
-    return () => FallbackFooter;
-  }),
+  () =>
+    import('remoteApp/Footer').catch((err) => {
+      console.error('Footer load error:', err);
+      // Return a module-like object with the fallback component
+      return { default: FallbackFooter };
+    }),
   { ssr: false }
 );
-
 const publicRoutes = ['/Registration/login', '/Registration/forgotPassword', '/Registration/registerAdmin', '/NoAccess'];
 
 // Map routes to required permissions
@@ -48,7 +72,6 @@ const permissionIdToKey: { [key: string]: string } = {
   '6867ab5da50a9ccaa7143a13': 'Roles_access',
   '6867ab88a50a9ccaa7143a17': 'Settings_access',
   '686e54c893afbada228ce5a1': 'Tables_access',
-  // Add mappings for additional permissions if needed
 };
 
 function AppContent({ Component, pageProps }: AppProps) {
@@ -58,7 +81,18 @@ function AppContent({ Component, pageProps }: AppProps) {
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const { isAuthenticated, isLoading, logout, token, user } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
+  const {pathname} = router;
+
+  // Register service worker on app load
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('Service Worker registered', reg))
+          .catch(err => console.error('Service Worker registration failed', err));
+      });
+    }
+  }, []);
 
   const decodeToken = (token: string) => {
     try {
@@ -251,10 +285,9 @@ function AppContent({ Component, pageProps }: AppProps) {
     return <div>Sidebar failed to load</div>;
   }
 
-  // Adjusted: Match header and sidebar spacing to a small consistent value
   const sidebarWidth = sidebarOpen ? 'w-64' : 'w-20';
   const contentMargin = sidebarOpen ? 'ml-64' : 'ml-20';
-  const headerHeight = 'h-16'; // Small consistent height
+  const headerHeight = 'h-16';
 
   return (
     <div className="flex flex-col min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
@@ -266,7 +299,7 @@ function AppContent({ Component, pageProps }: AppProps) {
         user={user}
         className={headerHeight}
       />
-      <div className="flex flex-1 overflow-hidden mt-10" style={{ backgroundColor: 'var(--background-color)' }}> {/* Reduced margin-top to 4px */}
+      <div className="flex flex-1 overflow-hidden mt-10" style={{ backgroundColor: 'var(--background-color)' }}>
         <Sidebar
           className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 ${sidebarWidth} bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-2xl transition-all duration-300 ease-in-out`}
           setSidebarOpen={setSidebarOpen}
@@ -291,10 +324,10 @@ function AppContent({ Component, pageProps }: AppProps) {
   );
 }
 
-export default function MyApp({ Component, pageProps }: AppProps) {
+export default function MyApp( props : AppProps) {
   return (
     <AuthProvider>
-      <AppContent Component={Component} pageProps={pageProps} />
+      <AppContent {...props} />
     </AuthProvider>
   );
 }

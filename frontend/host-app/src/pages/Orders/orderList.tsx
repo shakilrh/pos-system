@@ -10,6 +10,18 @@ import {
   QueueOrder,
 } from '../../services/orderService';
 
+// Add this interface
+interface OrderModalProps {
+  order: Order;
+  token: string | null;
+  logout: () => void;
+  onClose: () => void;
+  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
+  orders: Order[];
+  setMessage: (message: string) => void;
+  activeTab: string;
+}
+
 interface OrderListProps {
   orders: Order[];
   page: number;
@@ -34,7 +46,7 @@ interface OrderListProps {
   queueData: QueueOrder[] | any;
 }
 
-const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessage, activeTab }: any) => {
+const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessage, activeTab }: OrderModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleMarkAsReady = async () => {
@@ -137,28 +149,28 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
 };
 
 export default function OrderList({
-                                    orders,
-                                    page,
-                                    itemsPerPage,
-                                    totalPages,
-                                    setPage,
-                                    setItemsPerPage,
-                                    searchTerm,
-                                    setSearchTerm,
-                                    statusFilter,
-                                    setStatusFilter,
-                                    sortConfig,
-                                    setSortConfig,
-                                    preparationTime,
-                                    setPreparationTime,
-                                    message,
-                                    setMessage,
-                                    token,
-                                    logout,
-                                    onViewDetails,
-                                    setOrders,
-                                    queueData,
-                                  }: OrderListProps) {
+  orders,
+  page,
+  itemsPerPage,
+  totalPages,
+  setPage,
+  setItemsPerPage,
+  searchTerm,
+  setSearchTerm,
+  statusFilter,
+  setStatusFilter,
+  sortConfig,
+  setSortConfig,
+  preparationTime,
+  setPreparationTime,
+  message,
+  setMessage,
+  token,
+  logout,
+  onViewDetails,
+  setOrders,
+  queueData,
+}: OrderListProps) {
   const [outerActiveTab, setOuterActiveTab] = useState('physical');
   const [activeTab, setActiveTab] = useState('to_be_prepared');
   const [showModal, setShowModal] = useState(false);
@@ -421,9 +433,8 @@ export default function OrderList({
                 setActiveTab(tab.key === 'physical' ? 'to_be_prepared' : 'pending');
                 setPage(1);
               }}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md min-w-[140px] ${
-                outerActiveTab === tab.key ? 'shadow-md transform scale-105' : 'hover:scale-102'
-              }`}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md min-w-[140px] ${outerActiveTab === tab.key ? 'shadow-md transform scale-105' : 'hover:scale-102'
+                }`}
               style={{
                 backgroundColor: outerActiveTab === tab.key ? tab.color : tab.lightColor,
                 color: outerActiveTab === tab.key ? 'var(--text-on-primary)' : tab.textColor,
@@ -458,9 +469,8 @@ export default function OrderList({
                     setActiveTab(tab.key);
                     setPage(1);
                   }}
-                  className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md ${
-                    activeTab === tab.key ? 'shadow-md transform scale-105' : 'hover:scale-102'
-                  }`}
+                  className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md ${activeTab === tab.key ? 'shadow-md transform scale-105' : 'hover:scale-102'
+                    }`}
                   style={{
                     backgroundColor: activeTab === tab.key ? tab.color : tab.lightColor,
                     color: activeTab === tab.key ? 'var(--text-on-primary)' : tab.textColor,
@@ -547,7 +557,7 @@ export default function OrderList({
         />
       )}
 
-      {showModal && (
+            {showModal && (
         <OrderNotifications
           orders={orders}
           groupedOrders={groupedOrders}
@@ -566,6 +576,8 @@ export default function OrderList({
           logout={logout}
           setOrders={setOrders}
           setMessage={setMessage}
+          // Add the missing required prop below
+          preparationTime={preparationTime}
         />
       )}
 
@@ -709,7 +721,7 @@ export default function OrderList({
                       )}
                       {activeTab === 'served' && (
                         <>
-                          {order.payment_status === 'not_paid' && (
+                          {order.payment_status === 'unpaid' && (
                             <button
                               onClick={() => handlePaymentOrderSelect(order)}
                               className="px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md"
@@ -832,9 +844,8 @@ export default function OrderList({
                     <button
                       key={pageNumber}
                       onClick={() => setPage(pageNumber)}
-                      className={`px-3 py-2 text-sm rounded-lg border transition-all duration-200 hover:shadow-md ${
-                        pageNumber === page ? 'shadow-md' : ''
-                      }`}
+                      className={`px-3 py-2 text-sm rounded-lg border transition-all duration-200 hover:shadow-md ${pageNumber === page ? 'shadow-md' : ''
+                        }`}
                       style={{
                         backgroundColor: pageNumber === page ? currentTab?.color : 'var(--background-color)',
                         color: pageNumber === page ? 'var(--text-on-primary)' : 'var(--text-color)',
@@ -865,5 +876,4 @@ export default function OrderList({
     </div>
   );
 }
-
-export { OrderListProps, QueueOrder };
+export type { OrderListProps, QueueOrder };

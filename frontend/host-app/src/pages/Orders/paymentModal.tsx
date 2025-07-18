@@ -13,12 +13,17 @@ interface PaymentModalProps {
   setMessage: (message: string) => void;
 }
 
-interface OrderSearchProps {
+// Inside paymentModal.tsx
+
+// Find this interface
+export interface OrderSearchProps {
   orders: Order[];
   onOrderSelect: (order: Order) => void;
   searchTerm: string;
-  setSearchTerm: (term: string) => void;
+  setSearchTerm: React.Dispatch<React.SetStateAction<string>>;
   statusFilter: string;
+  // Add the following line:
+  style?: React.CSSProperties;
 }
 
 const OrderSearch: React.FC<OrderSearchProps> = ({

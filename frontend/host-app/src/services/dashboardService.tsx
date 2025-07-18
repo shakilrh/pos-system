@@ -1,6 +1,6 @@
 import { ApiResponse } from './orderService'; // Assuming ApiResponse is defined in orderService
 
-interface Order {
+export interface Order {
   _id: string;
   user_id: string | null;
   order_date: string;

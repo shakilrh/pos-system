@@ -4,7 +4,7 @@ import ProductList from './productList';
 import ProductDetails from './productDetails';
 import ProductCrud from './productCrud';
 import { fetchProducts } from '../../services/productService';
-import { Category, Product } from './productTypes';
+import {Product } from './productTypes';
 import FlashMessage from '../FlashMessage';
 import { ShoppingBagIcon } from '@heroicons/react/24/outline';
 

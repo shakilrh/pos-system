@@ -4,6 +4,9 @@ import { addCategory, updateCategory, deleteCategory } from '../../services/cate
 import { Category } from './categoryTypes';
 import FlashMessage from '../FlashMessage';
 
+type FlashMessageType = { message: string; type: 'success' | 'error' };
+
+
 interface CategoryCrudProps {
   token: string | null;
   logout: () => void;
@@ -19,18 +22,18 @@ interface CategoryCrudProps {
 }
 
 export default function CategoryCrud({
-                                       token,
-                                       logout,
-                                       categories,
-                                       setCategories,
-                                       category,
-                                       editingCategoryId,
-                                       deleteCategoryId,
-                                       onCancel,
-                                       isProductFormActive,
-                                       mode,
-                                       setFlashMessageInParent,
-                                     }: CategoryCrudProps) {
+  token,
+  logout,
+  categories,
+  setCategories,
+  category,
+  editingCategoryId,
+  deleteCategoryId,
+  onCancel,
+  isProductFormActive,
+  mode,
+  setFlashMessageInParent,
+}: CategoryCrudProps) {
   const [newCategoryName, setNewCategoryName] = useState(category?.name || '');
   const [newCategoryDesc, setNewCategoryDesc] = useState(category?.description || '');
   const [flashMessage, setFlashMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -149,28 +152,33 @@ export default function CategoryCrud({
     }
 
     if (!token) {
-      const errorMessage = { message: 'Please log in to perform this action', type: 'error' };
+      const errorMessage: { message: string; type: 'success' | 'error' } = { message: 'Please log in to perform this action', type: 'error' };
       setFlashMessage(errorMessage);
       setFlashMessageInParent(errorMessage);
       return;
     }
 
     try {
-      let updatedCategory;
+      let updatedCategory: Category | undefined;
       if (mode === 'add') {
         updatedCategory = await addCategory(token, logout, newCategoryName, newCategoryDesc || undefined);
         setCategories([...categories, updatedCategory]);
-        const successMessage = { message: `Category "${newCategoryName}" added successfully!`, type: 'success' };
+        const successMessage: FlashMessageType = { message: `Category "${newCategoryName}" added successfully!`, type: 'success' };
         setFlashMessageInParent(successMessage);
       } else if (mode === 'edit' && editingCategoryId) {
-        updatedCategory = await updateCategory(token, logout, editingCategoryId, newCategoryName, newCategoryDesc || undefined);
-        setCategories(categories.map((cat) => (cat._id === editingCategoryId ? updatedCategory : cat)));
-        const successMessage = { message: `Category "${newCategoryName}" updated successfully!`, type: 'success' };
+        const updatedCategory = await updateCategory(token, logout, editingCategoryId, newCategoryName, newCategoryDesc || undefined);
+
+        // By checking if updatedCategory exists, we ensure we don't add 'undefined' to the state.
+        if (updatedCategory) {
+          setCategories(categories.map((cat) => (cat._id === editingCategoryId ? updatedCategory : cat)));
+        }
+
+        const successMessage: FlashMessageType = { message: `Category "${newCategoryName}" updated successfully!`, type: 'success' };
         setFlashMessageInParent(successMessage);
       } else if (mode === 'delete' && deleteCategoryId) {
         await deleteCategory(token, logout, deleteCategoryId);
         setCategories(categories.filter((cat) => cat._id !== deleteCategoryId));
-        const successMessage = { message: `Category "${category?.name}" deleted successfully!`, type: 'success' };
+        const successMessage: FlashMessageType = { message: `Category "${category?.name}" deleted successfully!`, type: 'success' };
         setFlashMessageInParent(successMessage);
       }
       onCancel();
@@ -179,7 +187,7 @@ export default function CategoryCrud({
       if (mode === 'delete' && err instanceof Error && err.message.includes('products associated')) {
         message = `Cannot delete category "${category?.name}" because it has associated products.`;
       }
-      const errorMessage = { message, type: 'error' };
+      const errorMessage: { message: string; type: 'success' | 'error' } = { message: 'Please log in to perform this action', type: 'error' };
       setFlashMessage(errorMessage);
       setFlashMessageInParent(errorMessage);
     }
@@ -264,7 +272,11 @@ export default function CategoryCrud({
                 type="button"
                 onClick={onCancel}
                 className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isProductFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}`}
-                style={{ backgroundColor: 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' }}
+                // FIX: Cast the style object to React.CSSProperties
+                style={{ 
+                  backgroundColor: 'var(--background-color)', 
+                  '--tw-ring-color': 'var(--focus-ring)' 
+                } as React.CSSProperties}
                 disabled={isProductFormActive}
               >
                 Cancel
@@ -272,7 +284,10 @@ export default function CategoryCrud({
               <button
                 type="submit"
                 className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isProductFormActive || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--background-color)]'}`}
-                style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+                // FIX: Cast the style object to React.CSSProperties
+                style={{ 
+                  '--tw-ring-color': 'var(--focus-ring)' 
+                } as React.CSSProperties}
                 disabled={isProductFormActive || !isFormValid()}
               >
                 {mode === 'edit' ? 'Update Category' : 'Create Category'}
@@ -308,14 +323,21 @@ export default function CategoryCrud({
             <button
               onClick={handleSubmit}
               className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 bg-[var(--error-color)] text-[var(--text-on-primary)] hover:bg-opacity-90`}
-              style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+              // FIX: Cast the style object to React.CSSProperties
+              style={{ 
+                '--tw-ring-color': 'var(--focus-ring)' 
+              } as React.CSSProperties}
             >
               Delete
             </button>
             <button
               onClick={onCancel}
               className="flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]"
-              style={{ backgroundColor: 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' }}
+              // FIX: Cast the style object to React.CSSProperties
+              style={{ 
+                backgroundColor: 'var(--background-color)', 
+                '--tw-ring-color': 'var(--focus-ring)' 
+              } as React.CSSProperties}
             >
               Cancel
             </button>

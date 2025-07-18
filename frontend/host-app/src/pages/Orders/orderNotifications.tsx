@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Order } from './orderTypes';
+import { Order, OrderItemResponse } from './orderTypes';
 import { markNotificationAsRead, getOrderQueue, QueueOrder } from '../../services/orderService';
 
 interface OrderNotificationsProps {
@@ -85,25 +85,25 @@ const getStatusColor = (status: string): string => {
 };
 
 export default function OrderNotifications({
-                                             orders,
-                                             groupedOrders,
-                                             activeTab,
-                                             tabs,
-                                             setActiveTab,
-                                             setPage,
-                                             setShowModal,
-                                             showModal,
-                                             showOrderModal,
-                                             setShowOrderModal,
-                                             selectedOrder,
-                                             setSelectedOrder,
-                                             preparationTime,
-                                             setTimeLeft,
-                                             token,
-                                             logout,
-                                             setOrders,
-                                             setMessage,
-                                           }: OrderNotificationsProps) {
+  orders,
+  groupedOrders,
+  activeTab,
+  tabs,
+  setActiveTab,
+  setPage,
+  setShowModal,
+  showModal,
+  showOrderModal,
+  setShowOrderModal,
+  selectedOrder,
+  setSelectedOrder,
+  preparationTime,
+  setTimeLeft,
+  token,
+  logout,
+  setOrders,
+  setMessage,
+}: OrderNotificationsProps) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [queueOrders, setQueueOrders] = useState<QueueOrder[]>([]);
@@ -159,8 +159,14 @@ export default function OrderNotifications({
     const timer = setInterval(() => {
       const newTimeLeft: { [key: string]: number } = {};
       (groupedOrders.to_be_prepared || []).forEach(order => {
-        const createdAt = new Date(order.created_at || order.createdAt || new Date());
-        const estimatedTime = order.estimated_time || preparationTime;
+        const createdAt = new Date(order.createdAt || new Date());
+
+        // Find the corresponding queue order
+        const queueOrder = queueOrders.find(q => q.order_number === order.order_number);
+
+        // Get estimatedTime from the queueOrder if it exists, otherwise use the default
+        const estimatedTime = parseFloat(queueOrder?.estimated_time as string) || preparationTime;
+
         const elapsedMs = Date.now() - createdAt.getTime();
         const estimatedTimeMs = estimatedTime * 60 * 1000;
         newTimeLeft[order._id] = Math.max(0, Math.floor((estimatedTimeMs - elapsedMs) / 1000));
@@ -201,7 +207,7 @@ export default function OrderNotifications({
           <h4 className="font-semibold mt-2" style={{ color: 'var(--text-color)' }}>Items:</h4>
           <ul className="list-disc pl-5 space-y-1">
             {orderItems.length > 0 ? (
-              orderItems.map((item, index) => {
+              orderItems.map((item: OrderItemResponse, index: any) => {
                 const productName = item.product?.name || item.product_name || 'Unknown';
                 const quantity = item.quantity || 1;
                 const pictureUrl = item.product?.pictureUrl;

@@ -10,27 +10,27 @@ import {
 } from '@heroicons/react/24/outline';
 import UserService from '../services/UserService';
 
+// Define the User interface to allow for null values from the API
 interface User {
-  _id: string;
-  name: string;
-  email: string;
-  user_type: string;
-  role_id: string | null;
-  profile?: any;
-  logoUrl?: string;
-  store_name?: string;
-  store_logo?: string;
+  role_id?: string | null;
+  name?: string | null;
+  store_name?: string | null;
+  store_logo?: string | null;
+  logoUrl?: string | null;
+  email?: string | null;
 }
 
+// Define the HeaderProps interface to match what _app.tsx is passing
 interface HeaderProps {
   onSidebarToggle: () => void;
   onNavigate: (path: string) => void;
-  darkMode: boolean;
-  onDarkModeToggle: () => void;
-  onLogout: () => void;
+  darkMode?: boolean;
+  onDarkModeToggle?: () => void;
+  onLogout: () => Promise<void>;
   token: string | null;
   user: User | null;
 }
+
 
 export default function Header({
                                  onSidebarToggle,
@@ -55,7 +55,7 @@ export default function Header({
     placement: 'bottom-end',
     modifiers: [
       { name: 'offset', options: { offset: [0, 8] } },
-      { name: 'preventOverflow', options: { boundary: 'viewport' } },
+      { name: 'preventOverflow' },
       { name: 'flip', options: { fallbackPlacements: ['bottom-start', 'top-end', 'top-start'] } },
     ],
   });
@@ -186,7 +186,7 @@ export default function Header({
               src={storeData.store_logo}
               alt="Store Logo"
               className="w-8 h-8 rounded-full object-cover ring-2"
-              style={{ ringColor: 'color-mix(in srgb, var(--primary-color) 20%, transparent)' }}
+              style={{ '--tw-ring-color': 'color-mix(in srgb, var(--primary-color) 20%, transparent)' } as React.CSSProperties}
               onError={(e) => {
                 e.currentTarget.src = '/file.svg';
               }}

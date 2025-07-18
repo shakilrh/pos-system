@@ -93,11 +93,12 @@ export default function CategoryList({
         <button
           onClick={onAdd}
           className={`flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isProductFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''}`}
+          // FIX: Cast the style object to React.CSSProperties
           style={{
             backgroundColor: isProductFormActive ? undefined : 'var(--primary-color)',
             color: isProductFormActive ? undefined : 'var(--text-on-primary)',
             '--tw-ring-color': 'var(--focus-ring)',
-          }}
+          } as React.CSSProperties}
           disabled={isProductFormActive}
         >
           <PlusCircleIcon className="w-4 h-4 mr-1" />

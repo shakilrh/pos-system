@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Categories from './Categories/categories';
 import Products from './Products/products';
-import { Category, Product } from './Products/productTypes';
+import { Category } from './Categories/categoryTypes';
+import { Product } from './Products/productTypes';
 
 export default function MenuManagement() {
   const { isAuthenticated, token, logout } = useAuth();
   const [clientLoaded, setClientLoaded] = useState(false);
-  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterCategory, setFilterCategory] = useState<string | null>('all');
   const [categories, setCategories] = useState<Category[]>([]);
   const [isCategoryFormActive, setIsCategoryFormActive] = useState<boolean>(false);
   const [isProductFormActive, setIsProductFormActive] = useState<boolean>(false);

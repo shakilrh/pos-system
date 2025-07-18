@@ -1,3 +1,5 @@
+// --- START OF CORRECTED FILE UserService.ts ---
+
 interface UserDetails {
   _id: string;
   name: string;
@@ -88,16 +90,18 @@ export default class UserService {
       console.error('UserService: Error fetching user details:', error);
 
       // Handle different types of errors
-      if (error.name === 'AbortError') {
-        throw new Error('Request timed out. Please try again.');
-      }
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new Error('Request timed out. Please try again.');
+        }
 
-      if (error.message.includes('Failed to fetch')) {
-        throw new Error('Network error. Please check your connection.');
-      }
+        if (error.message.includes('Failed to fetch')) {
+          throw new Error('Network error. Please check your connection.');
+        }
 
-      if (error.message.includes('401')) {
-        throw new Error('Authentication failed. Please log in again.');
+        if (error.message.includes('401')) {
+          throw new Error('Authentication failed. Please log in again.');
+        }
       }
 
       throw error;
@@ -114,7 +118,7 @@ export default class UserService {
 export const fetchUserProfile = async (token: string, onLogout?: () => void): Promise<UserDetails> => {
   try {
     return await UserService.getUserDetails(token);
-  } catch (error) {
+  } catch (error: any) { // It's good practice to type the catch block error
     console.error('fetchUserProfile error:', error);
 
     // If authentication failed, trigger logout
@@ -128,3 +132,4 @@ export const fetchUserProfile = async (token: string, onLogout?: () => void): Pr
     throw error;
   }
 };
+// --- END OF CORRECTED FILE UserService.ts ---

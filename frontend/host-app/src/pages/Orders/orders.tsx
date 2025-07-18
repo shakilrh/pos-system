@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import OrderList from './orderList';
-import createOrder from './createOrder';
 import { getAllOrders, getOrderQueue } from '../../services/orderService';
-import { Order } from './orderTypes';
+import { Order, QueueOrder } from './orderTypes';
 
 export default function Orders() {
   const { isAuthenticated, isLoading, token, logout } = useAuth();
@@ -19,7 +18,7 @@ export default function Orders() {
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [preparationTime, setPreparationTime] = useState<number>(30);
-  const [queueData, setQueueData] = useState<any[]>([]);
+  const [queueData, setQueueData] = useState<QueueOrder[]>([]);
   const [currentTheme, setCurrentTheme] = useState<string>('default');
   const [clientLoaded, setClientLoaded] = useState(false);
 

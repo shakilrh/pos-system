@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { format, startOfDay, endOfDay, parseISO, eachDayOfInterval } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 import { getOrders } from '../../services/dashboardService';
-import { Order } from '../../services/dashboardService';
+import { Order } from '../../services/dashboardService'; // This import will now work correctly
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChartLine, faClipboardList, faUtensils, faShoppingBag } from '@fortawesome/free-solid-svg-icons';
