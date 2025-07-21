@@ -3,7 +3,7 @@ import { Table } from '../../services/floorTableService';
 import { Order } from '../../services/orderService';
 import toast from 'react-hot-toast';
 import AddToOrderForm from './addToOrder';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import {ChartBarIcon, ShoppingBagIcon, XMarkIcon} from '@heroicons/react/24/outline';
 
 interface Product {
   _id: string;
@@ -107,23 +107,10 @@ const CreateOrderForm = ({
 
   const totalAmount = calculateTotalOrderAmount();
   const showPayment = serviceType === 'take_away';
-  const getThemeColors = (theme?: string): ThemeColors => ({
-    cardBackground: 'var(--background-color)',
-    cardBorder: 'var(--border-color)',
-    cardText: 'var(--text-color)',
-    headingText: 'var(--heading-text)',
-  });
-  const themeColors = getThemeColors(currentTheme);
-
-  useEffect(() => {
-    console.log('Current waiterId:', waiterId);
-  }, [waiterId]);
 
   const validateCustomerName = (name: string): string[] => {
     const errors: string[] = [];
-    if (!name.trim()) {
-      errors.push('Customer name is required');
-    } else {
+    if (name.trim() && name.length > 0) {
       if (name.length < 2) errors.push('Customer name must be at least 2 characters long');
       if (name.length > 50) errors.push('Customer name must be less than 50 characters');
       if (!/^[A-Za-z\s'-]+$/.test(name)) errors.push('Customer name can only contain letters, spaces, hyphens, and apostrophes');
@@ -192,13 +179,13 @@ const CreateOrderForm = ({
     const customerNameValid = validateCustomerName(customerName).length === 0;
 
     if (!showPayment) {
-      return customerNameValid && orderItemsValid;
+      return orderItemsValid;
     }
 
     const receivedAmountValid = validateReceivedAmount(receivedAmount).length === 0;
     const paymentMethodValid = validatePaymentMethod(paymentMethod).length === 0;
 
-    return customerNameValid && orderItemsValid && receivedAmountValid && paymentMethodValid;
+    return orderItemsValid && receivedAmountValid && paymentMethodValid;
   };
 
   const handleCustomerNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -286,7 +273,10 @@ const CreateOrderForm = ({
   }, [serviceType, setPaymentMethod, setReceivedAmount, setSelectedTableId, setWaiterId]);
 
   const handleEnhancedCreateOrder = async () => {
-    const fieldsToValidate = ['orderItems', 'customerName'];
+    const fieldsToValidate = ['orderItems'];
+    if (customerName.trim().length > 0) {
+      fieldsToValidate.push('customerName');
+    }
     if (showPayment) {
       fieldsToValidate.push('receivedAmount', 'paymentMethod');
     }
@@ -306,7 +296,7 @@ const CreateOrderForm = ({
       try {
         console.log('Sending waiter_id:', waiterId);
         const orderData = {
-          customer_name: customerName,
+          customer_name: customerName || undefined,
           service_type: serviceType,
           order_items: orderItems,
           table_id: selectedTableId || undefined,
@@ -351,10 +341,20 @@ const CreateOrderForm = ({
   };
 
   return (
-    <div className="space-y-4" style={{ backgroundColor: themeColors.cardBackground, color: themeColors.cardText, border: `1px solid ${themeColors.cardBorder}` }}>
+    <div className="space-y-4">
+      {/* Header */}
+      {/* Header - Always visible */}
+      <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <div className="flex items-center mb-4">
+          <button className="mr-2" style={{ color: 'var(--text-secondary)' }}>
+            <ChartBarIcon className="w-5 h-5" />
+          </button>
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Order Details</h3>
+        </div>
+      </div>
       {/* Service Type */}
-      <div className="rounded-lg p-4 shadow-sm border" style={{ borderColor: themeColors.cardBorder }}>
-        <label className="block text-sm font-medium mb-2" style={{ color: themeColors.cardText }}>
+      <div className="rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-color)' }}>
           Service Type *
         </label>
         <div className="flex space-x-4">
@@ -362,6 +362,7 @@ const CreateOrderForm = ({
             type="button"
             onClick={() => setServiceType('dine_in')}
             className={`flex-1 py-2 px-4 rounded-md border transition-colors duration-200 ${serviceType === 'dine_in' ? 'bg-[var(--primary-color)] text-[var(--text-color-button)]' : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--background-color)]'}`}
+            style={{ borderColor: 'var(--border-color)' }}
           >
             <div className="flex items-center justify-center space-x-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -374,6 +375,7 @@ const CreateOrderForm = ({
             type="button"
             onClick={() => setServiceType('take_away')}
             className={`flex-1 py-2 px-4 rounded-md border transition-colors duration-200 ${serviceType === 'take_away' ? 'bg-[var(--primary-color)] text-[var(--text-color-button)]' : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--background-color)]'}`}
+            style={{ borderColor: 'var(--border-color)' }}
           >
             <div className="flex items-center justify-center space-x-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -386,54 +388,54 @@ const CreateOrderForm = ({
       </div>
 
       {/* Customer Name */}
-      <div className="rounded-lg p-4 shadow-sm border" style={{ borderColor: themeColors.cardBorder }}>
-        <label className="block text-sm font-medium mb-1" style={{ color: themeColors.cardText }}>
-          Customer Name *
+      <div className="rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-color)' }}>
+          Customer Name
         </label>
         <input
           type="text"
-          placeholder="Enter customer name"
+          placeholder="Enter customer name (optional)"
           value={customerName}
           onChange={handleCustomerNameChange}
           onFocus={() => handleFocus('customerName')}
           onBlur={() => handleBlur('customerName')}
           className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-[var(--primary-color)] transition-all duration-200 ${errors.customerName && errors.customerName.length > 0 ? 'border-[var(--error-color)] ring-1 ring-[var(--error-color)]' : 'border-[var(--border-color)]'}`}
-          style={{ backgroundColor: themeColors.cardBackground, color: themeColors.cardText }}
+          style={{ backgroundColor: 'var(--background-color)', color: 'var(--text-color)' }}
         />
         {renderFieldErrors('customerName')}
       </div>
 
       {/* Order Summary */}
-      <div className="rounded-lg p-4 shadow-sm border" style={{ borderColor: themeColors.cardBorder }}>
-        <h3 className="font-semibold mb-3" style={{ color: themeColors.headingText }}>Order Summary</h3>
+      <div className="rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <h3 className="font-semibold mb-3" style={{ color: 'var(--text-color)' }}>Order Summary *</h3>
         {orderItems.length === 0 ? (
           <div
             onClick={handleOrderItemsInteraction}
             className="py-8 text-center bg-[var(--background-secondary)] rounded border border-dashed"
-            style={{ borderColor: themeColors.cardBorder }}
+            style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }}
           >
-            <p style={{ color: themeColors.cardText }}>No items added to the order</p>
+            <p>No items added to the order</p>
             {renderFieldErrors('orderItems')}
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="grid grid-cols-5 gap-2 text-xs font-medium uppercase tracking-wider border-b pb-2" style={{ borderColor: themeColors.cardBorder }}>
-              <div style={{ color: themeColors.cardText }}>Item</div>
-              <div className="text-center" style={{ color: themeColors.cardText }}>Qty</div>
-              <div className="text-right" style={{ color: themeColors.cardText }}>Price</div>
-              <div className="text-right" style={{ color: themeColors.cardText }}>Total</div>
+            <div className="grid grid-cols-5 gap-2 text-xs font-medium uppercase tracking-wider border-b pb-2" style={{ borderColor: 'var(--border-color)', color: 'var(--text-color)' }}>
+              <div>Item</div>
+              <div className="text-center">Qty</div>
+              <div className="text-right">Price</div>
+              <div className="text-right">Total</div>
               <div></div>
             </div>
             {orderItems.map((item, index) => (
-              <div key={item.product_id} className="grid grid-cols-5 gap-2 items-center py-2 border-b" style={{ borderColor: themeColors.cardBorder }}>
-                <div className="font-medium truncate" style={{ color: themeColors.cardText }}>
+              <div key={item.product_id} className="grid grid-cols-5 gap-2 items-center py-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
+                <div className="font-medium truncate" style={{ color: 'var(--text-color)' }}>
                   {item.product?.name || `Product ${item.product_id}`}
                 </div>
-                <div className="text-center" style={{ color: themeColors.cardText }}>{item.quantity}</div>
-                <div className="text-right" style={{ color: themeColors.cardText }}>
+                <div className="text-center" style={{ color: 'var(--text-color)' }}>{item.quantity}</div>
+                <div className="text-right" style={{ color: 'var(--text-color)' }}>
                   ${(item.product?.price || 0).toFixed(2)}
                 </div>
-                <div className="text-right font-medium" style={{ color: themeColors.cardText }}>
+                <div className="text-right font-medium" style={{ color: 'var(--text-color)' }}>
                   ${(item.sub_total || 0).toFixed(2)}
                 </div>
                 <div className="flex justify-end">
@@ -450,8 +452,8 @@ const CreateOrderForm = ({
               </div>
             ))}
             <div className="flex justify-between items-center pt-2">
-              <span className="font-bold" style={{ color: themeColors.headingText }}>Total</span>
-              <span className="font-bold text-lg" style={{ color: themeColors.headingText }}>
+              <span className="font-bold" style={{ color: 'var(--text-color)' }}>Total</span>
+              <span className="font-bold text-lg" style={{ color: 'var(--text-color)' }}>
                 ${totalAmount.toFixed(2)}
               </span>
             </div>
@@ -462,32 +464,34 @@ const CreateOrderForm = ({
 
       {/* Dine-In Options */}
       {serviceType === 'dine_in' && (
-        <div className="rounded-lg p-4 shadow-sm border flex gap-4" style={{ borderColor: themeColors.cardBorder }}>
+        <div className="rounded-lg p-4 shadow-sm border flex gap-4" style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}>
           <div className="w-1/2">
-            <label className="block text-sm font-medium mb-1" style={{ color: themeColors.cardText }}>
+            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-color)' }}>
               Table (Optional)
             </label>
             <select
               value={selectedTableId || ''}
               onChange={(e) => setSelectedTableId(e.target.value || null)}
-              className="w-full p-2 border rounded" style={{ backgroundColor: themeColors.cardBackground, color: themeColors.cardText, borderColor: themeColors.cardBorder }}
+              className="w-full p-2 border rounded"
+              style={{ backgroundColor: 'var(--background-color)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}
             >
-              <option value="">Table</option>
+              <option value="">Select Table</option>
               {freeTables.map((table) => (
                 <option key={table._id} value={table._id}>{table.number}</option>
               ))}
             </select>
           </div>
           <div className="w-1/2">
-            <label className="block text-sm font-medium mb-1" style={{ color: themeColors.cardText }}>
+            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-color)' }}>
               Assign Waiter (Optional)
             </label>
             <select
               value={waiterId || ''}
               onChange={(e) => setWaiterId(e.target.value || null)}
-              className="w-full p-2 border rounded" style={{ backgroundColor: themeColors.cardBackground, color: themeColors.cardText, borderColor: themeColors.cards }}
+              className="w-full p-2 border rounded"
+              style={{ backgroundColor: 'var(--background-color)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}
             >
-              <option value="">Assign Waiter</option>
+              <option value="">Select Waiter</option>
               {freeWaiters.map((waiter) => (
                 <option key={waiter._id} value={waiter._id}>{waiter.name}</option>
               ))}
@@ -498,9 +502,9 @@ const CreateOrderForm = ({
 
       {/* Payment Section for Takeaway */}
       {showPayment && (
-        <div className="rounded-lg p-4 shadow-sm border space-y-4" style={{ borderColor: themeColors.cardBorder }}>
+        <div className="rounded-lg p-4 shadow-sm border space-y-4" style={{ backgroundColor: 'var(--background-color)', borderColor: 'var(--border-color)' }}>
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: themeColors.cardText }}>
+            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-color)' }}>
               Received Amount *
             </label>
             <input
@@ -512,14 +516,14 @@ const CreateOrderForm = ({
               min={totalAmount}
               step="0.01"
               className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-[var(--primary-color)] transition-all duration-200 ${errors.receivedAmount && errors.receivedAmount.length > 0 ? 'border-[var(--error-color)] ring-1 ring-[var(--error-color)]' : 'border-[var(--border-color)]'}`}
-              style={{ backgroundColor: themeColors.cardBackground, color: themeColors.cardText }}
+              style={{ backgroundColor: 'var(--background-color)', color: 'var(--text-color)' }}
               placeholder={`Minimum: $${totalAmount.toFixed(2)}`}
             />
             {renderFieldErrors('receivedAmount')}
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: themeColors.cardText }}>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-color)' }}>
               Payment Method *
             </label>
             <div className="flex gap-4">
@@ -527,6 +531,7 @@ const CreateOrderForm = ({
                 type="button"
                 onClick={() => handlePaymentMethodChange('cash')}
                 className={`flex-1 py-2 px-4 rounded-md border transition-colors duration-200 ${paymentMethod === 'cash' ? 'bg-[var(--primary-color)] text-[var(--text-color-button)]' : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--background-color)]'}`}
+                style={{ borderColor: 'var(--border-color)' }}
               >
                 Cash
               </button>
@@ -534,6 +539,7 @@ const CreateOrderForm = ({
                 type="button"
                 onClick={() => handlePaymentMethodChange('card')}
                 className={`flex-1 py-2 px-4 rounded-md border transition-colors duration-200 ${paymentMethod === 'card' ? 'bg-[var(--primary-color)] text-[var(--text-color-button)]' : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--background-color)]'}`}
+                style={{ borderColor: 'var(--border-color)' }}
               >
                 Card
               </button>
@@ -556,29 +562,19 @@ const CreateOrderForm = ({
 };
 
 const OrderDetails = (props: OrderDetailsProps) => {
-  const getThemeColors = (theme?: string): ThemeColors => ({
-    cardBackground: 'var(--background-color)',
-    cardBorder: 'var(--border-color)',
-    cardText: 'var(--text-color)',
-    headingText: 'var(--heading-text)',
-  });
-  const themeColors = getThemeColors(props.currentTheme);
-
   return (
-    <div className="min-h-screen bg-[var(--background-color)] py-4">
+    <div className="relative space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
       <div className="lg:grid lg:grid-cols-10 lg:gap-6">
         <div className="lg:col-span-10">
           <div
             className="rounded-lg shadow-md border w-full mx-auto p-6"
             style={{
-              backgroundColor: themeColors.cardBackground,
-              borderColor: themeColors.cardBorder,
-              color: themeColors.cardText,
+              backgroundColor: 'var(--background-color)',
+              borderColor: 'var(--border-color)',
+              color: 'var(--text-color)',
             }}
           >
-            <h1 className="text-2xl font-semibold mb-6" style={{ color: themeColors.headingText }}>
-              Order Details
-            </h1>
+
             {props.isAddToOrder ? (
               <AddToOrderForm {...props} />
             ) : (

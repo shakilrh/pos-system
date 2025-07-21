@@ -1,5 +1,5 @@
 import React from 'react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import {ShoppingBagIcon, XMarkIcon} from '@heroicons/react/24/outline';
 
 interface Product {
   _id: string;
@@ -39,90 +39,142 @@ const OrderMenu = ({
                      addProductToOrder,
                    }: OrderMenuProps) => {
   return (
-    <div className="min-h-screen bg-[var(--background-color)] py-4">
-      <div className="lg:grid lg:grid-cols-10 lg:gap-6">
-        <div className="lg:col-span-10">
-          <div
-            className="rounded-lg shadow-md border w-full mx-auto p-6"
-            style={{
-              backgroundColor: 'var(--cardBackground)',
-              borderColor: '#4a4a4a',
-              color: 'var(--cardText)',
-            }}
-          >
-            <h1 className="text-2xl font-semibold mb-6" style={{ color: 'var(--headingText)' }}>
-              Menu Items
-            </h1>
-            <div className="space-y-6">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[var(--primary-color)] transition-all duration-200"
-                  style={{ backgroundColor: 'var(--background-secondary)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}
-                />
-                {searchTerm && (
-                  <XMarkIcon
-                    onClick={() => setSearchTerm('')}
-                    className="absolute right-3 top-3 h-5 w-5 cursor-pointer hover:text-[var(--text-secondary)]"
-                    style={{ color: 'var(--text-secondary)' }}
-                  />
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setSelectedCategory('')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    selectedCategory === ''
-                      ? 'bg-[var(--primary-color)] text-[var(--sidebar-text)]'
-                      : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--border-hover)]'
-                  }`}
-                >
-                  All Products
-                </button>
-                {categories.map((category) => (
-                  <button
-                    key={category._id}
-                    onClick={() => setSelectedCategory(category._id)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                      selectedCategory === category._id
-                        ? 'bg-[var(--primary-color)] text-[var(--sidebar-text)]'
-                        : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--border-hover)]'
-                    }`}
-                  >
-                    {category.name}
-                  </button>
-                ))}
-              </div>
-              <div className="grid grid-cols-5 gap-4 max-h-96 overflow-y-auto">
-                {filteredProducts.map((product) => (
-                  <div
-                    key={product._id}
-                    onClick={() => addProductToOrder(product)}
-                    className="rounded-lg p-2 flex flex-col items-center cursor-pointer border hover:border-2 hover:shadow-md transition-all duration-200"
-                    style={{ minHeight: '90px', minWidth: '120px', borderColor: '#4a4a4a', backgroundColor: 'var(--cardBackground)' }}
-                  >
-                    <img
-                      src={product.pictureUrl || 'https://via.placeholder.com/96'}
-                      alt={product.name}
-                      className="w-14 h-14 object-cover rounded-md mb-1"
-                    />
-                    {product.time_required && (
-                      <span className="absolute top-0.5 right-0.5 text-[7px] px-1 py-0.5 rounded border font-medium leading-none"
-                            style={{ color: 'var(--info-color)', backgroundColor: 'var(--surface-secondary)', borderColor: 'var(--border-color)' }}>
-                        {product.time_required}m
-                      </span>
-                    )}
-                    <span className="text-[10px] font-semibold text-center leading-tight px-1" style={{ color: 'var(--cardText)' }}>{product.name}</span>
-                    <span className="text-[10px] mt-0.5 font-medium" style={{ color: 'var(--success-color)' }}>${product.price.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+    <div className="relative space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
+      {/* Header */}
+      {/* Header - Always visible */}
+      <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <div className="flex items-center mb-4">
+          <button className="mr-2" style={{ color: 'var(--text-secondary)' }}>
+            <ShoppingBagIcon className="w-5 h-5" />
+          </button>
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Menu Items</h3>
+        </div>
+      </div>
+
+      {/* Search and Category Filter */}
+      <div className="rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <div className="space-y-4">
+          {/* Search Input */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[var(--primary-color)] transition-all duration-200"
+              style={{ backgroundColor: 'var(--background-secondary)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}
+            />
+            {searchTerm && (
+              <XMarkIcon
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-3.5 h-5 w-5 cursor-pointer hover:text-[var(--error-color)]"
+                style={{ color: 'var(--text-secondary)' }}
+              />
+            )}
+          </div>
+
+          {/* Category Filters */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedCategory('')}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                selectedCategory === ''
+                  ? 'bg-[var(--primary-color)] text-[var(--text-color-button)]'
+                  : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--border-hover)]'
+              }`}
+            >
+              All Products
+            </button>
+            {categories.map((category) => (
+              <button
+                key={category._id}
+                onClick={() => setSelectedCategory(category._id)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  selectedCategory === category._id
+                    ? 'bg-[var(--primary-color)] text-[var(--text-color-button)]'
+                    : 'bg-[var(--background-secondary)] text-[var(--text-secondary)] hover:bg-[var(--border-hover)]'
+                }`}
+              >
+                {category.name}
+              </button>
+            ))}
           </div>
         </div>
+      </div>
+
+      {/* Products Grid */}
+      <div className="rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {filteredProducts.map((product) => (
+            <div
+              key={product._id}
+              onClick={() => addProductToOrder(product)}
+              className="group relative rounded-lg p-3 flex flex-col items-center cursor-pointer border hover:border-[var(--primary-color)] hover:shadow-md transition-all duration-200"
+              style={{
+                borderColor: 'var(--border-color)',
+                backgroundColor: 'var(--cardBackground)',
+                minHeight: '180px'
+              }}
+            >
+              {/* Time Required Badge */}
+              {product.time_required && (
+                <span
+                  className="absolute top-2 right-2 text-xs px-2 py-1 rounded-full font-medium"
+                  style={{
+                    color: 'var(--info-color)',
+                    backgroundColor: 'var(--background-secondary)',
+                    border: '1px solid var(--border-color)'
+                  }}
+                >
+                  {product.time_required}m
+                </span>
+              )}
+
+              {/* Product Image */}
+              <div className="w-20 h-20 mb-3 flex items-center justify-center overflow-hidden rounded-md">
+                <img
+                  src={product.pictureUrl || 'https://via.placeholder.com/96'}
+                  alt={product.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/96';
+                  }}
+                />
+              </div>
+
+              {/* Product Info */}
+              <div className="w-full text-center">
+                <h3
+                  className="text-sm font-semibold mb-1 line-clamp-2"
+                  style={{ color: 'var(--headingText)' }}
+                >
+                  {product.name}
+                </h3>
+                <span
+                  className="text-sm font-bold mt-auto"
+                  style={{ color: 'var(--success-color)' }}
+                >
+                  ${product.price.toFixed(2)}
+                </span>
+              </div>
+
+              {/* Add to Order Overlay */}
+              <div className="absolute inset-0 bg-[var(--primary-color)] bg-opacity-90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg">
+                <span
+                  className="text-white font-bold text-sm"
+                >
+                  Add to Order
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {filteredProducts.length === 0 && (
+          <div className="py-12 text-center">
+            <p style={{ color: 'var(--text-secondary)' }}>No products found matching your criteria</p>
+          </div>
+        )}
       </div>
     </div>
   );

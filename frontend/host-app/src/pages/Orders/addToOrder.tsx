@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import {ChartBarIcon, XMarkIcon} from '@heroicons/react/24/outline';
 import { Order, getOrderByNumber } from '../../services/orderService';
 import toast from 'react-hot-toast';
 import { OrderItem, ThemeColors, OrderDetailsProps } from './orderDetails';
@@ -43,10 +43,22 @@ const ParentOrderCard: React.FC<{
 
   return (
     <div className="mb-4 relative">
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200 shadow-md h-64">
+      <div
+        className="rounded-lg p-4 border shadow-sm h-64"
+        style={{
+          backgroundColor: themeColors.cardBackground,
+          borderColor: themeColors.cardBorder
+        }}
+      >
         <div className="flex justify-between items-start mb-3">
           <div className="flex items-center space-x-2">
-            <div className="bg-blue-500 text-white rounded-full p-1">
+            <div
+              className="rounded-full p-1"
+              style={{
+                backgroundColor: 'var(--primary-color)',
+                color: 'var(--text-color-button)'
+              }}
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
@@ -61,7 +73,13 @@ const ParentOrderCard: React.FC<{
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <div className="bg-purple-100 text-purple-600 rounded-full p-1">
+              <div
+                className="rounded-full p-1"
+                style={{
+                  backgroundColor: 'var(--background-secondary)',
+                  color: 'var(--primary-color)'
+                }}
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
@@ -73,7 +91,13 @@ const ParentOrderCard: React.FC<{
             </div>
 
             <div className="flex items-center space-x-2">
-              <div className="bg-green-100 text-green-600 rounded-full p-1">
+              <div
+                className="rounded-full p-1"
+                style={{
+                  backgroundColor: 'var(--background-secondary)',
+                  color: 'var(--primary-color)'
+                }}
+              >
                 {getServiceTypeIcon(parentOrder.service_type)}
               </div>
               <div>
@@ -86,7 +110,13 @@ const ParentOrderCard: React.FC<{
 
             {parentOrder.table_id && (
               <div className="flex items-center space-x-2">
-                <div className="bg-orange-100 text-orange-600 rounded-full p-1">
+                <div
+                  className="rounded-full p-1"
+                  style={{
+                    backgroundColor: 'var(--background-secondary)',
+                    color: 'var(--primary-color)'
+                  }}
+                >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
                   </svg>
@@ -100,7 +130,13 @@ const ParentOrderCard: React.FC<{
 
             {parentOrder.waiter && (
               <div className="flex items-center space-x-2">
-                <div className="bg-indigo-100 text-indigo-600 rounded-full p-1">
+                <div
+                  className="rounded-full p-1"
+                  style={{
+                    backgroundColor: 'var(--background-secondary)',
+                    color: 'var(--primary-color)'
+                  }}
+                >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -115,7 +151,13 @@ const ParentOrderCard: React.FC<{
 
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <div className="bg-emerald-100 text-emerald-600 rounded-full p-1">
+              <div
+                className="rounded-full p-1"
+                style={{
+                  backgroundColor: 'var(--background-secondary)',
+                  color: 'var(--primary-color)'
+                }}
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                 </svg>
@@ -402,9 +444,20 @@ const AddToOrderForm = ({
   };
 
   return (
-    <div className="space-y-6" style={{ backgroundColor: themeColors.cardBackground, color: themeColors.cardText, border: `1px solid ${themeColors.cardBorder}` }}>
-      <div>
-        <label className="block text-sm font-medium mb-2" style={{ color: themeColors.cardText }}>
+    <div className="space-y-4">
+      {/* Header */}
+      {/* Header - Always visible */}
+      <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <div className="flex items-center mb-4">
+          <button className="mr-2" style={{ color: 'var(--text-secondary)' }}>
+            <ChartBarIcon className="w-5 h-5" />
+          </button>
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Add to Order</h3>
+        </div>
+      </div>
+      {/* Parent Order Number Input */}
+      <div className="rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-color)' }}>
           Parent Order Number *
         </label>
         <input
@@ -414,71 +467,80 @@ const AddToOrderForm = ({
           onChange={handleParentOrderNumberChange}
           onFocus={() => handleFocus('parentOrderNumber')}
           onBlur={() => handleBlur('parentOrderNumber')}
-          className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-[var(--primary-color)] transition-all duration-200 ${errors.parentOrderNumber && errors.parentOrderNumber.length > 0 ? 'border-[var(--error-color)] ring-1 ring-[var(--error-color)]' : 'border-[var(--border-color)]'}`}
-          style={{ backgroundColor: themeColors.cardBackground, color: themeColors.cardText }}
+          className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-[var(--primary-color)] transition-all duration-200 ${errors.parentOrderNumber && errors.parentOrderNumber.length > 0 ? 'border-[var(--error-color)] ring-1 ring-[var(--error-color)]' : 'border-[var(--border-color)]'}`}
+          style={{ backgroundColor: 'var(--background-color)', color: 'var(--text-color)' }}
         />
         {renderFieldErrors('parentOrderNumber')}
       </div>
 
-      <div>
-        <h3 className="font-semibold mb-4" style={{ color: themeColors.headingText }}>Order Summary</h3>
+      {/* Order Summary */}
+      <div className="rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <h3 className="font-semibold mb-3" style={{ color: 'var(--text-color)' }}>Order Summary *</h3>
         {orderItems.length === 0 ? (
-          <div onClick={handleOrderItemsInteraction}>
-            <p style={{ color: themeColors.cardText }}>No items added to the order</p>
+          <div
+            onClick={handleOrderItemsInteraction}
+            className="py-8 text-center bg-[var(--background-secondary)] rounded border border-dashed"
+            style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }}
+          >
+            <p>No items added to the order</p>
             {renderFieldErrors('orderItems')}
           </div>
         ) : (
-          <>
-            <table className="w-full text-left border-collapse">
-              <thead>
-              <tr className="border-b" style={{ borderColor: themeColors.cardBorder }}>
-                <th className="py-2 px-4" style={{ color: themeColors.cardText }}>Item</th>
-                <th className="py-2 px clara-4" style={{ color: themeColors.cardText }}>Qty</th>
-                <th className="py-2 px-4" style={{ color: themeColors.cardText }}>Price</th>
-                <th className="py-2 px-4" style={{ color: themeColors.cardText }}>Total</th>
-                <th className="py-2 px-4" style={{ color: themeColors.cardText }}>Action</th>
-              </tr>
-              </thead>
-              <tbody>
-              {orderItems.map((item, index) => (
-                <tr key={item.product_id} className="border-b" style={{ borderColor: themeColors.cardBorder }}>
-                  <td className="py-2 px-4" style={{ color: themeColors.cardText }}>{item.product?.name || `Product ${item.product_id}`}</td>
-                  <td className="py-2 px-4" style={{ color: themeColors.cardText }}>{item.quantity}</td>
-                  <td className="py-2 px-4" style={{ color: themeColors.cardText }}>${(item.product?.price || 0).toFixed(2)}</td>
-                  <td className="py-2 px-4" style={{ color: themeColors.cardText }}>${(item.sub_total || 0).toFixed(2)}</td>
-                  <td className="py-2 px-4">
-                    <XMarkIcon
-                      onClick={() => {
-                        handleOrderItemsInteraction();
-                        setOrderItems(orderItems.filter((_, i) => i !== index));
-                      }}
-                      className="h-5 w-5 cursor-pointer hover:text-[var(--error-color-hover)]"
-                      style={{ color: 'var(--error-color)' }}
-                    />
-                  </td>
-                </tr>
-              ))}
-              <tr className="font-bold">
-                <td colSpan={3} className="py-2 px-4 text-right" style={{ color: themeColors.cardText }}>Total</td>
-                <td className="py-2 px-4" style={{ color: themeColors.cardText }}>${totalAmount.toFixed(2)}</td>
-                <td></td>
-              </tr>
-              </tbody>
-            </table>
+          <div className="space-y-3">
+            <div className="grid grid-cols-5 gap-2 text-xs font-medium uppercase tracking-wider border-b pb-2" style={{ borderColor: 'var(--border-color)', color: 'var(--text-color)' }}>
+              <div>Item</div>
+              <div className="text-center">Qty</div>
+              <div className="text-right">Price</div>
+              <div className="text-right">Total</div>
+              <div></div>
+            </div>
+            {orderItems.map((item, index) => (
+              <div key={item.product_id} className="grid grid-cols-5 gap-2 items-center py-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
+                <div className="font-medium truncate" style={{ color: 'var(--text-color)' }}>
+                  {item.product?.name || `Product ${item.product_id}`}
+                </div>
+                <div className="text-center" style={{ color: 'var(--text-color)' }}>{item.quantity}</div>
+                <div className="text-right" style={{ color: 'var(--text-color)' }}>
+                  ${(item.product?.price || 0).toFixed(2)}
+                </div>
+                <div className="text-right font-medium" style={{ color: 'var(--text-color)' }}>
+                  ${(item.sub_total || 0).toFixed(2)}
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      handleOrderItemsInteraction();
+                      setOrderItems(orderItems.filter((_, i) => i !== index));
+                    }}
+                    className="text-[var(--error-color)] hover:text-[var(--error-color-hover)] p-1 rounded-full hover:bg-[var(--background-secondary)]"
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            <div className="flex justify-between items-center pt-2">
+              <span className="font-bold" style={{ color: 'var(--text-color)' }}>Total</span>
+              <span className="font-bold text-lg" style={{ color: 'var(--text-color)' }}>
+                ${totalAmount.toFixed(2)}
+              </span>
+            </div>
             {renderFieldErrors('orderItems')}
-          </>
+          </div>
         )}
       </div>
 
+      {/* Parent Order Card */}
+      <ParentOrderCard parentOrder={parentOrder} themeColors={themeColors} />
+
+      {/* Add to Order Button */}
       <button
         onClick={handleEnhancedCreateOrder}
-        disabled={false}
-        className={`w-full py-2 rounded-lg transition-all duration-200 ${!isFormValid() ? 'bg-[var(--background-secondary)] text-[var(--text-secondary)] cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-color-button)] hover:bg-[var(--primary-color)]'}`}
+        disabled={!isFormValid()}
+        className={`w-full py-3 rounded-lg font-medium text-[var(--text-color-button)] transition-all duration-200 ${!isFormValid() ? 'bg-[var(--background-secondary)] cursor-not-allowed' : 'bg-[var(--primary-color)] hover:bg-[var(--primary-color)]'}`}
       >
         Add to Order
       </button>
-
-      <ParentOrderCard parentOrder={parentOrder} themeColors={themeColors} />
     </div>
   );
 };
