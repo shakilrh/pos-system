@@ -10,6 +10,9 @@ interface OrderData {
   customer_name: string;
   service_type: 'dine_in' | 'take_away';
   table_number?: string;
+  table_id?: string;
+  parent_order_number?: string;
+  waiter_id?: string;
 }
 
 interface Product {
@@ -48,10 +51,46 @@ interface Order {
   service_type: 'dine_in' | 'take_away';
   items: OrderItemResponse[];
   customer_name: string;
-  table_number?: string;
+  table_id?: string;
   __v: number;
   notification?: 'pending' | 'confirmed' | 'ready' | 'served' | 'completed' | 'cancel';
   notification_status?: 0 | 1;
+  waiter?: Waiter | null; // Changed from worker to waiter
+  waiter_status?: string | null; // Changed from worker_status
+  estimated_completion?: string;
+}
+
+interface Worker {
+  id: string;
+  name: string;
+  role: string;
+  is_assigned: boolean;
+}
+
+interface Waiter {
+  _id: string;
+  name: string;
+  email: string;
+  user_type: 'waiter';
+  role: string | null;
+  created_by: {
+    id: string;
+    name: string;
+    email: string;
+    store_name: string;
+    logoUrl: string;
+    store_logo: string;
+  };
+}
+
+interface AssignWorkerRequest {
+  order_number: string;
+  waiter_id?: string;
+}
+
+interface AddToOrderRequest {
+  order_number: string;
+  items: OrderItem[];
 }
 
 interface QueueOrderItem {
@@ -115,7 +154,7 @@ const handleApiError = (response: ApiResponse<any>, logout: () => void): string 
         window.location.href = '/pos-system/login';
         return 'Please log in to continue';
       case 403: return 'Access denied';
-      case 404: return response.message || 'Resource not found';
+      case 404: return response.message || 'Order not found';
       case 409: return response.message || 'Duplicate entry';
       case 500: return 'An unexpected server error occurred';
       default: return 'An unexpected error occurred';
@@ -161,6 +200,7 @@ export const createOrder = async (
   }
 };
 
+
 export const updateOrder = async (
   token: string,
   logout: () => void,
@@ -197,7 +237,7 @@ export const assignTable = async (
   token: string,
   logout: () => void,
   order_number: string,
-  table_id: string // Changed from table_number to table_id
+  table_id: string
 ): Promise<Order> => {
   try {
     const response = await fetch(`${API_BASE_URL}/orders/api/v1/assign-table`, {
@@ -206,7 +246,7 @@ export const assignTable = async (
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ order_number, table_id }), // Send table_id
+      body: JSON.stringify({ order_number, table_id }),
     });
 
     const data: ApiResponse<Order> = await response.json();
@@ -221,6 +261,7 @@ export const assignTable = async (
     throw new Error(message);
   }
 };
+
 export const confirmOrder = async (
   token: string,
   logout: () => void,
@@ -321,7 +362,7 @@ export const markOrderAsCompleted = async (
     }
 
     return 'data' in data.data ? data.data.data : data.data;
-  }  catch (err) {
+  } catch (err) {
     throw new Error(err instanceof Error ? err.message : 'Failed to mark order as completed');
   }
 };
@@ -371,6 +412,42 @@ export const getAllOrders = async (token: string, logout: string | (() => void))
   } catch (err) {
     console.error('Error in getAllOrders:', err);
     throw new Error(err instanceof Error ? err.message : 'Failed to fetch orders');
+  }
+};
+
+export const getOrderByNumber = async (
+  token: string,
+  logout: () => void,
+  order_number: string
+): Promise<Order> => {
+  try {
+    console.log(`Fetching order with number: ${order_number}`);
+    const response = await fetch(`${API_BASE_URL}/orders/api/v1/by-number`, {
+      method: 'POST', // Changed to POST to match Postman request
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ order_number }),
+    });
+
+    if (!response.ok) {
+      console.error(`HTTP error! status: ${response.status}, order_number: ${order_number}`);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: ApiResponse<Order> = await response.json();
+    console.log('API response:', data);
+    if (!data.success) {
+      throw new Error(data.message || handleApiError(data, logout));
+    }
+
+    return 'data' in data.data ? data.data.data : data.data;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to fetch order by number';
+    console.error('Error in getOrderByNumber:', message);
+    toast.error(message);
+    throw new Error(message);
   }
 };
 
@@ -447,6 +524,64 @@ export const markNotificationAsRead = async (
     return 'data' in data.data ? data.data.data : data.data;
   } catch (err) {
     throw new Error(err instanceof Error ? err.message : 'Failed to mark notification as read');
+  }
+};
+
+export const fetchFreeWaiters = async (token: string, logout: () => void): Promise<Waiter[]> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/api/v1/all-waiters`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data: ApiResponse<{ data: any[] }> = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || handleApiError(data, logout));
+    }
+    const waiters = data.data?.data || [];
+    return waiters.map(waiter => ({
+      id: waiter.id, // Map 'id' to '_id' to match Waiter interface
+      name: waiter.name,
+      email: waiter.email,
+      user_type: waiter.user_type,
+      role: waiter.role,
+      created_by: {
+        id: waiter.created_by.id,
+        name: waiter.created_by.name,
+        email: waiter.created_by.email,
+        store_name: waiter.created_by.store_name,
+        logoUrl: waiter.created_by.logoUrl,
+        store_logo: waiter.created_by.store_logo,
+      },
+    }));
+  } catch (err) {
+    throw new Error(err instanceof Error ? err.message : 'Failed to fetch waiters');
+  }
+};
+
+
+export const addToExistingOrder = async (
+  token: string,
+  logout: () => void,
+  order_number: string,
+  items: OrderItem[]
+): Promise<Order> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/api/v1/add-to-order`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ order_number, items }),
+    });
+
+    const data: ApiResponse<Order> = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || handleApiError(data, logout));
+    }
+
+    return 'data' in data.data ? data.data.data : data.data;
+  } catch (err) {
+    throw new Error(err instanceof Error ? err.message : 'Failed to add items to order');
   }
 };
 

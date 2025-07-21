@@ -75,7 +75,6 @@ const AssignTable: React.FC<AssignTableProps> = ({
         const fetchedOrders = await getAllOrders(token, logout);
         setOrders(fetchedOrders.filter(order =>
           order.service_type === 'dine_in' &&
-          (order.table_id === null || order.table_id === undefined) &&
           ['processing', 'ready'].includes(order.status.toLowerCase())
         ));
       } catch (err) {
@@ -202,7 +201,9 @@ const AssignTable: React.FC<AssignTableProps> = ({
     setAssigning(selectedOrder.order_number);
     try {
       const updatedOrder = await assignTable(token, logout, selectedOrder.order_number, selectedTableId);
-      setOrders(orders.filter(o => o.order_number !== selectedOrder.order_number));
+      setOrders(orders.map(o =>
+        o.order_number === updatedOrder.order_number ? { ...o, table_id: selectedTableId } : o
+      ));
       setTables(tables.map(t =>
         t._id === selectedTableId ? { ...t, status: 'occupied' } : t
       ));
@@ -263,32 +264,31 @@ const AssignTable: React.FC<AssignTableProps> = ({
     return gradients[index % gradients.length];
   };
 
+  const getTableNumber = (tableId: string | null | undefined) => {
+    if (!tableId) return 'N/A';
+    const table = tables.find(t => t._id === tableId);
+    return table ? table.number : 'N/A';
+  };
+
   if (!isClient || !isAuthenticated) {
     return null;
   }
 
   return (
-    <div className="w-full min-h-screen bg-[var(--background-color)] p-4" style={{ backgroundColor: themeColors.backgroundColor }}>
+    <div className="w-full min-h-screen bg-[var(--background-color)] p-3" style={{ backgroundColor: themeColors.backgroundColor }}>
       <div className="max-w-5xl mx-auto">
-        {/* Header Section */}
-        <div className="mb-8">
-          <div className="text-center mb-6">
-            <h1 className="text-4xl font-bold mb-2" >
-              🍽️ Table Assignment Center
-            </h1>
-            <p className="text-lg opacity-75" style={{ color: themeColors.inactiveTabText }}>
-              Assign tables to your dine-in orders with style
-            </p>
+        <div className="mb-6">
+          <div className="text-center mb-4">
+            <h1 className="text-2xl font-semibold mb-2" style={{ color: themeColors.headingText }}>🍽️ Table Assignment Center</h1>
+            <p className="text-sm opacity-75" style={{ color: themeColors.inactiveTabText }}>Assign tables to your dine-in orders</p>
           </div>
-
-          {/* Search Bar */}
           <div className="max-w-md mx-auto">
             <div className="relative group">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full p-2.5 pl-10 text-sm rounded-lg border focus:ring-2 transition-colors duration-200"
+                className="w-full p-2 pl-10 text-sm rounded-lg border focus:ring-2 transition-colors duration-200"
                 style={{
                   borderColor: themeColors.borderColor,
                   backgroundColor: themeColors.backgroundColor,
@@ -302,7 +302,6 @@ const AssignTable: React.FC<AssignTableProps> = ({
           </div>
         </div>
 
-        {/* Loading State */}
         {loading ? (
           <div className="flex flex-col justify-center items-center py-16">
             <div className="relative">
@@ -310,27 +309,26 @@ const AssignTable: React.FC<AssignTableProps> = ({
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent absolute top-0 left-0"></div>
             </div>
             <p className="mt-4 text-base font-medium" style={{ color: themeColors.textSecondary }}>
-              Loading delicious orders...
+              Loading orders...
             </p>
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="relative mx-auto w-24 h-24 mb-4">
+          <div className="text-center py-12">
+            <div className="relative mx-auto w-20 h-20 mb-4">
               <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 opacity-20"></div>
-              <div className="absolute inset-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+              <div className="absolute inset-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
                 <span className="text-3xl">🍽️</span>
               </div>
             </div>
-            <h3 className="text-xl font-bold mb-3" style={{ color: themeColors.headingText }}>
+            <h3 className="text-lg font-medium mb-2" style={{ color: themeColors.headingText }}>
               No Orders Available
             </h3>
-            <p className="text-base max-w-md mx-auto" style={{ color: themeColors.textSecondary }}>
+            <p className="text-sm max-w-md mx-auto" style={{ color: themeColors.textSecondary }}>
               {searchQuery ? 'No orders match your search criteria.' : 'All caught up! No orders are waiting for table assignment.'}
             </p>
           </div>
         ) : (
           <>
-            {/* Order Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
               {currentOrders.map((order, index) => {
                 const statusInfo = getStatusColor(order.status);
@@ -339,17 +337,15 @@ const AssignTable: React.FC<AssignTableProps> = ({
                 return (
                   <div
                     key={order.order_number}
-                    className="group relative overflow-hidden rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200"
+                    className="group relative overflow-hidden rounded-lg shadow-sm hover:shadow-md transform hover:-translate-y-1 transition-all duration-200"
                     style={{
                       background: getCardGradient(index),
-                      minHeight: '220px'
+                      minHeight: '200px'
                     }}
                   >
-                    {/* Card Content */}
-                    <div className="relative p-4 h-full flex flex-col justify-between" style={{ color: themeColors.cardText }}>
-                      {/* Header */}
+                    <div className="relative p-3 h-full flex flex-col justify-between" style={{ color: themeColors.cardText }}>
                       <div>
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center space-x-2">
                             <HashtagIcon className="w-4 h-4" />
                             <span className="text-base font-bold">{order.order_number}</span>
@@ -363,26 +359,23 @@ const AssignTable: React.FC<AssignTableProps> = ({
                           </div>
                         </div>
 
-                        {/* Customer Info */}
-                        <div className="flex items-center space-x-2 mb-4">
+                        <div className="flex items-center space-x-2 mb-2">
                           <UserIcon className="w-4 h-4" />
                           <span className="text-base font-medium">{order.customer_name}</span>
                         </div>
 
-                        {/* Order Details */}
-                        <div className="space-y-2 mb-4">
+                        <div className="space-y-2 mb-2">
                           <div className="flex justify-between text-xs opacity-90">
                             <span>Service Type:</span>
                             <span className="font-medium">Dine In</span>
                           </div>
                           <div className="flex justify-between text-xs opacity-90">
                             <span>Table Status:</span>
-                            <span className="font-medium text-yellow-600">⏳ Awaiting Assignment</span>
+                            <span className="font-medium text-yellow-600">⏳ {order.table_id ? `Table ${getTableNumber(order.table_id)}` : 'Awaiting Assignment'}</span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Action Button */}
                       <button
                         onClick={() => handleAssignTable(order)}
                         disabled={assigning === order.order_number}
@@ -414,7 +407,6 @@ const AssignTable: React.FC<AssignTableProps> = ({
               })}
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-center space-x-2">
                 <button
@@ -460,7 +452,6 @@ const AssignTable: React.FC<AssignTableProps> = ({
           </>
         )}
 
-        {/* Enhanced Modal */}
         {selectedOrder && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
             <div className="bg-[var(--background-color)] rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl border border-[var(--border-color)]" style={{ backgroundColor: themeColors.backgroundColor, borderColor: themeColors.borderColor }}>
