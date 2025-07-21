@@ -332,6 +332,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           showButtons={true}
           title="Payment Confirmed"
           paymentMethod={paymentMethod}
+          selectedTable={{ number: currentOrder.table_number }} // Pass table number as selectedTable
         />
       )}
     </>

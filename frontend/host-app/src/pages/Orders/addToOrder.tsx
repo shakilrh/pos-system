@@ -536,8 +536,12 @@ const AddToOrderForm = ({
       {/* Add to Order Button */}
       <button
         onClick={handleEnhancedCreateOrder}
-        disabled={!isFormValid()}
-        className={`w-full py-3 rounded-lg font-medium text-[var(--text-color-button)] transition-all duration-200 ${!isFormValid() ? 'bg-[var(--background-secondary)] cursor-not-allowed' : 'bg-[var(--primary-color)] hover:bg-[var(--primary-color)]'}`}
+        disabled={!parentOrder || orderItems.length === 0}
+        className={`flex items-center justify-center mx-auto px-8 py-4 text-lg font-medium rounded-lg transition-all duration-200 focus:outline-none w-3/4 min-w-[300px] max-w-[500px] ${
+          !parentOrder || orderItems.length === 0
+            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            : 'bg-[var(--primary-color)] text-[var(--text-color-button)] hover:brightness-90 hover:shadow-md'
+        }`}
       >
         Add to Order
       </button>
