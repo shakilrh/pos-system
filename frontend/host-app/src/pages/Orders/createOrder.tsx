@@ -273,7 +273,6 @@ export default function CreateOrder() {
 
       const paymentResponse = serviceType === 'take_away' ? await processPayment(token, logout, response._id, receivedAmount, paymentMethod) : { ...response, payment_status: 'pending' };
 
-
       const totalAmount = calculateTotalOrderAmount();
       const change = orderData.service_type === 'take_away' && orderData.received_amount ? orderData.received_amount - totalAmount : 0;
       setChangeAmount(change > 0 ? change : 0);
@@ -421,8 +420,23 @@ export default function CreateOrder() {
     setIsAddToOrder(false);
   };
 
-  if (!clientLoaded || isLoading) {
-    return null;
+  if (!clientLoaded) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-[var(--background-color)]">
+        <div
+          className="text-center p-6 max-w-md rounded-lg shadow-md border"
+          style={{
+            backgroundColor: themeColors.cardBackground,
+            borderColor: themeColors.cardBorder,
+            color: themeColors.cardText,
+          }}
+        >
+          <div className="text-2xl mb-4" style={{ color: themeColors.headingText }}>
+            Loading...
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
@@ -463,18 +477,18 @@ export default function CreateOrder() {
         />
       )}
       <div
-        className="rounded-lg shadow-md border w-full mt-6"
+        className="rounded-lg shadow-md border w-full p-4 mb-6"
         style={{
           backgroundColor: themeColors.cardBackground,
           borderColor: themeColors.cardBorder,
           color: themeColors.cardText,
         }}
       >
-        <div className="p-8">
-          <h1 className="text-2xl font-semibold mb-8" style={{ color: themeColors.headingText }}>
-            Create Order
-          </h1>
-          <div className="flex gap-4 mb-6">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
+          <div className="mb-3 lg:mb-0">
+            <h1 className="text-2xl font-bold" style={{ color: themeColors.headingText }}>Create Order</h1>
+          </div>
+          <div className="flex gap-4">
             <button
               onClick={() => {
                 setIsAddToOrder(false);
@@ -510,63 +524,63 @@ export default function CreateOrder() {
               Add to Existing Order
             </button>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
-            <div className="lg:col-span-3">
-              <div
-                className="rounded-lg shadow-md border p-4"
-                style={{
-                  backgroundColor: themeColors.cardBackground,
-                  borderColor: themeColors.cardBorder,
-                  color: themeColors.cardText,
-                }}
-              >
-                <OrderDetails
-                  customerName={customerName}
-                  setCustomerName={setCustomerName}
-                  serviceType={serviceType}
-                  setServiceType={setServiceType}
-                  receivedAmount={receivedAmount}
-                  setReceivedAmount={setReceivedAmount}
-                  paymentMethod={paymentMethod}
-                  setPaymentMethod={setPaymentMethod}
-                  orderItems={orderItems}
-                  setOrderItems={setOrderItems}
-                  calculateTotalOrderAmount={calculateTotalOrderAmount}
-                  handleCreateOrder={isAddToOrder ? handleAddToOrder : handleCreateOrder}
-                  freeTables={freeTables}
-                  selectedTableId={selectedTableId}
-                  setSelectedTableId={setSelectedTableId}
-                  token={token}
-                  logout={logout}
-                  orders={[]}
-                  waiterId={waiterId}
-                  setWaiterId={setWaiterId}
-                  freeWaiters={freeWaiters}
-                  isAddToOrder={isAddToOrder}
-                  currentTheme={currentTheme}
-                />
-              </div>
-            </div>
-            <div className="lg:col-span-7">
-              <div
-                className="rounded-lg shadow-md border p-4"
-                style={{
-                  backgroundColor: themeColors.cardBackground,
-                  borderColor: themeColors.cardBorder,
-                  color: themeColors.cardText,
-                }}
-              >
-                <OrderMenu
-                  searchTerm={searchTerm}
-                  setSearchTerm={setSearchTerm}
-                  selectedCategory={selectedCategory}
-                  setSelectedCategory={setSelectedCategory}
-                  categories={categories}
-                  filteredProducts={filteredProducts}
-                  addProductToOrder={addProductToOrder}
-                />
-              </div>
-            </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+        <div className="lg:col-span-3">
+          <div
+            className="rounded-lg shadow-md border p-4"
+            style={{
+              backgroundColor: themeColors.cardBackground,
+              borderColor: themeColors.cardBorder,
+              color: themeColors.cardText,
+            }}
+          >
+            <OrderDetails
+              customerName={customerName}
+              setCustomerName={setCustomerName}
+              serviceType={serviceType}
+              setServiceType={setServiceType}
+              receivedAmount={receivedAmount}
+              setReceivedAmount={setReceivedAmount}
+              paymentMethod={paymentMethod}
+              setPaymentMethod={setPaymentMethod}
+              orderItems={orderItems}
+              setOrderItems={setOrderItems}
+              calculateTotalOrderAmount={calculateTotalOrderAmount}
+              handleCreateOrder={isAddToOrder ? handleAddToOrder : handleCreateOrder}
+              freeTables={freeTables}
+              selectedTableId={selectedTableId}
+              setSelectedTableId={setSelectedTableId}
+              token={token}
+              logout={logout}
+              orders={[]}
+              waiterId={waiterId}
+              setWaiterId={setWaiterId}
+              freeWaiters={freeWaiters}
+              isAddToOrder={isAddToOrder}
+              currentTheme={currentTheme}
+            />
+          </div>
+        </div>
+        <div className="lg:col-span-7">
+          <div
+            className="rounded-lg shadow-md border p-4"
+            style={{
+              backgroundColor: themeColors.cardBackground,
+              borderColor: themeColors.cardBorder,
+              color: themeColors.cardText,
+            }}
+          >
+            <OrderMenu
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              categories={categories}
+              filteredProducts={filteredProducts}
+              addProductToOrder={addProductToOrder}
+            />
           </div>
         </div>
       </div>
@@ -583,8 +597,6 @@ export default function CreateOrder() {
           paymentMethod={paymentMethod}
           showButtons={true}
           title={isAddToOrder ? "Items Added to Order" : "Order Confirmed"}
-          paymentMethod={paymentMethod}
-          tables={freeTables}
           storeName={storeName}
           storeAddress={storeAddress}
           storePhone={storePhone}
