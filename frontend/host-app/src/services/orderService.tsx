@@ -538,7 +538,7 @@ export const fetchFreeWaiters = async (token: string, logout: () => void): Promi
     }
     const waiters = data.data?.data || [];
     return waiters.map(waiter => ({
-      id: waiter.id, // Map 'id' to '_id' to match Waiter interface
+      _id: waiter._id, // Map 'id' to '_id' to match Waiter interface
       name: waiter.name,
       email: waiter.email,
       user_type: waiter.user_type,
