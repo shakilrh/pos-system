@@ -41,7 +41,6 @@ const OrderMenu = ({
   return (
     <div className="relative space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
       {/* Header */}
-      {/* Header - Always visible */}
       <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
         <div className="flex items-center mb-4">
           <button className="mr-2" style={{ color: 'var(--text-secondary)' }}>
@@ -119,7 +118,7 @@ const OrderMenu = ({
               {/* Time Required Badge */}
               {product.time_required && (
                 <span
-                  className="absolute top-2 right-2 text-xs px-2 py-1 rounded-full font-medium"
+                  className="absolute top-2 right-2 text-xs px-2 py-1 rounded-full font-medium z-10"
                   style={{
                     color: 'var(--info-color)',
                     backgroundColor: 'var(--background-secondary)',
@@ -158,13 +157,9 @@ const OrderMenu = ({
                 </span>
               </div>
 
-              {/* Add to Order Overlay */}
-              <div className="absolute inset-0 bg-[var(--primary-color)] bg-opacity-90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg">
-                <span
-                  className="text-white font-bold text-sm"
-                >
-                  Add to Order
-                </span>
+              {/* Updated Hover Overlay */}
+              <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg">
+
               </div>
             </div>
           ))}
