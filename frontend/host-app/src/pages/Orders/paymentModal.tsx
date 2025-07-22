@@ -78,7 +78,7 @@ const OrderSearch: React.FC<OrderSearchProps> = ({
                     )}
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-medium">${order.total_amount?.toFixed(2) || '0.00'}</div>
+                    <div className="text-sm font-medium">${order.combined_total_amount?.toFixed(2) || '0.00'}</div>
                     <div className="text-xs text-[var(--text-secondary)]">{order.items?.length || 0} items</div>
                   </div>
                 </div>
@@ -104,7 +104,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                                                      orders,
                                                      setMessage
                                                    }) => {
-  const [receivedAmount, setReceivedAmount] = useState<string>(order.total_amount?.toString() || '0');
+  const [receivedAmount, setReceivedAmount] = useState<string>(order.combined_total_amount?.toString() || '0');
   const [paymentMethod, setPaymentMethod] = useState<string>('cash');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -113,11 +113,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   useEffect(() => {
     setCurrentOrder(order);
+    setReceivedAmount(order.combined_total_amount?.toString() || '0');
   }, [order]);
 
   const calculateChange = () => {
     const amount = parseFloat(receivedAmount);
-    return isNaN(amount) ? 0 : Math.max(0, amount - (currentOrder.total_amount || 0));
+    return isNaN(amount) ? 0 : Math.max(0, amount - (currentOrder.combined_total_amount || 0));
   };
 
   const handlePaymentProcess = async () => {
@@ -132,8 +133,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       return;
     }
 
-    if (amount < (currentOrder.total_amount || 0)) {
-      setMessage(`Payment amount too low. Required: $${(currentOrder.total_amount || 0).toFixed(2)}`);
+    if (amount < (currentOrder.combined_total_amount || 0)) {
+      setMessage(`Payment amount too low. Required: $${(currentOrder.combined_total_amount || 0).toFixed(2)}`);
       return;
     }
 
@@ -238,11 +239,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
             </div>
 
-            <div className="border-t pt-2 border-[var(--border-color)]">
-              <div className="flex justify-between text-lg font-bold text-[var(--text-color)]">
-                <span>Total:</span>
-                <span>${currentOrder.total_amount?.toFixed(2) || '0.00'}</span>
-              </div>
+            <div className="flex justify-between text-lg font-bold text-[var(--text-color)]">
+              <span>Total:</span>
+              <span>${currentOrder.combined_total_amount?.toFixed(2) || '0.00'}</span>
             </div>
 
             {currentOrder.payment_status === 'not_paid' ? (
@@ -286,7 +285,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   />
                 </div>
 
-                {paymentMethod === 'cash' && parseFloat(receivedAmount) > (currentOrder.total_amount || 0) && (
+                {paymentMethod === 'cash' && parseFloat(receivedAmount) > (currentOrder.combined_total_amount || 0) && (
                   <div className="p-3 bg-[var(--success-light)] border border-[var(--success-border)] rounded-lg">
                     <div className="text-sm font-medium text-[var(--text-success)]">
                       💰 Change: ${calculateChange().toFixed(2)}
@@ -296,7 +295,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
                 <button
                   onClick={handlePaymentProcess}
-                  disabled={isProcessing || !receivedAmount || parseFloat(receivedAmount) < (currentOrder.total_amount || 0)}
+                  disabled={isProcessing || !receivedAmount || parseFloat(receivedAmount) < (currentOrder.combined_total_amount || 0)}
                   className="w-full py-3 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
                 >
                   {isProcessing ? '⏳ Processing...' : 'Process Payment'}
@@ -332,7 +331,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           showButtons={true}
           title="Payment Confirmed"
           paymentMethod={paymentMethod}
-          selectedTable={{ number: currentOrder.table_number }} // Pass table number as selectedTable
+          selectedTable={{ number: currentOrder.table_number }}
         />
       )}
     </>
