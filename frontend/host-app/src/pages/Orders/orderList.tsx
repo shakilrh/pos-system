@@ -86,7 +86,17 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
       <div className="rounded-lg p-6 max-w-sm w-full mx-4" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
         <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-color)' }}>Order #{order.order_number}</h2>
         <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>👤 {order.customer_name || 'Guest'}</p>
-        {order.table_number && <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>Table: {order.table_number}</p>}
+        {order.table_number && <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)', backgroundColor: 'var(--info-light)', padding: '2px 8px', borderRadius: '9999px' }}>Table: {order.table_number}</p>}
+        {order.waiter_name && <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)', backgroundColor: 'var(--primary-light)', padding: '2px 8px', borderRadius: '9999px' }}>Waiter: {order.waiter_name}</p>}
+        {order.linked_orders?.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {order.linked_orders.map((linkedOrder, index) => (
+              <span key={index} className="text-sm px-2 py-0.5 rounded-full" style={{ backgroundColor: index % 2 === 0 ? 'var(--warning-light)' : 'var(--success-light)', color: 'var(--text-color)' }}>
+                Linked: {linkedOrder}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="space-y-2 mb-4">
           {order.items?.map((item, index) => (
             <div key={index} className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: 'var(--background-secondary)' }}>
@@ -165,9 +175,9 @@ export default function OrderList({
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [messageTimeout, setMessageTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [timeLeft, setTimeLeft] = useState<{ [key: string]: number }>({});
+  const [timeLeft, setTimeLeft] = useState<{ [key: string]: number }>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [queueCountdowns, setQueueCountdowns] = useState<{ [key: string]: number }>({});
+  const [queueCountdowns, setQueueCountdowns] = useState<{ [key: string]: number }>([]);
   const [blink, setBlink] = useState(false);
   const [selectedNotificationTab, setSelectedNotificationTab] = useState<string>('');
   const [paymentSearchTerm, setPaymentSearchTerm] = useState('');
@@ -587,24 +597,63 @@ export default function OrderList({
                           <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--error-color)' }}></span>
                         )}
                       </div>
-                      <div className="flex items-center space-x-2 mt-1">
+                      <div className="flex items-center space-x-2 mt-1 flex-wrap">
                         <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>👤 {order.customer_name || 'Guest'}</span>
                         {order.service_type && (
                           <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--text-color)' }}>
-                            {order.service_type === 'dine_in' ? '🍽️ Dine-In' : '🥡 Takeaway'}
-                          </span>
+                      {order.service_type === 'dine_in' ? '🍽️ Dine-In' : '🥡 Takeaway'}
+                    </span>
                         )}
                         {order.table_number && (
-                          <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--success-light)', color: 'var(--text-color)' }}>
-                            Table: {order.table_number}
-                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--info-light)', color: 'var(--text-color)' }}>
+                      Table: {order.table_number}
+                    </span>
+                        )}
+                        {order.waiter_name && (
+                          <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--text-color)' }}>
+                      Waiter: {order.waiter_name}
+                    </span>
+                        )}
+                        {order.linked_orders?.length > 0 && (
+                          <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                        Linked Orders:
+                      </span>
+                            <div className="flex gap-1">
+                              {order.linked_orders.map((linkedOrder, index) => (
+                                <div key={index} className="flex items-center space-x-1">
+                                  <div
+                                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                                    style={{
+                                      backgroundColor: index % 4 === 0 ? 'var(--primary-color)' :
+                                        index % 4 === 1 ? 'var(--success-color)' :
+                                          index % 4 === 2 ? 'var(--warning-color)' : 'var(--info-color)'
+                                    }}
+                                  >
+                                    🔗
+                                  </div>
+                                  <span
+                                    className="px-1 py-0.5 rounded text-xs font-medium"
+                                    style={{
+                                      backgroundColor: index % 4 === 0 ? 'var(--primary-light)' :
+                                        index % 4 === 1 ? 'var(--success-light)' :
+                                          index % 4 === 2 ? 'var(--warning-light)' : 'var(--info-light)',
+                                      color: 'var(--text-color)'
+                                    }}
+                                  >
+                              #{linkedOrder}
+                            </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         )}
                       </div>
                     </div>
                   </div>
                   <div className="flex-1 flex justify-center">
                     <div className="flex items-center space-x-2 max-w-md overflow-x-auto">
-                      {order.items?.map((item, index) => (
+                      {order.items?.length > 0 ? order.items.map((item, index) => (
                         <div
                           key={index}
                           className="flex items-center space-x-1 px-1 py-0.5 rounded-md border min-w-max"
@@ -612,20 +661,20 @@ export default function OrderList({
                         >
                           {renderOrderItemImage(item)}
                           <div className="flex flex-col">
-                            <span className="text-xs font-medium truncate max-w-20" style={{ color: 'var(--text-color)' }}>
-                              {item.product?.name || 'Unknown'}
-                            </span>
+                      <span className="text-xs font-medium truncate max-w-20" style={{ color: 'var(--text-color)' }}>
+                        {item.product?.name || 'Unknown'}
+                      </span>
                             <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>x{item.quantity}</span>
                           </div>
                         </div>
-                      )) || <div className="text-sm" style={{ color: 'var(--text-tertiary)' }}>No items</div>}
+                      )) : <div className="text-sm" style={{ color: 'var(--text-tertiary)' }}>No items</div>}
                     </div>
                   </div>
                   <div className="flex items-end space-x-3">
                     {getTimeDisplay(order)}
                     <span className="px-2 py-1 rounded-full text-xs font-medium border" style={getStatusBadge(order.status)}>
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                    </span>
+                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+              </span>
                     <span
                       className="px-2 py-1 rounded-full text-xs font-medium border"
                       style={{
@@ -634,8 +683,8 @@ export default function OrderList({
                         borderColor: order.payment_status === 'paid' ? 'var(--success-border)' : 'var(--border-color)',
                       }}
                     >
-                      {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
-                    </span>
+                {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
+              </span>
                     {(activeTab === 'completed' || activeTab === 'cancelled') && (
                       <div className="flex flex-col items-end">
                         <div className="text-lg font-bold" style={{ color: 'var(--text-color)' }}>${order.total_amount?.toFixed(2) || '0.00'}</div>
