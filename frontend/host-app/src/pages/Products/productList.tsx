@@ -108,14 +108,14 @@ export default function ProductList({
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div className="w-full sm:w-72">
-                  <label className="block text-sm font-medium mb-2" style={{color: 'var(--text-secondary)'}}>Search
+                  <label className="block text-sm font-medium mb-2 mt-2" style={{color: 'var(--text-secondary)'}}>Search
                       Products</label>
                   <div className="relative">
                       <input
                           type="text"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full p-2.5 pl-10 text-sm rounded-lg border focus:ring-2 transition-colors duration-200"
+                          className="w-full  px-2.5 py-1.5 pl-10 text-sm rounded-lg border focus:ring-2 transition-colors duration-200"
                           style={{
                               borderColor: 'var(--border-color)',
                               backgroundColor: 'var(--background-color)',
@@ -131,7 +131,7 @@ export default function ProductList({
 
               <button
                   onClick={onAdd}
-                  className={`flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isCategoryFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''}`}
+                  className={`flex items-center px-2.5 py-1.5 mt-9 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isCategoryFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''}`}
                   style={{
                       backgroundColor: isCategoryFormActive ? undefined : 'var(--primary-color)',
                       color: 'var(--text-color-button)',

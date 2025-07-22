@@ -70,7 +70,7 @@ export default function CategoryList({
   return (
 
       <div className="relative">
-          <div className="rounded-lg p-3 shadow-sm"
+          <div className="rounded-lg p-3 shadow-lg"
                style={{backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)'}}>
               <div className="flex items-center space-x-2">
                   <TagIcon className="w-5 h-5" style={{color: 'var(--accent-color)'}}/>
@@ -79,7 +79,7 @@ export default function CategoryList({
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
               <div className="w-full sm:w-72">
-                  <label className="block text-sm font-medium mb-2" style={{color: 'var(--text-secondary)'}}>Search
+                  <label className="block text-sm font-medium mb-2 mt-2" style={{color: 'var(--text-secondary)'}}>Search
                       Categories</label>
                   <div className="relative">
                       <input
@@ -102,7 +102,7 @@ export default function CategoryList({
 
               <button
                   onClick={onAdd}
-                  className={`flex items-center px-2.5 py-1.5 mt-6 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isProductFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''}`}
+                  className={`flex items-center px-2.5 py-1.5 mt-9 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isProductFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''}`}
                   style={{
                       backgroundColor: isProductFormActive ? undefined : 'var(--primary-color)',
                       color: 'var(--text-color-button)',
