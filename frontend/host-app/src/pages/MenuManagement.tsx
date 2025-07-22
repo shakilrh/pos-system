@@ -149,7 +149,7 @@ export default function MenuManagement() {
           <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
             <div className="lg:col-span-3">
               <div
-                  className="rounded-lg shadow-md border p-4"
+                  className="rounded-lg shadow-md border"
                   style={{
                     backgroundColor: themeColors.cardBackground,
                     borderColor: themeColors.cardBorder,

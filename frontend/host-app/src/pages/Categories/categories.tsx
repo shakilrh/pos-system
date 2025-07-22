@@ -115,7 +115,7 @@ export default function Categories({
         />
       )}
 
-      {/* Header - Always visible */}
+      {/* Header - Always visible
       <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
         <div className="flex items-center mb-4">
           <button className="mr-2" style={{ color: 'var(--text-secondary)' }}>
@@ -123,7 +123,7 @@ export default function Categories({
           </button>
           <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Category Management</h3>
         </div>
-      </div>
+      </div>*/}
 
       {/* Product List - Visible for list, details, and delete states */}
       {activeSection === 'list' && (

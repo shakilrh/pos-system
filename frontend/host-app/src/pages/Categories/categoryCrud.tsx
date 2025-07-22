@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, TagIcon } from '@heroicons/react/24/outline';
+import {XMarkIcon, TagIcon, UserIcon} from '@heroicons/react/24/outline';
 import { addCategory, updateCategory, deleteCategory } from '../../services/categoryService';
 import { Category } from './categoryTypes';
 import FlashMessage from '../FlashMessage';
@@ -187,118 +187,119 @@ export default function CategoryCrud({
 
   if (mode === 'add' || mode === 'edit') {
     return (
-      <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-        {flashMessage && (
-          <FlashMessage
-            message={flashMessage.message}
-            type={flashMessage.type}
-            onClose={() => setFlashMessage(null)}
-          />
-        )}
-        <div className="flex items-center justify-between px-6 py-4" style={{ backgroundColor: 'var(--background-color)', borderBottom: '1px solid var(--border-color)', borderTopLeftRadius: '0.5rem', borderTopRightRadius: '0.5rem' }}>
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <TagIcon className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold" style={{ color: 'var(--text-color)' }}>
-                {mode === 'edit' ? 'Edit Category' : 'Create New Category'}
-              </h3>
-            </div>
-          </div>
-          <button onClick={onCancel} className="hover:text-[var(--text-secondary)]" style={{ color: 'var(--text-secondary)' }}>
-            <XMarkIcon className="w-6 h-6" />
-          </button>
-        </div>
-        <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--background-secondary)', border: '1px solid var(--border-color)' }}>
-          <form onSubmit={handleSubmit} className="space-y-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <label htmlFor="categoryName" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Category Name *</label>
-                <input
-                  id="categoryName"
-                  type="text"
-                  value={newCategoryName}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  onFocus={() => handleFocus('name')}
-                  onBlur={() => handleBlur('name')}
-                  placeholder="Enter category name"
-                  className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${errors.name && errors.name.length > 0 ? 'ring-1' : ''}`}
-                  style={{
-                    borderColor: errors.name && errors.name.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
-                    backgroundColor: 'var(--background-color)',
-                    color: 'var(--text-color)',
-                    outlineColor: 'var(--focus-ring)',
-                  }}
-                  maxLength={100}
-                  required
-                />
-                {renderFieldErrors('name')}
-                <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>{newCategoryName.length}/100</p>
+        <div className="">
+          <div className="rounded-lg justify-between"
+               style={{backgroundColor: 'var(--background-secondary)', border: '1px solid var(--border-color)'}}>
+            <div className="p-4 border-b flex justify-between" style={{borderColor: 'var(--border-color)'}}>
+              <div className="flex items-center space-x-2">
+                <TagIcon className="w-5 h-5" style={{color: 'var(--accent-color)'}}/>
+                <h3 className="text-lg font-semibold" style={{color: 'var(--text-color)'}}>
+                  {mode === 'edit' ? 'Edit Category' : 'Create New Category'}
+                </h3>
               </div>
-              <div className="sm:col-span-2">
-                <label htmlFor="categoryDescription" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Description (Optional)</label>
-                <textarea
-                  id="categoryDescription"
-                  value={newCategoryDesc}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  onFocus={() => handleFocus('description')}
-                  onBlur={() => handleBlur('description')}
-                  placeholder="Category description (optional)"
-                  className={`w-full p-2 text-sm rounded-lg border resize-none focus:outline-none focus:ring-2 transition-colors duration-200 ${errors.description && errors.description.length > 0 ? 'ring-1' : ''}`}
-                  style={{
-                    borderColor: errors.description && errors.description.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
-                    backgroundColor: 'var(--background-color)',
-                    color: 'var(--text-color)',
-                    outlineColor: 'var(--focus-ring)',
-                  }}
-                  rows={3}
-                  maxLength={500}
-                />
-                {renderFieldErrors('description')}
-                <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>{newCategoryDesc.length}/500</p>
-              </div>
-            </div>
-            <div className="flex space-x-2 pt-2">
-              <button
-                type="button"
-                onClick={onCancel}
-                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isProductFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}`}
-                style={{ backgroundColor: 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' }}
-                disabled={isProductFormActive}
-              >
-                Cancel
+              <button onClick={onCancel} className="hover:text-[var(--text-secondary)]"
+                      style={{color: 'var(--text-secondary)'}}>
+                <XMarkIcon className="w-6 h-6"/>
               </button>
-              <button
-                type="submit"
-                //className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isProductFormActive || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--background-color)]'}`}
-                //style={{ '--tw-ring-color': 'var(--focus-ring)' }}
-                disabled={isProductFormActive || !isFormValid()}
-                className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isProductFormActive || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-color-button)] hover:bg-[var(--primary-color)]'}`}
-                /*style={{
-                  backgroundColor: isProductFormActive ? undefined : 'var(--primary-color)',
-                  color: 'var(--text-color-button)',
+            </div>
+            {flashMessage && (
+                <FlashMessage
+                    message={flashMessage.message}
+                    type={flashMessage.type}
+                    onClose={() => setFlashMessage(null)}
+                />
+            )}
+            <form onSubmit={handleSubmit} className="p-3 space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div class="sm:col-span-2">
+                  <label htmlFor="categoryName" className="block text-sm font-medium mb-1"
+                         style={{color: 'var(--text-secondary)'}}>Category Name *</label>
+                  <input
+                      id="categoryName"
+                      type="text"
+                      value={newCategoryName}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      onFocus={() => handleFocus('name')}
+                      onBlur={() => handleBlur('name')}
+                      placeholder="Enter category name"
+                      className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${errors.name && errors.name.length > 0 ? 'ring-1' : ''}`}
+                      style={{
+                        borderColor: errors.name && errors.name.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                        backgroundColor: 'var(--background-color)',
+                        color: 'var(--text-color)',
+                        outlineColor: 'var(--focus-ring)',
+                      }}
+                      maxLength={100}
+                      required
+                  />
+                  {renderFieldErrors('name')}
+                  <p className="mt-1 text-xs" style={{color: 'var(--text-tertiary)'}}>{newCategoryName.length}/100</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="categoryDescription" className="block text-sm font-medium mb-1"
+                         style={{color: 'var(--text-secondary)'}}>Description (Optional)</label>
+                  <textarea
+                      id="categoryDescription"
+                      value={newCategoryDesc}
+                      onChange={(e) => handleInputChange('description', e.target.value)}
+                      onFocus={() => handleFocus('description')}
+                      onBlur={() => handleBlur('description')}
+                      placeholder="Category description (optional)"
+                      className={`w-full p-2 text-sm rounded-lg border resize-none focus:outline-none focus:ring-2 transition-colors duration-200 ${errors.description && errors.description.length > 0 ? 'ring-1' : ''}`}
+                      style={{
+                        borderColor: errors.description && errors.description.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                        backgroundColor: 'var(--background-color)',
+                        color: 'var(--text-color)',
+                        outlineColor: 'var(--focus-ring)',
+                      }}
+                      rows={3}
+                      maxLength={500}
+                  />
+                  {renderFieldErrors('description')}
+                  <p className="mt-1 text-xs" style={{color: 'var(--text-tertiary)'}}>{newCategoryDesc.length}/500</p>
+                </div>
+              </div>
+              <div className="flex space-x-2 pt-2">
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isProductFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}`}
+                    style={{backgroundColor: 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)'}}
+                    disabled={isProductFormActive}
+                >
+                  Cancel
+                </button>
+                <button
+                    type="submit"
+                    //className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isProductFormActive || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--background-color)]'}`}
+                    //style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+                    disabled={isProductFormActive || !isFormValid()}
+                    className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isProductFormActive || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-color-button)] hover:bg-[var(--primary-color)]'}`}
+                    /*style={{
+                      backgroundColor: isProductFormActive ? undefined : 'var(--primary-color)',
+                      color: 'var(--text-color-button)',
 
-                }}*/
-              >
-                {mode === 'edit' ? 'Update Category' : 'Create Category'}
-              </button>
-            </div>
-          </form>
+                    }}*/
+                >
+                  {mode === 'edit' ? 'Update Category' : 'Create Category'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
     );
   }
 
   if (mode === 'delete' && deleteCategoryId) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-        <div className="rounded-lg p-6 w-full max-w-md mx-4 shadow-xl" style={{ backgroundColor: 'var(--surface-color)' }}>
-          {flashMessage && (
-            <FlashMessage
-              message={flashMessage.message}
-              type={flashMessage.type}
-              onClose={() => setFlashMessage(null)}
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="rounded-lg p-6 w-full max-w-md mx-4 shadow-xl"
+               style={{backgroundColor: 'var(--surface-color)'}}>
+            {flashMessage && (
+                <FlashMessage
+                    message={flashMessage.message}
+                    type={flashMessage.type}
+                    onClose={() => setFlashMessage(null)}
             />
           )}
           <div className="flex items-center space-x-2 mb-4">
