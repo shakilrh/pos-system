@@ -169,7 +169,7 @@ export default function MenuManagement() {
             </div>
             <div className="lg:col-span-7">
               <div
-                  className="rounded-lg shadow-md border p-4"
+                  className="rounded-lg shadow-md border"
                   style={{
                     backgroundColor: themeColors.cardBackground,
                     borderColor: themeColors.cardBorder,

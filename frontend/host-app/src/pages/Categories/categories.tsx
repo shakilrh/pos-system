@@ -105,7 +105,7 @@ export default function Categories({
   }
 
   return (
-    <div className="relative space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)', opacity: isProductFormActive ? 0.5 : 1, pointerEvents: isProductFormActive ? 'none' : 'auto' }}>
+    <div className="relative p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)', opacity: isProductFormActive ? 0.5 : 1, pointerEvents: isProductFormActive ? 'none' : 'auto' }}>
       <Toaster position="top-right" />
       {flashMessage && (
         <FlashMessage
