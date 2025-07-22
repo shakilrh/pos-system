@@ -10,11 +10,11 @@ export default function Profile() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [logo, setLogo] = useState<string>('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [address, setAddress] = useState('');
   const [storeName, setStoreName] = useState('');
   const [storeLogo, setStoreLogo] = useState<string>('');
   const [storeLogoFile, setStoreLogoFile] = useState<File | null>(null);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -22,24 +22,20 @@ export default function Profile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const storeLogoInputRef = useRef<HTMLInputElement>(null);
 
-  console.log('Profile component rendered with user object:', user);
+  console.log('Profile component rendered with user:', user);
 
   useEffect(() => {
     if (token) fetchProfile();
   }, [token]);
 
-  // This useEffect correctly syncs local state whenever the user object in the context changes.
   useEffect(() => {
-    const profileData = user?.user; // The actual profile data is nested
-    if (profileData) {
-      setName(profileData.name || '');
-      setEmail(profileData.email || '');
-      setLogo(profileData.logoUrl || '');
-      setPhoneNumber(profileData.phone_number || '');
-      setAddress(profileData.address || '');
-      setStoreName(profileData.store_name || '');
-      setStoreLogo(profileData.store_logo || '');
-    }
+    setName(user?.name || '');
+    setEmail(user?.email || '');
+    setLogo(user?.logoUrl || '');
+    setStoreName(user?.store_name || '');
+    setStoreLogo(user?.store_logo || '');
+    setPhoneNumber(user?.phone_number || '');
+    setAddress(user?.address || '');
   }, [user]);
 
   const fetchProfile = async (retryCount = 1) => {
@@ -51,21 +47,16 @@ export default function Profile() {
     setLoading(true);
     setError(null);
     try {
-      const userData = await fetchUserProfile(token, logout); // userData is likely { user: {...} }
+      const userData = await fetchUserProfile(token, logout);
       console.log('Fetched user profile:', userData);
-      setUser(userData); // Update context. The useEffect above will handle local state.
-      
-      // Also update local state directly for immediate feedback
-      const profileData = userData.user; 
-      if (profileData) {
-          setName(profileData.name || '');
-          setEmail(profileData.email || '');
-          setLogo(profileData.logoUrl || '');
-          setPhoneNumber(profileData.phone_number || '');
-          setAddress(profileData.address || '');
-          setStoreName(profileData.store_name || '');
-          setStoreLogo(profileData.store_logo || '');
-      }
+      setUser(userData);
+      setName(userData.name || '');
+      setEmail(userData.email || '');
+      setLogo(userData.logoUrl || '');
+      setStoreName(userData.store_name || '');
+      setStoreLogo(userData.store_logo || '');
+      setPhoneNumber(userData.phone_number || '');
+      setAddress(userData.address || '');
     } catch (err) {
       console.error('Fetch profile error:', err);
       setError(err.message || 'Failed to fetch profile');
@@ -219,62 +210,6 @@ export default function Profile() {
       setLoading(false);
     }
   };
-  
-  const handlePhoneNumberSave = async () => {
-    if (!token || !phoneNumber.trim()) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const formData = new FormData();
-      formData.append('phone_number', phoneNumber.trim());
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      const data = await response.json();
-      console.log('Phone number update response:', { status: response.status, headers: Object.fromEntries(response.headers), data });
-      if (!response.ok || !data.success) {
-        throw new Error(handleApiError(data, 'phone number'));
-      }
-      await fetchProfile();
-      setEditingField(null);
-      showSuccess('Phone number updated successfully');
-    } catch (err) {
-      console.error('Update phone number error:', err);
-      setError(err.message || 'Failed to update phone number');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handleAddressSave = async () => {
-    if (!token || !address.trim()) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const formData = new FormData();
-      formData.append('address', address.trim());
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      const data = await response.json();
-      console.log('Address update response:', { status: response.status, headers: Object.fromEntries(response.headers), data });
-      if (!response.ok || !data.success) {
-        throw new Error(handleApiError(data, 'address'));
-      }
-      await fetchProfile();
-      setEditingField(null);
-      showSuccess('Address updated successfully');
-    } catch (err) {
-      console.error('Update address error:', err);
-      setError(err.message || 'Failed to update address');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleStoreNameSave = async () => {
     if (!token || !storeName.trim() ) return;
@@ -301,6 +236,70 @@ export default function Profile() {
     } catch (err) {
       console.error('Update store name error:', err);
       setError(err.message || 'Failed to update store name');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePhoneNumberSave = async () => {
+    if (!token || !phoneNumber.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('phone_number', phoneNumber.trim());
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      const data = await response.json();
+      console.log('Phone number update response:', { status: response.status, headers: Object.fromEntries(response.headers), data });
+      if (!response.ok || !data.success) {
+        throw new Error(handleApiError(data, 'phone number'));
+      }
+      // FIX: Update local state directly instead of re-fetching to avoid race conditions.
+      const updatedUser = { ...user, phone_number: phoneNumber.trim() };
+      setUser(updatedUser);
+      setEditingField(null);
+      showSuccess('Phone number updated successfully');
+    } catch (err) {
+      console.error('Update phone number error:', err);
+      setError(err.message || 'Failed to update phone number');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddressSave = async () => {
+    if (!token || !address.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('address', address.trim());
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      const data = await response.json();
+      console.log('Address update response:', { status: response.status, headers: Object.fromEntries(response.headers), data });
+      if (!response.ok || !data.success) {
+        throw new Error(handleApiError(data, 'address'));
+      }
+      // FIX: Update local state directly instead of re-fetching to avoid race conditions.
+      const updatedUser = { ...user, address: address.trim() };
+      setUser(updatedUser);
+      setEditingField(null);
+      showSuccess('Address updated successfully');
+    } catch (err) {
+      console.error('Update address error:', err);
+      setError(err.message || 'Failed to update address');
     } finally {
       setLoading(false);
     }
@@ -487,7 +486,7 @@ export default function Profile() {
                     <button
                       onClick={() => {
                         setEditingField(null);
-                        setName(user?.user?.name || '');
+                        setName(user?.name || '');
                       }}
                       className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
                     >
@@ -575,98 +574,6 @@ export default function Profile() {
               )}
             </div>
 
-            {/* Phone Number Field */}
-            <div className="px-6 py-6">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Phone Number</label>
-                {editingField !== 'phoneNumber' && (
-                  <button
-                    onClick={() => setEditingField('phoneNumber')}
-                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
-                  >
-                    Edit
-                  </button>
-                )}
-              </div>
-              {editingField === 'phoneNumber' ? (
-                <div className="space-y-3">
-                  <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Enter phone number"
-                  />
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={handlePhoneNumberSave}
-                      disabled={loading || !phoneNumber.trim()}
-                      className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
-                    >
-                      {loading ? 'Saving...' : 'Save'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingField(null);
-                        setPhoneNumber(user?.user?.phone_number || '');
-                      }}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-gray-900">{phoneNumber || 'Not set'}</p>
-              )}
-            </div>
-
-            {/* Address Field */}
-            <div className="px-6 py-6">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Address</label>
-                {editingField !== 'address' && (
-                  <button
-                    onClick={() => setEditingField('address')}
-                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
-                  >
-                    Edit
-                  </button>
-                )}
-              </div>
-              {editingField === 'address' ? (
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Enter your address"
-                  />
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={handleAddressSave}
-                      disabled={loading || !address.trim()}
-                      className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
-                    >
-                      {loading ? 'Saving...' : 'Save'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingField(null);
-                        setAddress(user?.user?.address || '');
-                      }}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-gray-900">{address || 'Not set'}</p>
-              )}
-            </div>
-
             {/* Store Name Field */}
             <div className="px-6 py-6">
               <div className="flex items-center justify-between mb-2">
@@ -700,7 +607,7 @@ export default function Profile() {
                     <button
                       onClick={() => {
                         setEditingField(null);
-                        setStoreName(user?.user?.store_name || '');
+                        setStoreName(user?.store_name || '');
                       }}
                       className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
                     >
@@ -754,7 +661,7 @@ export default function Profile() {
                       onClick={() => {
                         setEditingField(null);
                         setStoreLogoFile(null);
-                        setStoreLogo(user?.user?.store_logo || '');
+                        setStoreLogo(user?.store_logo || '');
                       }}
                       className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
                     >
@@ -770,6 +677,98 @@ export default function Profile() {
                     className="w-full h-full object-cover"
                   />
                 </div>
+              )}
+            </div>
+            
+            {/* Phone Number Field */}
+            <div className="px-6 py-6">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-gray-700">Phone Number</label>
+                {editingField !== 'phoneNumber' && (
+                  <button
+                    onClick={() => setEditingField('phoneNumber')}
+                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+              {editingField === 'phoneNumber' ? (
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Enter phone number"
+                  />
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={handlePhoneNumberSave}
+                      disabled={loading || !phoneNumber.trim()}
+                      className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
+                    >
+                      {loading ? 'Saving...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingField(null);
+                        setPhoneNumber(user?.phone_number || '');
+                      }}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-900">{phoneNumber || 'Not set'}</p>
+              )}
+            </div>
+
+            {/* Address Field */}
+            <div className="px-6 py-6">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-gray-700">Address</label>
+                {editingField !== 'address' && (
+                  <button
+                    onClick={() => setEditingField('address')}
+                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+              {editingField === 'address' ? (
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Enter address"
+                  />
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={handleAddressSave}
+                      disabled={loading || !address.trim()}
+                      className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
+                    >
+                      {loading ? 'Saving...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingField(null);
+                        setAddress(user?.address || '');
+                      }}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-900">{address || 'Not set'}</p>
               )}
             </div>
           </div>
