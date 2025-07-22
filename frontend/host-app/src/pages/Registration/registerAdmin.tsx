@@ -11,6 +11,8 @@ export default function RegisterAdmin() {
     password: '',
     confirmPassword: '',
     storeName: '',
+    phoneNumber: '',
+    address: ''
   });
   const [logo, setLogo] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -22,6 +24,8 @@ export default function RegisterAdmin() {
     confirmPassword?: string[];
     storeName?: string[];
     logo?: string[];
+    phoneNumber?: string[];
+    address?: string[];
   }>({});
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
 
@@ -98,27 +102,36 @@ export default function RegisterAdmin() {
     return errors;
   };
 
-  const validateLogo = (file: File | null): string[] => {
-    // Logo is completely optional - return empty array if no file
-    if (!file) return [];
-
+  const validatePhoneNumber = (phoneNumber: string): string[] => {
+    if (!phoneNumber.trim()) return []; // Optional field
     const errors: string[] = [];
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+    if (!phoneRegex.test(phoneNumber)) errors.push('Please enter a valid phone number (e.g., +1234567890)');
+    return errors;
+  };
 
+  const validateAddress = (address: string): string[] => {
+    if (!address.trim()) return []; // Optional field
+    const errors: string[] = [];
+    if (address.length < 5) errors.push('Address must be at least 5 characters long');
+    if (address.length > 200) errors.push('Address must be less than 200 characters');
+    return errors;
+  };
+
+  const validateLogo = (file: File | null): string[] => {
+    if (!file) return [];
+    const errors: string[] = [];
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
       errors.push('Please select a valid image file (JPEG, PNG, GIF, WebP)');
     }
-
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) errors.push('Image size should be less than 5MB');
-
     const minSize = 1024; // 1KB minimum
     if (file.size < minSize) errors.push('Image file is too small (minimum 1KB)');
-
     return errors;
   };
 
-  // Get all validation errors for a field
   const getFieldErrors = (fieldName: string): string[] => {
     switch (fieldName) {
       case 'name':
@@ -131,6 +144,10 @@ export default function RegisterAdmin() {
         return validateConfirmPassword(formData.confirmPassword, formData.password);
       case 'storeName':
         return validateStoreName(formData.storeName);
+      case 'phoneNumber':
+        return validatePhoneNumber(formData.phoneNumber);
+      case 'address':
+        return validateAddress(formData.address);
       case 'logo':
         return validateLogo(logo);
       default:
@@ -138,12 +155,12 @@ export default function RegisterAdmin() {
     }
   };
 
-  // Check if form is valid - logo errors should not block submission since it's optional
   const isFormValid = (): boolean => {
     const requiredFields = ['name', 'email', 'password', 'confirmPassword', 'storeName'];
     const requiredFieldsValid = requiredFields.every(field => getFieldErrors(field).length === 0);
+    const optionalFieldsValid = ['phoneNumber', 'address'].every(field => getFieldErrors(field).length === 0);
     const logoValid = validateLogo(logo).length === 0;
-    return requiredFieldsValid && logoValid;
+    return requiredFieldsValid && optionalFieldsValid && logoValid;
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -152,16 +169,12 @@ export default function RegisterAdmin() {
       ...prev,
       [name]: value
     }));
-
-    // If field is touched, update errors in real-time
     if (touchedFields.has(name)) {
       setErrors(prev => ({
         ...prev,
         [name]: getFieldErrors(name === 'confirmPassword' ? 'confirmPassword' : name)
       }));
     }
-
-    // Special case for confirm password - update when password changes
     if (name === 'password' && touchedFields.has('confirmPassword')) {
       setErrors(prev => ({
         ...prev,
@@ -173,22 +186,17 @@ export default function RegisterAdmin() {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setLogo(file);
-
-    // Only validate if a file is selected
     if (file) {
       const logoErrors = validateLogo(file);
       setErrors(prev => ({ ...prev, logo: logoErrors }));
-
       if (logoErrors.length > 0) {
         setFlashMessage({ message: logoErrors[0], type: 'error' });
       } else {
-        // Clear any previous logo error messages
         if (flashMessage?.type === 'error' && flashMessage.message.includes('Image')) {
           setFlashMessage(null);
         }
       }
     } else {
-      // Clear logo errors when no file is selected
       setErrors(prev => ({ ...prev, logo: [] }));
       if (flashMessage?.type === 'error' && flashMessage.message.includes('Image')) {
         setFlashMessage(null);
@@ -197,7 +205,6 @@ export default function RegisterAdmin() {
   };
 
   const handleFocus = (fieldName: string) => {
-    // Mark field as touched and show all validation errors
     setTouchedFields(prev => new Set(prev).add(fieldName));
     setErrors(prev => ({
       ...prev,
@@ -206,7 +213,6 @@ export default function RegisterAdmin() {
   };
 
   const handleBlur = (fieldName: string) => {
-    // Keep showing errors for touched fields
     if (touchedFields.has(fieldName)) {
       setErrors(prev => ({
         ...prev,
@@ -217,53 +223,43 @@ export default function RegisterAdmin() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Mark all fields as touched and validate
-    const allFields = ['name', 'email', 'password', 'confirmPassword', 'storeName'];
+    const allFields = ['name', 'email', 'password', 'confirmPassword', 'storeName', 'phoneNumber', 'address'];
     setTouchedFields(new Set(allFields));
-
     const allErrors: any = {};
     allFields.forEach(field => {
       allErrors[field] = getFieldErrors(field);
     });
-    // Only add logo errors if there's actually a logo to validate
     allErrors.logo = validateLogo(logo);
-
     setErrors(allErrors);
-
-    // Check if there are any errors
     const hasErrors = Object.values(allErrors).some((fieldErrors: any) => fieldErrors.length > 0);
-
     if (hasErrors) {
       setFlashMessage({ message: 'Please fix all errors before submitting', type: 'error' });
       return;
     }
-
     setLoading(true);
     try {
       await adminAuthService.registerAdmin(
         formData.name.trim(),
         formData.email.trim(),
         formData.password,
-        logo, // This can be null now
+        logo,
         formData.storeName.trim(),
+        formData.phoneNumber.trim() || null,
+        formData.address.trim() || null
       );
-
       setFlashMessage({ message: 'Admin registered successfully! Redirecting to login...', type: 'success' });
-
-      // Reset form
       setFormData({
         name: '',
         email: '',
         password: '',
         confirmPassword: '',
-        storeName: ''
+        storeName: '',
+        phoneNumber: '',
+        address: ''
       });
       setLogo(null);
       setErrors({});
       setTouchedFields(new Set());
-
-      // Redirect to login after showing success message
       setTimeout(() => router.push('/login'), 2000);
     } catch (error: any) {
       console.error('Registration error:', error);
@@ -283,7 +279,6 @@ export default function RegisterAdmin() {
   const renderFieldErrors = (fieldName: string) => {
     const fieldErrors = errors[fieldName as keyof typeof errors] || [];
     if (fieldErrors.length === 0) return null;
-
     return (
       <div className="mt-1 space-y-1">
         {fieldErrors.map((error, index) => (
@@ -426,6 +421,46 @@ export default function RegisterAdmin() {
                   } focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 text-sm`}
                 />
                 {renderFieldErrors('storeName')}
+              </div>
+
+              <div>
+                <label htmlFor="phoneNumber" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+                  Phone Number (Optional)
+                </label>
+                <input
+                  type="text"
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleInputChange}
+                  onFocus={() => handleFocus('phoneNumber')}
+                  onBlur={() => handleBlur('phoneNumber')}
+                  placeholder="+1234567890"
+                  className={`w-full p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border ${
+                    errors.phoneNumber && errors.phoneNumber.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200 dark:border-gray-600'
+                  } focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 text-sm`}
+                />
+                {renderFieldErrors('phoneNumber')}
+              </div>
+
+              <div>
+                <label htmlFor="address" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+                  Address (Optional)
+                </label>
+                <input
+                  type="text"
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  onFocus={() => handleFocus('address')}
+                  onBlur={() => handleBlur('address')}
+                  placeholder="123 Main St, City, Country"
+                  className={`w-full p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border ${
+                    errors.address && errors.address.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200 dark:border-gray-600'
+                  } focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 text-sm`}
+                />
+                {renderFieldErrors('address')}
               </div>
 
               <div>

@@ -62,6 +62,8 @@ export const adminAuthService = {
     password: string,
     logo: File | null,
     storeName: string,
+    phoneNumber: string | null,
+    address: string | null,
     logout?: () => void
   ): Promise<any> => {
     try {
@@ -73,6 +75,12 @@ export const adminAuthService = {
         formData.append('logo', logo);
       }
       formData.append('store_name', storeName);
+      if (phoneNumber) {
+        formData.append('phone_number', phoneNumber);
+      }
+      if (address) {
+        formData.append('address', address);
+      }
 
       const response = await fetch(`${API_BASE_URL}/users/api/v1/create-admin`, {
         method: 'POST',
