@@ -346,6 +346,8 @@ export const fetchUserProfileOriginal = async (token: string, logout: () => void
         salary: user.profile?.salary || user.salary || 0,
         address: user.profile?.address || user.address || '',
         store_name: user.store_name || null,
+        phone_number: user.phone_number || null,
+        address: user.address || null,
         logoUrl: user.logoUrl || null,
         store_logo: user.store_logo || null,
       };

@@ -6,7 +6,7 @@ import { fetchProducts } from '../../services/productService';
 import { fetchCategories } from '../../services/categoryService';
 import { fetchFreeTables, Table } from '../../services/floorTableService';
 import { fetchFreeWaiters } from '../../services/orderService';
-import { fetchUserProfile } from '../../services/UserService';
+import { getUserDetails } from '../../services/UserService';
 import FlashMessage from '../FlashMessage';
 import OrderDetails from './OrderDetails';
 import OrderMenu from './OrderMenu';
@@ -69,6 +69,7 @@ interface Order {
   waiter_id?: string;
 }
 
+
 export default function CreateOrder() {
   const { isAuthenticated, isLoading, token, logout, user } = useAuth();
   const router = useRouter();
@@ -90,9 +91,6 @@ export default function CreateOrder() {
   const [freeTables, setFreeTables] = useState<Table[]>([]);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
-  const [storeName, setStoreName] = useState<string>('');
-  const [storeAddress, setStoreAddress] = useState<string>('123 Main Street, City');
-  const [storePhone, setStorePhone] = useState<string>('(123) 456-7890');
   const [waiterId, setWaiterId] = useState<string | null>(null);
   const [selectedWaiter, setSelectedWaiter] = useState<Waiter | null>(null);
   const [isAddToOrder, setIsAddToOrder] = useState(false);
@@ -122,6 +120,7 @@ export default function CreateOrder() {
 
     return () => observer.disconnect();
   }, []);
+
 
   const getThemeColors = () => {
     if (currentTheme === 'dark' || currentTheme === 'dark-pro') {
@@ -185,10 +184,8 @@ export default function CreateOrder() {
         setFreeWaiters(waitersResponse);
 
         if (token) {
-          const userProfile = await fetchUserProfile(token, logout);
-          setStoreName(userProfile.store_name || 'Rasant Restaurant');
-          setStoreAddress(userProfile.store_address || '123 Main Street, City');
-          setStorePhone(userProfile.store_phone || '(123) 456-7890');
+          // const userProfile = await fetchUserProfile(token, logout);
+
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -597,11 +594,9 @@ export default function CreateOrder() {
           paymentMethod={paymentMethod}
           showButtons={true}
           title={isAddToOrder ? "Items Added to Order" : "Order Confirmed"}
-          storeName={storeName}
-          storeAddress={storeAddress}
-          storePhone={storePhone}
           selectedTable={selectedTable}
           selectedWaiter={selectedWaiter}
+
         />
       )}
     </div>
