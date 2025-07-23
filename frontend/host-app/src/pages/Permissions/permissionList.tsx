@@ -59,8 +59,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
         if (
           (group.key === 'Dashboard' && (permission.key.toLowerCase().startsWith('dashboard_') || permission.key.toLowerCase() === 'can_view_dashboard')) ||
           (group.key === 'Menu Management' &&
-            (permission.key.toLowerCase().startsWith('manage_categories') ||
-              permission.key.toLowerCase().startsWith('manage_products') ||
+            (permission.key.toLowerCase().startsWith('can_view_menu') ||
               permission.key.toLowerCase().startsWith('can_view_categories') ||
               permission.key.toLowerCase().startsWith('can_edit_categories') ||
               permission.key.toLowerCase().startsWith('can_delete_categories') ||
@@ -68,21 +67,25 @@ const PermissionList: React.FC<PermissionListProps> = ({
               permission.key.toLowerCase().startsWith('can_edit_products') ||
               permission.key.toLowerCase().startsWith('can_delete_products'))) ||
           (group.key === 'Orders' &&
-            (permission.key.toLowerCase().startsWith('manage_prepared_orders') ||
+            (permission.key.toLowerCase().startsWith('can_view_orders') ||
+              permission.key.toLowerCase().startsWith('manage_prepared_orders') ||
               permission.key.toLowerCase().startsWith('manage_ready_orders') ||
               permission.key.toLowerCase().startsWith('manage_served_orders') ||
               permission.key.toLowerCase().startsWith('manage_completed_orders') ||
               permission.key.toLowerCase().startsWith('create_orders'))) ||
           (group.key === 'Roles Management' &&
-            (permission.key.toLowerCase().startsWith('manage_users') ||
+            (permission.key.toLowerCase().startsWith('can_view_rolemanagement') ||
+            permission.key.toLowerCase().startsWith('manage_users') ||
               permission.key.toLowerCase().startsWith('manage_roles') ||
               permission.key.toLowerCase().startsWith('manage_permissions'))) ||
           (group.key === 'Tables Management' &&
-            (permission.key.toLowerCase().startsWith('manage_tables') ||
+            (permission.key.toLowerCase().startsWith('can_view_tablemanagement') ||
+            permission.key.toLowerCase().startsWith('manage_tables') ||
               permission.key.toLowerCase().startsWith('manage_floors') ||
               permission.key.toLowerCase().startsWith('assign_tables'))) ||
           (group.key === 'Settings' &&
-            (permission.key.toLowerCase().startsWith('manage_store_settings') ||
+            (permission.key.toLowerCase().startsWith('can_view_storesettings') ||
+            permission.key.toLowerCase().startsWith('manage_store_settings') ||
               permission.key.toLowerCase().startsWith('manage_store_profile')))
         ) {
           group.subPermissions!.push(permission);
