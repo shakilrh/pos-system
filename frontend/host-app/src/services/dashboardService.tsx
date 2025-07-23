@@ -40,13 +40,6 @@ interface Order {
   }[];
 }
 
-// Add to dashboardService.tsx
-export interface EnhancedOrder extends Order {
-  waiter_name?: string;
-  waiter_id?: string;
-  estimated_completion?: string;
-}
-
 export const getOrders = async (token: string, logout: () => void): Promise<Order[]> => {
   try {
     const response = await fetch('http://192.168.18.107:3000/orders/api/v1/list', {
