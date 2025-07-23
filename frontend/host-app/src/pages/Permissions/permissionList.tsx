@@ -10,6 +10,15 @@ interface GroupedPermission {
   subPermissions?: Permission[];
 }
 
+const MAIN_PAGES = [
+  { key: 'dashboard_access', name: 'Dashboard', description: 'Access to Dashboard page' },
+  { key: 'menu_management_access', name: 'Menu Management', description: 'Access to Menu Management page' },
+  { key: 'orders_access', name: 'Orders', description: 'Access to Orders page' },
+  { key: 'roles_management_access', name: 'Roles Management', description: 'Access to Roles Management page' },
+  { key: 'tables_management_access', name: 'Tables Management', description: 'Access to Tables Management page' },
+  { key: 'settings_access', name: 'Settings', description: 'Access to Settings page' },
+];
+
 const PermissionList: React.FC<PermissionListProps> = ({
                                                          permissions,
                                                          setEditPermission,
@@ -30,33 +39,59 @@ const PermissionList: React.FC<PermissionListProps> = ({
     const groups: GroupedPermission[] = [];
     const ungroupedPermissions: Permission[] = [];
 
-    const parentPermissions = permissions.filter(p => p.key && p.key.toLowerCase().includes('_access'));
-
-    parentPermissions.forEach(parent => {
-      const prefix = parent.key.toLowerCase().replace('_access', '');
+    MAIN_PAGES.forEach(page => {
       groups.push({
-        id: parent._id,
-        key: parent.key,
-        description: parent.description,
+        id: page.key,
+        key: page.name,
+        description: page.description,
         isMainPage: true,
-        subPermissions: []
+        subPermissions: [],
       });
     });
 
     permissions.forEach(permission => {
-      if (!permission.key || !permission.key.toLowerCase().includes('_access')) {
-        let assigned = false;
-        for (const group of groups) {
-          const prefix = group.key.toLowerCase().replace('_access', '');
-          if (permission.key && permission.key.toLowerCase().startsWith(prefix)) {
-            group.subPermissions!.push(permission);
-            assigned = true;
-            break;
-          }
+      let assigned = false;
+      if (!permission.key) {
+        ungroupedPermissions.push(permission);
+        return;
+      }
+      for (const group of groups) {
+        if (
+          (group.key === 'Dashboard' && (permission.key.toLowerCase().startsWith('dashboard_') || permission.key.toLowerCase() === 'can_view_dashboard')) ||
+          (group.key === 'Menu Management' &&
+            (permission.key.toLowerCase().startsWith('manage_categories') ||
+              permission.key.toLowerCase().startsWith('manage_products') ||
+              permission.key.toLowerCase().startsWith('can_view_categories') ||
+              permission.key.toLowerCase().startsWith('can_edit_categories') ||
+              permission.key.toLowerCase().startsWith('can_delete_categories') ||
+              permission.key.toLowerCase().startsWith('can_view_products') ||
+              permission.key.toLowerCase().startsWith('can_edit_products') ||
+              permission.key.toLowerCase().startsWith('can_delete_products'))) ||
+          (group.key === 'Orders' &&
+            (permission.key.toLowerCase().startsWith('manage_prepared_orders') ||
+              permission.key.toLowerCase().startsWith('manage_ready_orders') ||
+              permission.key.toLowerCase().startsWith('manage_served_orders') ||
+              permission.key.toLowerCase().startsWith('manage_completed_orders') ||
+              permission.key.toLowerCase().startsWith('create_orders'))) ||
+          (group.key === 'Roles Management' &&
+            (permission.key.toLowerCase().startsWith('manage_users') ||
+              permission.key.toLowerCase().startsWith('manage_roles') ||
+              permission.key.toLowerCase().startsWith('manage_permissions'))) ||
+          (group.key === 'Tables Management' &&
+            (permission.key.toLowerCase().startsWith('manage_tables') ||
+              permission.key.toLowerCase().startsWith('manage_floors') ||
+              permission.key.toLowerCase().startsWith('assign_tables'))) ||
+          (group.key === 'Settings' &&
+            (permission.key.toLowerCase().startsWith('manage_store_settings') ||
+              permission.key.toLowerCase().startsWith('manage_store_profile')))
+        ) {
+          group.subPermissions!.push(permission);
+          assigned = true;
+          break;
         }
-        if (!assigned) {
-          ungroupedPermissions.push(permission);
-        }
+      }
+      if (!assigned) {
+        ungroupedPermissions.push(permission);
       }
     });
 
@@ -66,7 +101,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
         key: 'Other Permissions',
         description: 'Permissions not categorized under main pages',
         isMainPage: false,
-        subPermissions: ungroupedPermissions
+        subPermissions: ungroupedPermissions,
       });
     }
 
@@ -90,7 +125,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
         if (groupMatches || filteredSubPermissions.length > 0) {
           return {
             ...group,
-            subPermissions: filteredSubPermissions
+            subPermissions: filteredSubPermissions,
           };
         }
         return null;
@@ -104,12 +139,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
   const totalPages = Math.ceil(filteredPermissions.length / permissionsPerPage);
 
   const toggleGroup = (groupId: string) => {
-    setExpandedGroup(prev => {
-      if (prev === groupId) {
-        return null;
-      }
-      return groupId;
-    });
+    setExpandedGroup(prev => (prev === groupId ? null : groupId));
   };
 
   const handlePermissionClick = (permission: Permission) => {
@@ -141,7 +171,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
           className="flex items-center space-x-1 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 self-end"
           style={{
             backgroundColor: 'var(--primary-color)',
-            '--tw-ring-color': 'var(--focus-ring)'
+            '--tw-ring-color': 'var(--focus-ring)',
           } as React.CSSProperties}
         >
           <PlusIcon className="w-5 h-5" />
@@ -151,9 +181,11 @@ const PermissionList: React.FC<PermissionListProps> = ({
 
       {isLoading.fetch ? (
         <div className="space-y-3">
-          {Array(4).fill(0).map((_, idx) => (
-            <div key={idx} className="animate-pulse h-12 bg-[--background-secondary] rounded-lg"></div>
-          ))}
+          {Array(4)
+            .fill(0)
+            .map((_, idx) => (
+              <div key={idx} className="animate-pulse h-12 bg-[--background-secondary] rounded-lg"></div>
+            ))}
         </div>
       ) : filteredPermissions.length === 0 ? (
         <div className="text-center py-10">
@@ -177,36 +209,8 @@ const PermissionList: React.FC<PermissionListProps> = ({
                     )}
                     <span>{group.key}</span>
                   </button>
-                  {group.isMainPage && (
-                    <span className="text-xs text-[--info-color]">(Main Access)</span>
-                  )}
+                  {group.isMainPage && <span className="text-xs text-[--info-color]">(Main Page)</span>}
                 </div>
-                {group.isMainPage && (
-                  <div className="flex space-x-4">
-                    <button
-                      onClick={() => setEditPermission({ _id: group.id, key: group.key, description: group.description })}
-                      className="text-[--primary-color] hover:opacity-80"
-                      title="Edit permission"
-                    >
-                      <PencilIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirm(group.id)}
-                      disabled={isLoading.delete === group.id}
-                      className="text-[--error-color] hover:text-[--error-color-hover] disabled:opacity-50"
-                      title="Delete permission"
-                    >
-                      {isLoading.delete === group.id ? (
-                        <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      ) : (
-                        <TrashIcon className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-                )}
               </div>
               {expandedGroup === group.id && group.subPermissions && group.subPermissions.length > 0 && (
                 <div className="p-3 space-y-2">
@@ -221,9 +225,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
                       >
                         {permission.key || 'N/A'}
                         {permission.description && (
-                          <p className="text-xs text-[--text-secondary] mt-1">
-                            {permission.description}
-                          </p>
+                          <p className="text-xs text-[--text-secondary] mt-1">{permission.description}</p>
                         )}
                       </div>
                       <div className="flex space-x-4">
@@ -241,9 +243,25 @@ const PermissionList: React.FC<PermissionListProps> = ({
                           title="Delete permission"
                         >
                           {isLoading.delete === permission._id ? (
-                            <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            <svg
+                              className="animate-spin w-5 h-5"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
                             </svg>
                           ) : (
                             <TrashIcon className="w-5 h-5" />
@@ -268,11 +286,15 @@ const PermissionList: React.FC<PermissionListProps> = ({
           >
             Previous
           </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              className={`px-4 py-2 text-sm rounded-lg ${currentPage === page ? 'bg-[--primary-color] text-white' : 'bg-[--background-secondary] text-[--text-color] hover:bg-[--border-hover]'} transition-colors duration-200`}
+              className={`px-4 py-2 text-sm rounded-lg ${
+                currentPage === page
+                  ? 'bg-[--primary-color] text-white'
+                  : 'bg-[--background-secondary] text-[--text-color] hover:bg-[--border-hover]'
+              } transition-colors duration-200`}
             >
               {page}
             </button>
@@ -306,8 +328,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
                 <span className="text-[--text-color]">{selectedPermission.description || 'N/A'}</span>
               </div>
             </div>
-            <div className="mt-6 flex justify-end">
-            </div>
+            <div className="mt-6 flex justify-end"></div>
           </div>
         </div>
       )}
