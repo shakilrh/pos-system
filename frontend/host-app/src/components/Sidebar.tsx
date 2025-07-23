@@ -41,14 +41,14 @@ interface User {
 }
 
 // --- Navigation Structure ---Tables/TableManagement
+// Navigation Structure
 const navItems = [
-  { name: 'Dashboard', icon: HomeIcon || FallbackIcon, href: '/Dashboard/dashboard', description: 'Overview of your account', permission: 'Dashboard_access' },
-  { name: 'Menu Management', icon: ShoppingBagIcon || FallbackIcon, href: '/MenuManagement', description: 'Manage your menu items', permission: 'Menu_access' },
-  { name: 'Orders', icon: ChartBarIcon || FallbackIcon, href: '/Orders/orders', description: 'View and manage orders', permission: 'Orders_access' },
-  { name: 'Create Orders', icon: PlusCircleIcon || FallbackIcon, href: '/Orders/createOrder', description: 'Create new orders', permission: 'Orders_can_create' },
-  { name: 'Roles Management', icon: UsersIcon || FallbackIcon, href: '/RoleAndUserManagement', description: 'Control user roles', permission: 'Roles_access' },
-  { name: 'Tables Management', icon: Square3Stack3DIcon || FallbackIcon, href: '/Tables/FloorTableManagement', description: 'Control Tables | Floors', permission: 'Tables_access' }
-
+  { name: 'Dashboard', icon: HomeIcon || FallbackIcon, href: '/Dashboard/dashboard', description: 'Overview of your account', permission: 'can_view_dashboard' },
+  { name: 'Menu Management', icon: ShoppingBagIcon || FallbackIcon, href: '/MenuManagement', description: 'Manage your menu items', permission: 'can_view_menu' },
+  { name: 'Orders', icon: ChartBarIcon || FallbackIcon, href: '/Orders/orders', description: 'View and manage orders', permission: 'can_view_orders' },
+  { name: 'Create Orders', icon: PlusCircleIcon || FallbackIcon, href: '/Orders/createOrder', description: 'Create new orders', permission: 'create_orders' },
+  { name: 'Roles Management', icon: UsersIcon || FallbackIcon, href: '/RoleAndUserManagement', description: 'Control user roles', permission: 'can_view_rolemanagement' },
+  { name: 'Tables Management', icon: Square3Stack3DIcon || FallbackIcon, href: '/Tables/FloorTableManagement', description: 'Control Tables | Floors', permission: 'can_view_tablemanagement' }
 ];
 
 // --- Component Props ---

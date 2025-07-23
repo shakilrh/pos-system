@@ -29,27 +29,46 @@ const Footer = dynamic(
 
 const publicRoutes = ['/Registration/login', '/Registration/forgotPassword', '/Registration/registerAdmin', '/NoAccess'];
 
-// Map routes to required permissions
+// Map routes to actual database permissions
 const routePermissions: { [key: string]: string } = {
-  '/Dashboard/dashboard': 'Dashboard_access',
-  '/MenuManagement': 'Menu_access',
-  '/Orders/orders': 'Orders_access',
-  '/Orders/createOrder': 'Orders_can_create',
-  '/RoleAndUserManagement': 'Roles_access',
-  'Tables/TableManagement': 'Tables_access',
+  '/Dashboard/dashboard': 'can_view_dashboard',
+  '/MenuManagement': 'can_view_menu',
+  '/Orders/orders': 'can_view_orders',
+  '/Orders/createOrder': 'create_orders',
+  '/RoleAndUserManagement': 'can_view_rolemanagement',
+  '/Tables/FloorTableManagement': 'can_view_tablemanagement',
 };
 
-// Map permission IDs to keys
-const permissionIdToKey: { [key: string]: string } = {
-  '686e549493afbada228ce59d': 'Dashboard_access',
-  '6867ab13a50a9ccaa7143a0f': 'Orders_access',
-  '6867adc7a50a9ccaa7143a48': 'Orders_can_create',
-  '6867aaeca50a9ccaa7143a09': 'Menu_access',
-  '6867ab5da50a9ccaa7143a13': 'Roles_access',
-  '6867ab88a50a9ccaa7143a17': 'Settings_access',
-  '686e54c893afbada228ce5a1': 'Tables_access',
-  // Add mappings for additional permissions if needed
-};
+// List of all actual database permissions for admin users
+const ALL_PERMISSIONS = [
+  'can_view_dashboard',
+  'can_view_menu',
+  'can_view_orders',
+  'create_orders',
+  'can_view_rolemanagement',
+  'can_view_tablemanagement',
+  'can_view_storesettings',
+  'manage_categories',
+  'can_view_categories',
+  'can_edit_categories',
+  'can_delete_categories',
+  'manage_products',
+  'can_view_products',
+  'can_edit_products',
+  'can_delete_products',
+  'manage_prepared_orders',
+  'manage_ready_orders',
+  'manage_served_orders',
+  'manage_completed_orders',
+  'manage_users',
+  'manage_roles',
+  'manage_permissions',
+  'manage_tables',
+  'manage_floors',
+  'assign_tables',
+  'manage_store_settings',
+  'manage_store_profile',
+];
 
 function AppContent({ Component, pageProps }: AppProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -108,9 +127,8 @@ function AppContent({ Component, pageProps }: AppProps) {
     console.log('Decoded token:', decodedToken);
 
     if (decodedToken.user_type === 'isadmin') {
-      const allPermissions = Object.values(permissionIdToKey);
-      console.log('User is admin, granting all permissions:', allPermissions);
-      setUserPermissions(allPermissions);
+      console.log('User is admin, granting all permissions:', ALL_PERMISSIONS);
+      setUserPermissions(ALL_PERMISSIONS);
       setPermissionsLoaded(true);
 
       console.log('Admin User:', {
@@ -123,9 +141,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     }
 
     const permissions = Array.isArray(decodedToken.permissions)
-      ? decodedToken.permissions
-        .map((id: string) => permissionIdToKey[id])
-        .filter((key: string | undefined) => key !== undefined)
+      ? decodedToken.permissions.filter((key: string) => typeof key === 'string')
       : [];
 
     console.log('Mapped permissions for non-admin user:', permissions);
@@ -251,10 +267,9 @@ function AppContent({ Component, pageProps }: AppProps) {
     return <div>Sidebar failed to load</div>;
   }
 
-  // Adjusted: Match header and sidebar spacing to a small consistent value
   const sidebarWidth = sidebarOpen ? 'w-64' : 'w-20';
   const contentMargin = sidebarOpen ? 'ml-64' : 'ml-20';
-  const headerHeight = 'h-16'; // Small consistent height
+  const headerHeight = 'h-16';
 
   return (
     <div className="flex flex-col min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
@@ -266,7 +281,7 @@ function AppContent({ Component, pageProps }: AppProps) {
         user={user}
         className={headerHeight}
       />
-      <div className="flex flex-1 overflow-hidden mt-10" style={{ backgroundColor: 'var(--background-color)' }}> {/* Reduced margin-top to 4px */}
+      <div className="flex flex-1 overflow-hidden mt-10" style={{ backgroundColor: 'var(--background-color)' }}>
         <Sidebar
           className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 ${sidebarWidth} bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-2xl transition-all duration-300 ease-in-out`}
           setSidebarOpen={setSidebarOpen}
