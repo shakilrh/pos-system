@@ -18,11 +18,9 @@ const MAIN_PAGES = [
     description: 'Access to Menu Management page',
     subPermissions: [
       { key: 'can_view_menu', name: 'Can View Menu', description: 'View Menu page' },
-      { key: 'manage_categories', name: 'Manage Categories', description: 'Manage categories in menu' },
       { key: 'can_view_categories', name: 'Can View Categories', description: 'View categories' },
       { key: 'can_edit_categories', name: 'Can Edit Categories', description: 'Edit categories' },
       { key: 'can_delete_categories', name: 'Can Delete Categories', description: 'Delete categories' },
-      { key: 'manage_products', name: 'Manage Products', description: 'Manage products in menu' },
       { key: 'can_view_products', name: 'Can View Products', description: 'View products' },
       { key: 'can_edit_products', name: 'Can Edit Products', description: 'Edit products' },
       { key: 'can_delete_products', name: 'Can Delete Products', description: 'Delete products' },
