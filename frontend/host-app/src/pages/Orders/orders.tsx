@@ -73,7 +73,7 @@ export default function Orders() {
           cardBackground: '#ffffff',
           cardBorder: '#e5e7eb',
           cardText: '#1e3a8a',
-          headingText: '#1e3a8a',
+          headingText: '#000',
         };
       case 'green':
         return {
@@ -143,62 +143,118 @@ export default function Orders() {
     fetchOrders();
   }, [isAuthenticated, token, logout, itemsPerPage]);
 
-  if (isLoading) {
-    return null;
+  if (!clientLoaded) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-[var(--background-color)]">
+        <div
+          className="text-center p-6 max-w-md rounded-lg shadow-md border"
+          style={{
+            backgroundColor: themeColors.cardBackground,
+            borderColor: themeColors.cardBorder,
+            color: themeColors.cardText,
+          }}
+        >
+          <div className="text-2xl mb-4" style={{ color: themeColors.headingText }}>
+            Loading...
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
-    return null;
+    return (
+      <div className="flex justify-center items-center h-screen bg-[var(--background-color)]">
+        <div
+          className="text-center p-6 max-w-md rounded-lg shadow-md border"
+          style={{
+            backgroundColor: themeColors.cardBackground,
+            borderColor: themeColors.cardBorder,
+            color: themeColors.cardText,
+          }}
+        >
+          <h2 className="text-2xl font-bold mb-4" style={{ color: themeColors.headingText }}>
+            Access Denied
+          </h2>
+          <p className="mb-6" style={{ color: themeColors.cardText }}>
+            Please log in to access the Order Management Dashboard.
+          </p>
+          <button
+            onClick={() => window.location.href = '/pos-system/login'}
+            className="px-4 py-2 bg-[var(--primary-color)] text-[var(--sidebar-text)] rounded-lg hover:bg-[var(--primary-700)] transition-colors"
+          >
+            Go to Log In
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="w-full min-h-screen py-4 bg-[var(--background-color)]">
       <div
-        className="rounded-lg shadow-md border w-full mt-6"
+        className="rounded-lg shadow-md border w-full p-4 mb-6"
         style={{
           backgroundColor: themeColors.cardBackground,
           borderColor: themeColors.cardBorder,
           color: themeColors.cardText,
         }}
       >
-        <div className="p-8">
-          <h1 className="text-2xl font-semibold mb-8" style={{ color: themeColors.headingText }}>
-            Order Management
-          </h1>
-          <OrderList
-            orders={orders}
-            page={page}
-            itemsPerPage={itemsPerPage}
-            totalPages={totalPages}
-            setPage={setPage}
-            setItemsPerPage={setItemsPerPage}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            sortConfig={sortConfig}
-            setSortConfig={setSortConfig}
-            preparationTime={preparationTime}
-            setPreparationTime={setPreparationTime}
-            message={message}
-            setMessage={setMessage}
-            token={token}
-            logout={logout}
-            onViewDetails={setSelectedOrder}
-            setOrders={setOrders}
-            queueData={queueData}
-          />
-          {selectedOrder && (
-            <OrderDetails
-              order={selectedOrder}
-              token={token}
-              logout={logout}
-              onClose={() => setSelectedOrder(null)}
-              setOrders={setOrders}
-              orders={orders}
-              setMessage={setMessage}
-            />
-          )}
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
+          <div className="mb-3 lg:mb-0">
+            <h1 className="text-2xl font-bold" style={{ color: themeColors.headingText }}>
+              Order Management
+            </h1>
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+        <div className="lg:col-span-10">
+          <div
+            className="rounded-lg shadow-md border"
+            style={{
+              backgroundColor: themeColors.cardBackground,
+              borderColor: themeColors.cardBorder,
+              color: themeColors.cardText,
+            }}
+          >
+            <div className="p-8">
+              <OrderList
+                orders={orders}
+                page={page}
+                itemsPerPage={itemsPerPage}
+                totalPages={totalPages}
+                setPage={setPage}
+                setItemsPerPage={setItemsPerPage}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+                sortConfig={sortConfig}
+                setSortConfig={setSortConfig}
+                preparationTime={preparationTime}
+                setPreparationTime={setPreparationTime}
+                message={message}
+                setMessage={setMessage}
+                token={token}
+                logout={logout}
+                onViewDetails={setSelectedOrder}
+                setOrders={setOrders}
+                queueData={queueData}
+              />
+              {selectedOrder && (
+                <OrderDetails
+                  order={selectedOrder}
+                  token={token}
+                  logout={logout}
+                  onClose={() => setSelectedOrder(null)}
+                  setOrders={setOrders}
+                  orders={orders}
+                  setMessage={setMessage}
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
