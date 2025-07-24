@@ -9,6 +9,7 @@ import {
   markNotificationAsRead,
   QueueOrder,
 } from '../../services/orderService';
+import { useAuth } from '../../context/AuthContext';
 
 interface OrderListProps {
   orders: Order[];
@@ -169,8 +170,9 @@ export default function OrderList({
                                     setOrders,
                                     queueData,
                                   }: OrderListProps) {
+  const { userPermissions } = useAuth();
   const [outerActiveTab, setOuterActiveTab] = useState('physical');
-  const [activeTab, setActiveTab] = useState('to_be_prepared');
+  const [activeTab, setActiveTab] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -184,28 +186,97 @@ export default function OrderList({
   const [preparationSearchTerm, setPreparationSearchTerm] = useState('');
   const [selectedPaymentOrder, setSelectedPaymentOrder] = useState<Order | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-
-  const outerTabs = [
-    { key: 'physical', label: 'Physical Orders', color: 'var(--primary-color)', lightColor: 'var(--primary-light)', textColor: 'var(--text-color)' },
-    { key: 'online', label: 'Online Orders', color: 'var(--success-color)', lightColor: 'var(--success-light)', textColor: 'var(--text-color)' },
-  ];
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   const physicalTabs = [
-    { key: 'to_be_prepared', label: 'To Be Prepared', color: 'var(--primary-color)', lightColor: 'var(--primary-light)', textColor: 'var(--text-color)', borderColor: 'var(--primary-border)' },
-    { key: 'ready', label: 'Ready', color: 'var(--success-color)', lightColor: 'var(--success-light)', textColor: 'var(--text-color)', borderColor: 'var(--success-border)' },
-    { key: 'served', label: 'Served', color: 'var(--info-color)', lightColor: 'var(--info-light)', textColor: 'var(--text-color)', borderColor: 'var(--info-border)' },
-    { key: 'completed', label: 'Completed', color: 'var(--warning-color)', lightColor: 'var(--warning-light)', textColor: 'var(--text-color)', borderColor: 'var(--warning-border)' },
+    ...(userPermissions.includes('manage_prepared_orders') ? [{
+      key: 'to_be_prepared',
+      label: 'To Be Prepared',
+      color: 'var(--primary-color)',
+      lightColor: 'var(--primary-light)',
+      textColor: 'var(--text-color)',
+      borderColor: 'var(--primary-border)'
+    }] : []),
+    ...(userPermissions.includes('manage_ready_orders') ? [{
+      key: 'ready',
+      label: 'Ready',
+      color: 'var(--success-color)',
+      lightColor: 'var(--success-light)',
+      textColor: 'var(--text-color)',
+      borderColor: 'var(--success-border)'
+    }] : []),
+    ...(userPermissions.includes('manage_served_orders') ? [{
+      key: 'served',
+      label: 'Served',
+      color: 'var(--info-color)',
+      lightColor: 'var(--info-light)',
+      textColor: 'var(--text-color)',
+      borderColor: 'var(--info-border)'
+    }] : []),
+    ...(userPermissions.includes('manage_completed_orders') ? [{
+      key: 'completed',
+      label: 'Completed',
+      color: 'var(--warning-color)',
+      lightColor: 'var(--warning-light)',
+      textColor: 'var(--text-color)',
+      borderColor: 'var(--warning-border)'
+    }] : []),
   ];
 
   const onlineTabs = [
-    { key: 'pending', label: 'Pending', color: 'var(--warning-color)', lightColor: 'var(--warning-light)', textColor: 'var(--text-color)', borderColor: 'var(--warning-border)' },
-    { key: 'to_be_prepared', label: 'To Be Prepared', color: 'var(--primary-color)', lightColor: 'var(--primary-light)', textColor: 'var(--text-color)', borderColor: 'var(--primary-border)' },
-    { key: 'ready', label: 'Ready', color: 'var(--success-color)', lightColor: 'var(--success-light)', textColor: 'var(--text-color)', borderColor: 'var(--success-border)' },
-    { key: 'completed', label: 'Completed', color: 'var(--warning-color)', lightColor: 'var(--warning-light)', textColor: 'var(--text-color)', borderColor: 'var(--warning-border)' },
-    { key: 'cancelled', label: 'Cancelled', color: 'var(--error-color)', lightColor: 'var(--error-light)', textColor: 'var(--text-color)', borderColor: 'var(--error-border)' },
+    ...(userPermissions.includes('accept_onlineorders') ? [{
+      key: 'pending',
+      label: 'Pending',
+      color: 'var(--warning-color)',
+      lightColor: 'var(--warning-light)',
+      textColor: 'var(--text-color)',
+      borderColor: 'var(--warning-border)'
+    }] : []),
+    ...(userPermissions.includes('manage_prepared_orders') ? [{
+      key: 'to_be_prepared',
+      label: 'To Be Prepared',
+      color: 'var(--primary-color)',
+      lightColor: 'var(--primary-light)',
+      textColor: 'var(--text-color)',
+      borderColor: 'var(--primary-border)'
+    }] : []),
+    ...(userPermissions.includes('manage_ready_orders') ? [{
+      key: 'ready',
+      label: 'Ready',
+      color: 'var(--success-color)',
+      lightColor: 'var(--success-light)',
+      textColor: 'var(--text-color)',
+      borderColor: 'var(--success-border)'
+    }] : []),
+    ...(userPermissions.includes('manage_completed_orders') ? [{
+      key: 'completed',
+      label: 'Completed',
+      color: 'var(--warning-color)',
+      lightColor: 'var(--warning-light)',
+      textColor: 'var(--text-color)',
+      borderColor: 'var(--warning-border)'
+    }] : []),
+    ...(userPermissions.includes('manage_cancelled_orders') ? [{
+      key: 'cancelled',
+      label: 'Cancelled',
+      color: 'var(--error-color)',
+      lightColor: 'var(--error-light)',
+      textColor: 'var(--text-color)',
+      borderColor: 'var(--error-border)'
+    }] : []),
   ];
 
-  const tabs = outerActiveTab === 'physical' ? physicalTabs : onlineTabs;
+  const outerTabs = [
+    ...(physicalTabs.length > 0 ? [{ key: 'physical', label: 'Physical Orders', color: 'var(--primary-color)', lightColor: 'var(--primary-light)', textColor: 'var(--text-color)' }] : []),
+    ...(onlineTabs.length > 0 ? [{ key: 'online', label: 'Online Orders', color: 'var(--success-color)', lightColor: 'var(--success-light)', textColor: 'var(--text-color)' }] : []),
+  ];
+
+  useEffect(() => {
+    const tabs = outerActiveTab === 'physical' ? physicalTabs : onlineTabs;
+    if (tabs.length > 0 && !activeTab) {
+      setActiveTab(tabs[0].key);
+    }
+  }, [userPermissions, outerActiveTab]);
 
   useEffect(() => {
     if (Array.isArray(queueData)) {
@@ -255,8 +326,13 @@ export default function OrderList({
   }, [message, setMessage]);
 
   const filteredOrdersByType = React.useMemo(
-    () => orders.filter((order) => order.order_type === outerActiveTab || !order.order_type),
-    [orders, outerActiveTab]
+    () => orders.filter((order) => {
+      const orderDate = new Date(order.order_date).toISOString().split('T')[0]; // ✅ Fixed line
+      const isToday = orderDate === selectedDate;
+      const isCompletedOrCancelled = order.status.toLowerCase() === 'completed' || order.status.toLowerCase() === 'cancelled';
+      return (order.order_type === outerActiveTab || !order.order_type) && (!isCompletedOrCancelled || isToday);
+    }),
+    [orders, outerActiveTab, selectedDate]
   );
 
   const handlePaymentOrderSelect = (order: Order) => {
@@ -297,7 +373,7 @@ export default function OrderList({
   }, [filteredOrdersByType, outerActiveTab]);
 
   const filteredOrders = React.useMemo(() => {
-    const ordersInActiveTab = groupedOrders[activeTab] || [];
+    const ordersInActiveTab = groupedOrders[activeTab || ''] || [];
     let filtered = ordersInActiveTab;
     if (activeTab === 'to_be_prepared' || activeTab === 'pending') {
       filtered = ordersInActiveTab.filter(
@@ -318,18 +394,6 @@ export default function OrderList({
   }, [groupedOrders, activeTab, preparationSearchTerm, paymentSearchTerm]);
 
   const paginatedOrders = filteredOrders.slice((page - 1) * itemsPerPage, page * itemsPerPage);
-
-  const mapStatusToTab = (status: string): string => {
-    const statusMap: Record<string, string> = {
-      pending: 'pending',
-      processing: 'to_be_prepared',
-      ready: 'ready',
-      served: 'served',
-      cancelled: 'cancelled',
-      completed: 'completed',
-    };
-    return statusMap[status.toLowerCase()] || 'to_be_prepared';
-  };
 
   const getTabUnreadCount = (tabKey: string): number => {
     const currentTabOrders = groupedOrders[tabKey] || [];
@@ -397,7 +461,7 @@ export default function OrderList({
     return { backgroundColor: bgColor, color: textColor, borderColor };
   };
 
-  const currentTab = tabs.find((tab) => tab.key === activeTab);
+  const currentTab = (outerActiveTab === 'physical' ? physicalTabs : onlineTabs).find((tab) => tab.key === activeTab);
 
   const getMessageStyles = (message: string) => {
     const [borderColor, bgColor, textColor] = message.includes('Failed') || message.includes('Please log in')
@@ -415,35 +479,107 @@ export default function OrderList({
     setShowModal(true);
   };
 
+  if (!userPermissions.some(perm => ['manage_prepared_orders', 'manage_ready_orders', 'manage_served_orders', 'manage_completed_orders', 'accept_onlineorders', 'manage_cancelled_orders'].includes(perm))) {
+    return (
+      <div className="text-center py-12 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+        <div className="text-5xl mb-3" style={{ color: 'var(--text-tertiary)' }}>📋</div>
+        <h3 className="text-lg font-medium" style={{ color: 'var(--text-secondary)' }}>No Access</h3>
+        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>You do not have permission to view any orders.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
       <div className="flex justify-between items-center">
         <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Total Orders: {filteredOrders.length}</div>
+        {(activeTab === 'completed' || activeTab === 'cancelled') && (
+          <div
+            className="flex items-center px-4 py-2 rounded-lg border cursor-pointer transition-all duration-200"
+            onClick={() => document.getElementById('order-date-picker')?.showPicker()}
+            style={{
+              backgroundColor: 'var(--background-color)',
+              borderColor: 'var(--border-color)',
+              color: 'var(--text-color)',
+            }}
+          >
+  <span className="text-sm mr-2" style={{ color: 'var(--text-secondary)' }}>
+    📅 Select Date:
+  </span>
+            <input
+              id="order-date-picker"
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-transparent text-sm border-0 focus:ring-0 cursor-pointer"
+              style={{
+                color: 'var(--text-color)',
+                backgroundColor: 'transparent',
+                border: 'none',
+                outline: 'none',
+                appearance: 'none',
+                WebkitAppearance: 'none',
+                MozAppearance: 'none',
+              }}
+            />
+
+
+
+          </div>
+
+        )}
       </div>
 
-      <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-        <div className="flex flex-wrap gap-2">
-          {outerTabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => {
-                setOuterActiveTab(tab.key);
-                setActiveTab(tab.key === 'physical' ? 'to_be_prepared' : 'pending');
-                setPage(1);
-              }}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md min-w-[140px] ${
-                outerActiveTab === tab.key ? 'shadow-md transform scale-105' : 'hover:scale-102'
-              }`}
-              style={{
-                backgroundColor: outerActiveTab === tab.key ? tab.color : tab.lightColor,
-                color: outerActiveTab === tab.key ? 'var(--text-on-primary)' : tab.textColor,
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
+      {outerTabs.length > 0 && (
+        <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+          <div className="flex flex-wrap gap-2">
+            {outerTabs.map((tab, index) => {
+              // FontAwesome colors for outer tabs
+              const getOuterTabColors = (tabKey, tabIndex) => {
+                if (tabKey === 'physical' || tabIndex === 0) {
+                  return {
+                    active: '#4285f4',      // FontAwesome blue
+                    light: '#f0f7ff',       // Very light blue background
+                    text: '#1a73e8',        // Darker blue text
+                    gradient: 'linear-gradient(135deg, #4285f4 0%, #1976d2 100%)'
+                  };
+                } else {
+                  return {
+                    active: '#ffc107',      // FontAwesome yellow/amber
+                    light: '#fffbf0',       // Very light yellow background
+                    text: '#ff8f00',        // Darker yellow/amber text
+                    gradient: 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)'
+                  };
+                }
+              };
+
+              const tabColors = getOuterTabColors(tab.key, index);
+
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => {
+                    setOuterActiveTab(tab.key);
+                    const tabs = tab.key === 'physical' ? physicalTabs : onlineTabs;
+                    setActiveTab(tabs[0]?.key || null);
+                    setPage(1);
+                  }}
+                  className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:shadow-lg hover:transform hover:scale-105 min-w-[140px] ${
+                    outerActiveTab === tab.key ? 'shadow-lg transform scale-105' : 'hover:scale-102'
+                  }`}
+                  style={{
+                    background: outerActiveTab === tab.key ? tabColors.gradient : tabColors.light,
+                    color: outerActiveTab === tab.key ? '#ffffff' : tabColors.text,
+                    border: outerActiveTab === tab.key ? 'none' : `2px solid ${tabColors.active}20`
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="h-10">
         {message && (
@@ -456,53 +592,150 @@ export default function OrderList({
         )}
       </div>
 
-      <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-        <div className="flex flex-wrap gap-2">
-          {tabs.map((tab) => {
-            const ordersCount = groupedOrders[tab.key]?.length || 0;
-            const unreadCount = getTabUnreadCount(tab.key);
-            return (
-              <div key={tab.key} className="relative flex-1" style={{ minWidth: '140px' }}>
-                <button
-                  onClick={() => {
-                    setActiveTab(tab.key);
-                    setPage(1);
-                  }}
-                  className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md ${
-                    activeTab === tab.key ? 'shadow-md transform scale-105' : 'hover:scale-102'
-                  }`}
-                  style={{
-                    backgroundColor: activeTab === tab.key ? tab.color : tab.lightColor,
-                    color: activeTab === tab.key ? 'var(--text-on-primary)' : tab.textColor,
-                  }}
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <span>{tab.label}</span>
-                      <span className="ml-2 rounded-full w-5 h-5 flex items-center justify-center text-xs" style={{ backgroundColor: 'var(--background-secondary)', color: 'var(--text-secondary)' }}>
-                        {ordersCount}
-                      </span>
-                    </div>
-                  </div>
-                </button>
+      {activeTab && (
+        <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+          <div className="flex flex-wrap gap-2">
+            {(outerActiveTab === 'physical' ? physicalTabs : onlineTabs).map((tab, index) => {
+              const ordersCount = groupedOrders[tab.key]?.length || 0;
+              const unreadCount = getTabUnreadCount(tab.key);
+              const tabsArray = outerActiveTab === 'physical' ? physicalTabs : onlineTabs;
+              const isSingleTab = tabsArray.length === 1;
 
-                <button
-                  onClick={() => handleNotificationClick(tab.key)}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 hover:scale-110 transition-transform"
-                  style={{ color: 'var(--text-secondary)' }}
+              // FontAwesome inspired vibrant colors for different tab states
+              const getTabColors = (tabKey) => {
+                const colorMap = {
+                  'pending': {
+                    active: '#ff6b35',      // Vibrant orange-red
+                    light: '#fff5f2',       // Very light orange background
+                    text: '#cc4125',        // Darker orange-red text
+                    gradient: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)'
+                  },
+                  'confirmed': {
+                    active: '#4285f4',      // Google blue
+                    light: '#f0f7ff',       // Very light blue background
+                    text: '#1a73e8',        // Darker blue text
+                    gradient: 'linear-gradient(135deg, #4285f4 0%, #1976d2 100%)'
+                  },
+                  'preparing': {
+                    active: '#ff9800',      // Material orange
+                    light: '#fff8f0',       // Very light orange background
+                    text: '#e65100',        // Darker orange text
+                    gradient: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)'
+                  },
+                  'ready': {
+                    active: '#9c27b0',      // Material purple
+                    light: '#faf4ff',       // Very light purple background
+                    text: '#7b1fa2',        // Darker purple text
+                    gradient: 'linear-gradient(135deg, #9c27b0 0%, #8e24aa 100%)'
+                  },
+                  'completed': {
+                    active: '#4caf50',      // Material green
+                    light: '#f1f8e9',       // Very light green background
+                    text: '#388e3c',        // Darker green text
+                    gradient: 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)'
+                  },
+                  'cancelled': {
+                    active: '#f44336',      // Material red
+                    light: '#fff3f2',       // Very light red background
+                    text: '#d32f2f',        // Darker red text
+                    gradient: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)'
+                  },
+                  'shipped': {
+                    active: '#00bcd4',      // Cyan
+                    light: '#f0fdff',       // Very light cyan background
+                    text: '#0097a7',        // Darker cyan text
+                    gradient: 'linear-gradient(135deg, #00bcd4 0%, #0097a7 100%)'
+                  },
+                  'delivered': {
+                    active: '#8bc34a',      // Light green
+                    light: '#f7fff0',       // Very light green background
+                    text: '#689f38',        // Darker light green text
+                    gradient: 'linear-gradient(135deg, #8bc34a 0%, #689f38 100%)'
+                  },
+                  'default': {
+                    active: '#607d8b',      // Blue grey
+                    light: '#f8f9fa',       // Light grey background
+                    text: '#455a64',        // Darker grey text
+                    gradient: 'linear-gradient(135deg, #607d8b 0%, #455a64 100%)'
+                  }
+                };
+
+                return colorMap[tabKey] || colorMap['default'];
+              };
+
+              const tabColors = getTabColors(tab.key);
+
+              return (
+                <div
+                  key={tab.key}
+                  className={`relative ${isSingleTab ? 'flex-none mx-auto' : 'flex-1'}`}
+                  style={{
+                    minWidth: isSingleTab ? '400px' : '140px',
+                    maxWidth: isSingleTab ? '400px' : 'none'
+                  }}
                 >
-                  <span className="text-lg">🔔</span>
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold animate-pulse" style={{ backgroundColor: 'var(--error-color)', color: 'var(--text-on-primary)' }}>
-                      {unreadCount}
-                    </span>
-                  )}
-                </button>
-              </div>
-            );
-          })}
+                  <button
+                    onClick={() => {
+                      setActiveTab(tab.key);
+                      setPage(1);
+                    }}
+                    className={`w-full px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-300 hover:shadow-lg hover:transform hover:scale-105 ${
+                      activeTab === tab.key ? 'shadow-lg transform scale-105' : 'hover:scale-102'
+                    }`}
+                    style={{
+                      background: activeTab === tab.key ? tabColors.gradient : tabColors.light,
+                      color: activeTab === tab.key ? '#ffffff' : tabColors.text,
+                      paddingRight: '3rem', // Make space for notification button
+                      border: activeTab === tab.key ? 'none' : `2px solid ${tabColors.active}20`
+                    }}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <span className="font-semibold">{tab.label}</span>
+                        <span
+                          className="ml-3 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-sm"
+                          style={{
+                            backgroundColor: activeTab === tab.key ? 'rgba(255,255,255,0.25)' : `${tabColors.active}15`,
+                            color: activeTab === tab.key ? '#ffffff' : tabColors.active,
+                            border: activeTab === tab.key ? '1px solid rgba(255,255,255,0.3)' : `1px solid ${tabColors.active}30`
+                          }}
+                        >
+                    {ordersCount}
+                  </span>
+                      </div>
+                    </div>
+
+                    {/* Notification button inside the tab button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent tab selection when clicking notification
+                        handleNotificationClick(tab.key);
+                      }}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 hover:scale-110 transition-transform z-10"
+                      style={{
+                        color: activeTab === tab.key ? 'rgba(255,255,255,0.8)' : tabColors.text
+                      }}
+                    >
+                      <span className="text-lg">🔔</span>
+                      {unreadCount > 0 && (
+                        <span
+                          className="absolute -top-1 -right-1 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold animate-pulse"
+                          style={{
+                            backgroundColor: '#e74c3c', // FontAwesome red for notifications
+                            color: '#ffffff'
+                          }}
+                        >
+                    {unreadCount}
+                  </span>
+                      )}
+                    </button>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {activeTab === 'to_be_prepared' && (
         <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
@@ -562,7 +795,7 @@ export default function OrderList({
           orders={orders}
           groupedOrders={groupedOrders}
           activeTab={selectedNotificationTab}
-          tabs={tabs}
+          tabs={outerActiveTab === 'physical' ? physicalTabs : onlineTabs}
           setActiveTab={setActiveTab}
           setPage={setPage}
           setShowModal={setShowModal}
@@ -579,7 +812,7 @@ export default function OrderList({
         />
       )}
 
-      {outerActiveTab === 'physical' && (
+      {outerActiveTab === 'physical' && activeTab && (
         <div className="space-y-2">
           {paginatedOrders.length > 0 ? (
             paginatedOrders.map((order) => (
@@ -601,24 +834,24 @@ export default function OrderList({
                         <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>👤 {order.customer_name || 'Guest'}</span>
                         {order.service_type && (
                           <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--text-color)' }}>
-                      {order.service_type === 'dine_in' ? '🍽️ Dine-In' : '🥡 Takeaway'}
-                    </span>
+                            {order.service_type === 'dine_in' ? '🍽️ Dine-In' : '🥡 Takeaway'}
+                          </span>
                         )}
                         {order.table_number && (
                           <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--info-light)', color: 'var(--text-color)' }}>
-                      Table: {order.table_number}
-                    </span>
+                            Table: {order.table_number}
+                          </span>
                         )}
                         {order.waiter_name && (
                           <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--text-color)' }}>
-                      Waiter: {order.waiter_name}
-                    </span>
+                            Waiter: {order.waiter_name}
+                          </span>
                         )}
                         {order.linked_orders?.length > 0 && (
                           <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                        Linked Orders:
-                      </span>
+                            <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                              Linked Orders:
+                            </span>
                             <div className="flex gap-1">
                               {order.linked_orders.map((linkedOrder, index) => (
                                 <div key={index} className="flex items-center space-x-1">
@@ -641,8 +874,8 @@ export default function OrderList({
                                       color: 'var(--text-color)'
                                     }}
                                   >
-                              #{linkedOrder}
-                            </span>
+                                    #{linkedOrder}
+                                  </span>
                                 </div>
                               ))}
                             </div>
@@ -661,9 +894,9 @@ export default function OrderList({
                         >
                           {renderOrderItemImage(item)}
                           <div className="flex flex-col">
-                      <span className="text-xs font-medium truncate max-w-20" style={{ color: 'var(--text-color)' }}>
-                        {item.product?.name || 'Unknown'}
-                      </span>
+                            <span className="text-xs font-medium truncate max-w-20" style={{ color: 'var(--text-color)' }}>
+                              {item.product?.name || 'Unknown'}
+                            </span>
                             <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>x{item.quantity}</span>
                           </div>
                         </div>
@@ -673,8 +906,8 @@ export default function OrderList({
                   <div className="flex items-end space-x-3">
                     {getTimeDisplay(order)}
                     <span className="px-2 py-1 rounded-full text-xs font-medium border" style={getStatusBadge(order.status)}>
-                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-              </span>
+                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    </span>
                     <span
                       className="px-2 py-1 rounded-full text-xs font-medium border"
                       style={{
@@ -683,8 +916,8 @@ export default function OrderList({
                         borderColor: order.payment_status === 'paid' ? 'var(--success-border)' : 'var(--border-color)',
                       }}
                     >
-                {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
-              </span>
+                      {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
+                    </span>
                     {(activeTab === 'completed' || activeTab === 'cancelled') && (
                       <div className="flex flex-col items-end">
                         <div className="text-lg font-bold" style={{ color: 'var(--text-color)' }}>${order.total_amount?.toFixed(2) || '0.00'}</div>

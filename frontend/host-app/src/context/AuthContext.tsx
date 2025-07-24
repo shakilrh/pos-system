@@ -21,6 +21,8 @@ interface AuthContextType {
   profileError: string | null;
   user: User | null;
   token: string | null;
+  userPermissions: string[];
+  permissionsLoaded: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User | null) => void;
@@ -29,6 +31,49 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// List of all actual database permissions for admin users
+const ALL_PERMISSIONS = [
+  'can_view_dashboard',
+  'can_view_menu',
+  'can_view_orders',
+  'create_orders',
+  'can_view_rolemanagement',
+  'can_view_tablemanagement',
+  'can_view_storesettings',
+  'can_add_categories',
+  'can_edit_categories',
+  'can_delete_categories',
+  'can_add_products',
+  'can_edit_products',
+  'can_delete_products',
+  'manage_prepared_orders',
+  'manage_ready_orders',
+  'manage_served_orders',
+  'manage_completed_orders',
+  'accept_onlineorders',
+  'manage_cancelled_orders',
+  'can_add_users',
+  'can_edit_users',
+  'can_delete_users',
+  'can_add_roles',
+  'can_edit_roles',
+  'can_delete_roles',
+  'can_add_permissions',
+  'can_edit_permissions',
+  'can_delete_permissions',
+  'assign_permissions',
+  'can_add_floors',
+  'can_edit_floors',
+  'can_delete_floors',
+  'can_add_tables',
+  'can_edit_tables',
+  'can_delete_tables',
+  'manage_floors',
+  'assign_tables',
+  'manage_store_settings',
+  'manage_store_profile',
+];
+
 const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,6 +81,8 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [userPermissions, setUserPermissions] = useState<string[]>([]);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
 
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 1000; // 1 second
@@ -46,6 +93,23 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       setTimeout(() => reject(new Error('Request timed out')), ms);
     });
     return Promise.race([promise, timeout]);
+  };
+
+  const decodeToken = (token: string) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
+    }
   };
 
   const refreshUserProfile = async (tokenParam?: string): Promise<void> => {
@@ -122,10 +186,43 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated && token) {
-      refreshUserProfile(token);
+    if (isLoading) {
+      console.log('Still loading auth, skipping permission extraction');
+      return;
     }
-  }, [isAuthenticated, token]);
+
+    if (!isAuthenticated || !token) {
+      console.log('No authentication or token, clearing permissions');
+      setUserPermissions([]);
+      setPermissionsLoaded(true);
+      return;
+    }
+
+    const decodedToken = decodeToken(token);
+    if (!decodedToken) {
+      console.error('Failed to decode token');
+      setUserPermissions([]);
+      setPermissionsLoaded(true);
+      return;
+    }
+
+    console.log('Decoded token:', decodedToken);
+
+    if (decodedToken.user_type === 'isadmin') {
+      console.log('User is admin, granting all permissions:', ALL_PERMISSIONS);
+      setUserPermissions(ALL_PERMISSIONS);
+      setPermissionsLoaded(true);
+      return;
+    }
+
+    const permissions = Array.isArray(decodedToken.permissions)
+      ? decodedToken.permissions.filter((key: string) => typeof key === 'string')
+      : [];
+
+    console.log('Mapped permissions for non-admin user:', permissions);
+    setUserPermissions(permissions);
+    setPermissionsLoaded(true);
+  }, [isAuthenticated, token, isLoading]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -169,7 +266,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       console.log('Auth state updated, token stored:', token);
     } catch (error) {
       console.error('Login error:', error);
-      setProfileError(error.message || 'Login failed');
+      setProfileError(error instanceof Error ? error.message : 'Login failed');
       throw error;
     } finally {
       setIsLoading(false);
@@ -183,11 +280,28 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     setUser(null);
     setIsAuthenticated(false);
     setProfileError(null);
+    setUserPermissions([]);
+    setPermissionsLoaded(false);
     console.log('Logged out, token removed from localStorage');
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, profileLoading, profileError, user, token, login, logout, setUser, refreshUserProfile }}>
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        isLoading,
+        profileLoading,
+        profileError,
+        user,
+        token,
+        userPermissions,
+        permissionsLoaded,
+        login,
+        logout,
+        setUser,
+        refreshUserProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

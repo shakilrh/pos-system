@@ -3,11 +3,11 @@ import { format, startOfDay, endOfDay, parseISO, eachDayOfInterval } from 'date-
 import { useAuth } from '../../context/AuthContext';
 import { getOrders } from '../../services/dashboardService';
 import { Order } from '../../services/dashboardService';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer, Area, AreaChart, BarChart, Bar } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChartLine, faClipboardList, faUtensils, faShoppingBag } from '@fortawesome/free-solid-svg-icons';
+import { faChartLine, faClipboardList, faUtensils, faShoppingBag, faSearch, faClipboardCheck, faHashtag, faUser, faClipboard, faUserTie, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 
-// Utility functions (unchanged)
+// Utility functions
 const toPKT = (date: Date): Date => {
   const pktOffset = 5 * 60 * 60 * 1000;
   return new Date(date.getTime() + pktOffset);
@@ -97,7 +97,7 @@ const StatsSection = ({ stats }: { stats: { title: string; value: string; icon: 
 
 const SalesOverview = ({ salesData }: { salesData: { time: string; value: number }[] }) => {
   return (
-    <div className="bg-[var(--background-secondary)] rounded-lg shadow-md p-6 border border-[var(--border-color)] hover:shadow-lg transition-shadow duration-300">
+    <div className="bg-[var(--background-secondary)] rounded-xl shadow-xl p-6 border border-[var(--border-color)] hover:shadow-2xl transition-all duration-300">
       <h3 className="text-lg font-bold text-[var(--text-color)] mb-4 flex items-center">
         <span className="w-3 h-3 bg-[var(--primary-color)] rounded-full mr-3"></span>
         Sales Trend
@@ -107,12 +107,12 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
           <AreaChart data={salesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--primary-color)" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="var(--primary-color)" stopOpacity={0.1} />
+                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1} />
               </linearGradient>
               <linearGradient id="colorValueSecondary" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--surface-color)" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="var(--surface-color)" stopOpacity={0.1} />
+                <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="#10B981" stopOpacity={0.1} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
@@ -148,12 +148,12 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
             <Area
               type="monotone"
               dataKey="value"
-              stroke="var(--primary-color)"
+              stroke="#3B82F6"
               strokeWidth={3}
               fill="url(#colorValue)"
               fillOpacity={1}
-              dot={{ r: 4, fill: 'var(--primary-color)', strokeWidth: 2, stroke: 'var(--background-secondary)' }}
-              activeDot={{ r: 6, fill: 'var(--primary-color)', strokeWidth: 2, stroke: 'var(--background-secondary)' }}
+              dot={{ r: 4, fill: '#3B82F6', strokeWidth: 2, stroke: 'var(--background-secondary)' }}
+              activeDot={{ r: 6, fill: '#3B82F6', strokeWidth: 2, stroke: 'var(--background-secondary)' }}
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -172,10 +172,10 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
 
 const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Order[] }) => {
   const orderTypeData = getOrderTypeData(orders);
-  const COLORS = ['var(--success-color)', 'var(--error-color)'];
+  const COLORS = ['#10B981', '#EF4444'];
 
   return (
-    <div className="bg-[var(--background-secondary)] rounded-lg shadow-md p-4 border border-[var(--border-color)] hover:shadow-lg transition-shadow duration-300">
+    <div className="bg-[var(--background-secondary)] rounded-xl shadow-xl p-6 border border-[var(--border-color)] hover:shadow-2xl transition-all duration-300">
       <h3 className="text-base font-bold text-[var(--text-color)] mb-3 flex items-center">
         <span className="w-2 h-2 bg-[var(--primary-color)] rounded-full mr-2"></span>
         Revenue by Order Type
@@ -238,15 +238,12 @@ const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Or
 };
 
 const TopSellingItems = ({ items }: { items: { name: string; orders: number; image: string }[] }) => (
-  <div className="bg-[var(--background-secondary)] rounded-lg shadow-md p-4 border border-[var(--border-color)] hover:shadow-lg transition-shadow duration-300">
+  <div className="bg-[var(--background-secondary)] rounded-xl shadow-xl p-6 border border-[var(--border-color)] hover:shadow-2xl transition-all duration-300">
     <div className="flex justify-between items-center mb-3">
       <h3 className="text-base font-bold text-[var(--text-color)] flex items-center">
         <span className="w-2 h-2 bg-[var(--primary-color)] rounded-full mr-2"></span>
         Top Items
       </h3>
-      <button className="text-[var(--primary-color)] hover:text-[var(--primary-600)] text-xs font-medium transition-colors duration-200">
-        View All
-      </button>
     </div>
     <div className="space-y-2">
       {items.slice(0, 3).map((item, index) => (
@@ -278,7 +275,7 @@ const TopSellingItems = ({ items }: { items: { name: string; orders: number; ima
 );
 
 const RoleList = ({ roles }: { roles: { _id: string; name: string; permissions: { _id: string; key: string; description: string }[] }[] }) => (
-  <div className="bg-[var(--background-secondary)] rounded-lg shadow-md p-4 border border-[var(--border-color)] hover:shadow-lg transition-shadow duration-300">
+  <div className="bg-[var(--background-secondary)] rounded-xl shadow-xl p-6 border border-[var(--border-color)] hover:shadow-2xl transition-all duration-300">
     <h3 className="text-base font-bold text-[var(--text-color)] mb-3 flex items-center">
       <span className="w-2 h-2 bg-[var(--primary-color)] rounded-full mr-2"></span>
       User Roles
@@ -306,10 +303,10 @@ const RoleList = ({ roles }: { roles: { _id: string; name: string; permissions: 
 
 const OrderStatusChart = ({ orders }: { orders: Order[] }) => {
   const data = getOrderStatusData(orders);
-  const COLORS = ['var(--warning-color)', 'var(--success-color)', 'var(--primary-color)', 'var(--accent-color)', 'var(--error-color)'];
+  const COLORS = ['#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EF4444'];
 
   return (
-    <div className="bg-[var(--background-secondary)] rounded-lg shadow-md p-4 border border-[var(--border-color)] hover:shadow-lg transition-shadow duration-300">
+    <div className="bg-[var(--background-secondary)] rounded-xl shadow-xl p-6 border border-[var(--border-color)] hover:shadow-2xl transition-all duration-300">
       <h3 className="text-base font-bold text-[var(--text-color)] mb-3 flex items-center">
         <span className="w-2 h-2 bg-[var(--primary-color)] rounded-full mr-2"></span>
         Order Status
@@ -362,6 +359,219 @@ const OrderStatusChart = ({ orders }: { orders: Order[] }) => {
   );
 };
 
+const WaiterPerformanceChart = ({ orders }: { orders: Order[] }) => {
+  const completedOrders = orders.filter(order => order.status === 'completed');
+  const waiterStats = completedOrders.reduce((acc, order) => {
+    if (order.waiter_name) {
+      const waiterName = order.waiter_name || 'N/A';
+      if (!acc[waiterName]) {
+        acc[waiterName] = {
+          name: waiterName,
+          count: 0,
+          totalAmount: 0
+        };
+      }
+      acc[waiterName].count += 1;
+      acc[waiterName].totalAmount += order.total_amount;
+    }
+    return acc;
+  }, {} as Record<string, { name: string; count: number; totalAmount: number }>);
+  const data = Object.values(waiterStats).sort((a, b) => b.count - a.count);
+  const totalOrders = completedOrders.length;
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#F97316', '#84CC16', '#EC4899', '#6366F1'];
+
+  return (
+    <div className="bg-[var(--background-secondary)] rounded-xl shadow-xl p-6 border border-[var(--border-color)] hover:shadow-2xl transition-all duration-300 h-96 w-full flex flex-col">
+      <h3 className="text-base font-bold text-[var(--text-color)] mb-3 flex items-center">
+        <span className="w-2 h-2 bg-[var(--primary-color)] rounded-full mr-2"></span>
+        Waiter Performance
+      </h3>
+      <div className="flex-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 5, right: 30, left: 0, bottom: 5 }} barSize={30}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 10, fill: 'var(--text-secondary)' }}
+              axisLine={{ stroke: 'var(--border-color)' }}
+              tickMargin={5}
+              interval={0}
+            />
+            <YAxis
+              tick={{ fontSize: 12, fill: 'var(--text-secondary)' }}
+              axisLine={{ stroke: 'var(--border-color)' }}
+              tickMargin={8}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'var(--background-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                fontSize: '13px',
+                color: 'var(--text-color)',
+              }}
+              formatter={(value: number, name: string) => {
+                if (name === 'Orders') return [`${value} (${Math.round((value / totalOrders) * 100)}%)`, 'Orders'];
+                return [`$${value}`, 'Revenue'];
+              }}
+            />
+            <Bar
+              dataKey="count"
+              name="Orders"
+              radius={[4, 4, 0, 0]}
+              animationDuration={1500}
+            >
+              {data.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={COLORS[index % COLORS.length]}
+                  stroke={COLORS[index % COLORS.length]}
+                  strokeWidth={1}
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      {data.length === 0 && (
+        <div className="flex items-center justify-center h-32">
+          <div className="text-center text-[var(--text-secondary)]">
+            <div className="text-3xl mb-2">📊</div>
+            <div className="text-sm">No waiter performance data available</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const CompletedOrdersTable = ({ orders, onSearch }: { orders: Order[], onSearch: (term: string) => void }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    onSearch(e.target.value);
+  };
+  const completedOrders = orders.filter(order =>
+    order.status === 'completed' &&
+    (!searchTerm || (order.waiter_name && order.waiter_name.toLowerCase().includes(searchTerm.toLowerCase())))
+  );
+
+  return (
+    <div className="bg-[var(--background-secondary)] rounded-xl shadow-xl p-6 border border-[var(--border-color)] hover:shadow-2xl transition-all duration-300 h-96 w-full flex flex-col">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-4">
+        <h3 className="text-base font-bold text-[var(--text-color)] flex items-center">
+          <span className="w-2 h-2 bg-[var(--primary-color)] rounded-full mr-2"></span>
+          Completed Orders
+          <span className="ml-2 px-2 py-1 rounded-full text-xs font-bold bg-[var(--primary-color)] text-[var(--sidebar-text)]">
+            {completedOrders.length}
+          </span>
+        </h3>
+        <div className="relative w-full md:w-64">
+          <input
+            type="text"
+            placeholder="Search waiter..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="w-full pl-9 pr-4 py-2 bg-[var(--surface-color)] border border-[var(--border-color)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] transition-all duration-200"
+          />
+          <FontAwesomeIcon
+            icon={faSearch}
+            className="absolute left-3 top-3 text-[var(--text-secondary)]"
+          />
+        </div>
+      </div>
+      <div className="flex-1 overflow-auto">
+        <table className="min-w-full divide-y divide-[var(--border-color)]">
+          <thead className="bg-[var(--surface-color)] sticky top-0 z-10">
+          <tr>
+            <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Order #</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Waiter</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Customer</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Items</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Amount</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Completed At</th>
+          </tr>
+          </thead>
+          <tbody className="bg-[var(--background-secondary)] divide-y divide-[var(--border-color)]">
+          {completedOrders.length > 0 ? (
+            completedOrders.map((order, index) => (
+              <tr
+                key={order._id}
+                className={`hover:bg-[var(--surface-color)] transition-colors duration-150 ${index % 2 === 0 ? 'bg-[var(--background-secondary)]' : 'bg-[var(--surface-color)]'}`}
+              >
+                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-[var(--text-color)]">
+                  <div className="flex items-center">
+                      <span className="p-1 rounded mr-2 bg-[var(--primary-color)] text-[var(--sidebar-text)]">
+                        <FontAwesomeIcon icon={faHashtag} className="text-xs" />
+                      </span>
+                    {order.order_number}
+                  </div>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-[var(--text-color)]">
+                  <div className="flex items-center">
+                      <span className="p-1 rounded-full mr-2 bg-[var(--primary-color)] text-[var(--sidebar-text)]">
+                        <FontAwesomeIcon icon={faUser} className="text-xs" />
+                      </span>
+                    {order.waiter_name || 'N/A'}
+                  </div>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-[var(--text-color)]">
+                  {order.customer_name}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-[var(--text-color)]">
+                  <div className="flex items-center">
+                    {order.items.slice(0, 2).map((item, idx) => (
+                      <div key={idx} className="flex items-center mr-2">
+                        <img
+                          src={item.product.pictureUrl}
+                          alt={item.product.name}
+                          className="w-6 h-6 rounded-full object-cover mr-1 border border-[var(--border-color)]"
+                        />
+                        <span className="text-xs bg-[var(--surface-color)] px-1 rounded">{item.quantity}x</span>
+                      </div>
+                    ))}
+                    {order.items.length > 2 && (
+                      <span className="text-xs text-[var(--text-secondary)] bg-[var(--surface-color)] px-2 py-1 rounded-full">
+                          +{order.items.length - 2}
+                        </span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-[var(--text-color)]">
+                    <span className="px-2 py-1 rounded-full bg-[var(--primary-color)] text-[var(--sidebar-text)]">
+                      ${order.total_amount}
+                    </span>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-[var(--text-secondary)]">
+                  {format(new Date(order.updatedAt), 'MMM d, h:mm a')}
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={6} className="px-4 py-8 text-center text-[var(--text-secondary)]">
+                <div className="flex flex-col items-center justify-center">
+                  <FontAwesomeIcon icon={faClipboard} className="text-3xl mb-2" />
+                  <p>No completed orders found</p>
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="mt-2 text-sm hover:underline text-[var(--primary-color)]"
+                    >
+                      Clear search
+                    </button>
+                  )}
+                </div>
+              </td>
+            </tr>
+          )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
 // Main Dashboard Component
 const Dashboard = () => {
   const { isAuthenticated, isLoading, token, logout } = useAuth();
@@ -478,18 +688,42 @@ const Dashboard = () => {
                 {format(new Date(), 'PPPP')} • {format(new Date(), 'p')}
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="date"
-                  value={format(startDate, 'yyyy-MM-dd')}
-                  onChange={(e) => setStartDate(parseISO(e.target.value))}
-                  className="px-3 py-1 bg-[var(--background-secondary)] border border-[var(--border-color)] rounded-md text-xs text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] transition-colors duration-200"
-                />
-                <input
-                  type="date"
-                  value={format(endDate, 'yyyy-MM-dd')}
-                  onChange={(e) => setEndDate(parseISO(e.target.value))}
-                  className="px-3 py-1 bg-[var(--background-secondary)] border border-[var(--border-color)] rounded-md text-xs text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] transition-colors duration-200"
-                />
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={format(startDate, 'yyyy-MM-dd')}
+                    onChange={(e) => setStartDate(parseISO(e.target.value))}
+                    className="px-3 py-1 bg-[var(--background-secondary)] border border-[var(--border-color)] rounded-md text-xs text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] transition-colors duration-200 w-full cursor-pointer"
+                    onClick={(e) => (e.target as HTMLInputElement).showPicker()}
+                  />
+                  <FontAwesomeIcon
+                    icon={faCalendarAlt}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)] cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                      input.showPicker();
+                    }}
+                  />
+                </div>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={format(endDate, 'yyyy-MM-dd')}
+                    onChange={(e) => setEndDate(parseISO(e.target.value))}
+                    className="px-3 py-1 bg-[var(--background-secondary)] border border-[var(--border-color)] rounded-md text-xs text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] transition-colors duration-200 w-full cursor-pointer"
+                    onClick={(e) => (e.target as HTMLInputElement).showPicker()}
+                  />
+                  <FontAwesomeIcon
+                    icon={faCalendarAlt}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)] cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                      input.showPicker();
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -502,14 +736,26 @@ const Dashboard = () => {
           <RevenueSection totalSales={totalSales} orders={filteredOrders} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <TopSellingItems items={topSellingItemsData} />
           <RoleList roles={roles} />
           <OrderStatusChart orders={filteredOrders} />
         </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
+        <div className="xl:col-span-1">
+            <WaiterPerformanceChart orders={filteredOrders} />
+          </div>
+          <div className="xl:col-span-2">
+            <CompletedOrdersTable orders={filteredOrders} onSearch={(term) => console.log(term)} />
+          </div>
+        </div>
+
+
       </div>
     </div>
   );
 };
 
 export default Dashboard;
+
