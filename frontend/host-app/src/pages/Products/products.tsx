@@ -7,7 +7,7 @@ import { fetchProducts } from '../../services/productService';
 import { Category, Product } from './productTypes';
 import FlashMessage from '../FlashMessage';
 import { ShoppingBagIcon } from '@heroicons/react/24/outline';
-
+import { useAuth } from '../../context/AuthContext';
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000';
 
 interface ProductsProps {

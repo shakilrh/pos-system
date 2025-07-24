@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Category } from './categoryTypes';
 import FlashMessage from '../FlashMessage';
-
+import { useAuth } from '../../context/AuthContext'; // Add this import
 interface CategoryListProps {
   token: string | null;
   isAuthenticated: boolean;
@@ -37,6 +37,7 @@ export default function CategoryList({
                                        flashMessage,
                                        setFlashMessage,
                                      }: CategoryListProps) {
+  const { userPermissions, permissionsLoaded } = useAuth(); // Add this
   const itemsPerPage = 11;
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,6 +68,16 @@ export default function CategoryList({
     setSelectedCategory(null);
   };
 
+  if (!permissionsLoaded) { // Add this loading check
+    return (
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 border-t-4 border-b-4 border-orange-500 rounded-full animate-spin"></div>
+          <p className="mt-4 text-lg font-semibold text-gray-700">Loading permissions...</p>
+        </div>
+      </div>
+    );
+  }
   return (
 
       <div className="relative">
@@ -100,22 +111,24 @@ export default function CategoryList({
                   </div>
               </div>
 
+            {userPermissions.includes('can_add_categories') && ( // Wrap Add button
               <button
-                  onClick={onAdd}
-                  className={`flex items-center px-2.5 py-1.5 mt-9 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isProductFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''}`}
-                  style={{
-                      backgroundColor: isProductFormActive ? undefined : 'var(--primary-color)',
-                      color: 'var(--text-color-button)',
-
-                  }}
-                  disabled={isProductFormActive}
+                onClick={onAdd}
+                className={`flex items-center px-2.5 py-1.5 mt-9 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isProductFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''}`}
+                style={{
+                  backgroundColor: isProductFormActive ? undefined : 'var(--primary-color)',
+                  color: 'var(--text-color-button)',
+                }}
+                disabled={isProductFormActive}
               >
-                  <PlusCircleIcon className="w-4 h-4 mr-1"/>
-                  <span>Add</span>
+                <PlusCircleIcon className="w-4 h-4 mr-1"/>
+                <span>Add</span>
               </button>
+            )}
           </div>
 
-          {isAuthenticated && (
+
+        {isAuthenticated && (
               <>
                   {currentCategories.length === 0 ? (
                       <div className="text-center py-10">
@@ -148,25 +161,30 @@ export default function CategoryList({
                                       >
                                           {category.name}
                                       </td>
-                                      <td className="py-3 whitespace-nowrap text-right text-sm font-medium">
-                                          <button
+
+                                        <td className="py-3 whitespace-nowrap text-right text-sm font-medium">
+                                          {userPermissions.includes('can_edit_categories') && ( // Wrap Edit button
+                                            <button
                                               onClick={() => onEdit(category)}
                                               className="mr-4"
                                               style={{color: 'var(--primary-color)'}}
                                               title="Edit"
                                               disabled={isProductFormActive}
-                                          >
+                                            >
                                               <PencilIcon className="w-5 h-5"/>
-                                          </button>
-                                          {/*<button*/}
-                                          {/*  onClick={() => onDelete(category._id)}*/}
-                                          {/*  disabled={isProductFormActive}*/}
-                                          {/*  className="disabled:opacity-50"*/}
-                                          {/*  style={{ color: 'var(--error-color)' }}*/}
-                                          {/*  title="Delete"*/}
-                                          {/*>*/}
-                                          {/*  <TrashIcon className="w-5 h-5" />*/}
-                                          {/*</button>*/}
+                                            </button>
+                                          )}
+                                          {userPermissions.includes('can_delete_categories') && ( // Wrap Delete button (uncommented)
+                                            <button
+                                              onClick={() => onDelete(category._id)}
+                                              disabled={isProductFormActive}
+                                              className="disabled:opacity-50"
+                                              style={{ color: 'var(--error-color)' }}
+                                              title="Delete"
+                                            >
+                                              <TrashIcon className="w-5 h-5" />
+                                            </button>
+                                          )}
                                       </td>
                                   </tr>
                               ))}
