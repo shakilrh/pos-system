@@ -25,12 +25,12 @@
   --warning-color: #b45309; /* Amber-700 - 4.51:1 on white */
   --error-color: #b91c1c; /* Red-700 - 4.51:1 on white */
   --info-color: #1e40af; /* Blue-700 - 4.51:1 on white */
-  
+
   /* Interactive state indicators */
   --focus-ring: #3b82f6; /* Blue-500 for focus rings */
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
-  
+
   /* Hover state enhancement */
   --hover-opacity: 0.8;
   --active-opacity: 0.9;
@@ -57,7 +57,7 @@
   --accent-color: #1e40af; /* Blue-700 - consistent across themes */
   --surface-color: #ffffff;
   --surface-secondary: #f1f5f9; /* Slate-100 */
-  
+
   /* Error state hover */
   --error-color-hover: #991b1b; /* Red-800 */
 }
@@ -83,7 +83,7 @@
   --accent-color: #1e40af; /* Blue-700 - consistent across themes */
   --surface-color: #ffffff;
   --surface-secondary: #f1f5f9; /* Slate-100 */
-  
+
   /* Error state hover */
   --error-color-hover: #991b1b; /* Red-800 */
 }
@@ -109,7 +109,7 @@
   --accent-color: #1e40af; /* Blue-700 - consistent across themes */
   --surface-color: #ffffff;
   --surface-secondary: #f1f5f9; /* Slate-100 */
-  
+
   /* Error state hover */
   --error-color-hover: #991b1b; /* Red-800 */
 }
@@ -132,7 +132,7 @@
   --accent-color: #1e40af; /* Blue-700 - consistent across themes */
   --surface-color: #ffffff;
   --surface-secondary: #f3f4f6; /* Gray-100 */
-  
+
   /* Error state hover */
   --error-color-hover: #991b1b; /* Red-800 */
 }
@@ -155,7 +155,7 @@
   --accent-color: #1e40af; /* Blue-700 - consistent across themes */
   --surface-color: #fefce8; /* Yellow-50 */
   --surface-secondary: #fef3c7; /* Amber-100 */
-  
+
   /* Error state hover */
   --error-color-hover: #991b1b; /* Red-800 */
 }
@@ -213,25 +213,19 @@ a:active,
     --background-color: #ffffff;
     --border-color: #000000;
   }
-  
+
   [data-theme="dark-pro"] {
     --text-color: #ffffff;
     --background-color: #000000;
     --border-color: #ffffff;
   }
 }
-
-/* REDUCED MOTION SUPPORT */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  display: none;
 }
 
-/* COLOR BLIND FRIENDLY INDICATORS */
-.success-indicator::before { content: "✓ "; }
-.warning-indicator::before { content: "⚠ "; }
-.error-indicator::before { content: "✗ "; }
-.info-indicator::before { content: "ℹ "; }
+input[type="date"]::-moz-calendar-picker-indicator {
+  display: none;
+}
+

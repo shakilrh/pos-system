@@ -60,10 +60,10 @@ const PermissionList: React.FC<PermissionListProps> = ({
           (group.key === 'Dashboard' && (permission.key.toLowerCase().startsWith('dashboard_') || permission.key.toLowerCase() === 'can_view_dashboard')) ||
           (group.key === 'Menu Management' &&
             (permission.key.toLowerCase().startsWith('can_view_menu') ||
-              permission.key.toLowerCase().startsWith('can_view_categories') ||
+              permission.key.toLowerCase().startsWith('can_add_categories') ||
               permission.key.toLowerCase().startsWith('can_edit_categories') ||
               permission.key.toLowerCase().startsWith('can_delete_categories') ||
-              permission.key.toLowerCase().startsWith('can_view_products') ||
+              permission.key.toLowerCase().startsWith('can_add_products') ||
               permission.key.toLowerCase().startsWith('can_edit_products') ||
               permission.key.toLowerCase().startsWith('can_delete_products'))) ||
           (group.key === 'Orders' &&
@@ -72,6 +72,8 @@ const PermissionList: React.FC<PermissionListProps> = ({
               permission.key.toLowerCase().startsWith('manage_ready_orders') ||
               permission.key.toLowerCase().startsWith('manage_served_orders') ||
               permission.key.toLowerCase().startsWith('manage_completed_orders') ||
+              permission.key.toLowerCase().startsWith('manage_cancelled_orders') ||
+              permission.key.toLowerCase().startsWith('accept_onlineorders') ||
               permission.key.toLowerCase().startsWith('create_orders'))) ||
           (group.key === 'Roles Management' &&
             (permission.key.toLowerCase().startsWith('can_view_rolemanagement') ||

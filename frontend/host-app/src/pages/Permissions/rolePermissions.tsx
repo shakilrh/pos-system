@@ -90,6 +90,8 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
               permission.key.toLowerCase().startsWith('manage_served_orders') ||
               permission.key.toLowerCase().startsWith('manage_completed_orders') ||
               permission.key.toLowerCase().startsWith('create_orders'))) ||
+              permission.key.toLowerCase().startsWith('manage_cancelled_orders') ||
+              permission.key.toLowerCase().startsWith('accept_onlineorders') ||
           (group.key === 'Roles Management' &&
             (permission.key.toLowerCase().startsWith('can_view_rolemanagement') ||
             permission.key.toLowerCase().startsWith('manage_users') ||
