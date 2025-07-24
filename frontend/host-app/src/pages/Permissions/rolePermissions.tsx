@@ -94,13 +94,24 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
               permission.key.toLowerCase().startsWith('accept_onlineorders') ||
           (group.key === 'Roles Management' &&
             (permission.key.toLowerCase().startsWith('can_view_rolemanagement') ||
-            permission.key.toLowerCase().startsWith('manage_users') ||
-              permission.key.toLowerCase().startsWith('manage_roles') ||
-              permission.key.toLowerCase().startsWith('manage_permissions'))) ||
+              permission.key.toLowerCase().startsWith('can_add_users') ||
+              permission.key.toLowerCase().startsWith('can_edit_users') ||
+              permission.key.toLowerCase().startsWith('can_delete_users') ||
+              permission.key.toLowerCase().startsWith('can_add_roles') ||
+              permission.key.toLowerCase().startsWith('can_edit_roles') ||
+              permission.key.toLowerCase().startsWith('can_delete_roles') ||
+              permission.key.toLowerCase().startsWith('can_add_permissions') ||
+              permission.key.toLowerCase().startsWith('can_edit_permissions') ||
+              permission.key.toLowerCase().startsWith('assign_permissions') ||
+              permission.key.toLowerCase().startsWith('can_delete_permissions'))) ||
           (group.key === 'Tables Management' &&
             (permission.key.toLowerCase().startsWith('can_view_tablemanagement') ||
-             permission.key.toLowerCase().startsWith('manage_tables') ||
-              permission.key.toLowerCase().startsWith('manage_floors') ||
+              permission.key.toLowerCase().startsWith('can_add_floors') ||
+              permission.key.toLowerCase().startsWith('can_edit_floors') ||
+              permission.key.toLowerCase().startsWith('can_delete_floors') ||
+              permission.key.toLowerCase().startsWith('can_add_tables') ||
+              permission.key.toLowerCase().startsWith('can_edit_tables') ||
+              permission.key.toLowerCase().startsWith('can_delete_tables') ||
               permission.key.toLowerCase().startsWith('assign_tables'))) ||
           (group.key === 'Settings' &&
             (permission.key.toLowerCase().startsWith('can_view_storesettings') ||
