@@ -139,7 +139,7 @@ export default function Products({
 
   if (loading) {
     return (
-      <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+         <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
         <div className="animate-pulse space-y-4">
           <div className="h-8 rounded" style={{ backgroundColor: 'var(--background-secondary)' }}></div>
           {Array(4)
@@ -153,7 +153,7 @@ export default function Products({
   }
 
   return (
-    <div className="relative p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
+      <div className="relative p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)', opacity: isCategoryFormActive ? 0.5 : 1, pointerEvents: isCategoryFormActive ? 'none' : 'auto' }}>
       <Toaster position="top-right" />
       {flashMessage && (
         <FlashMessage
