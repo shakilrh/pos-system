@@ -1,6 +1,6 @@
 import React from 'react';
 import {ShoppingBagIcon, XMarkIcon} from '@heroicons/react/24/outline';
-
+import { PhotoIcon } from '@heroicons/react/24/outline';
 interface Product {
   _id: string;
   name: string;
@@ -130,15 +130,22 @@ const OrderMenu = ({
               )}
 
               {/* Product Image */}
-              <div className="w-20 h-20 mb-3 flex items-center justify-center overflow-hidden rounded-md">
-                <img
-                  src={product.pictureUrl || 'https://via.placeholder.com/96'}
-                  alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/96';
-                  }}
-                />
+
+              <div className="w-20 h-20 mb-3 flex items-center justify-center overflow-hidden rounded-md" style={{ backgroundColor: product.pictureUrl ? 'transparent' : 'var(--background-secondary)' }}>
+                {product.pictureUrl ? (
+                  <img
+                    src={product.pictureUrl}
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/96';
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <PhotoIcon className="w-8 h-8" style={{ color: 'var(--text-tertiary)' }} />
+                  </div>
+                )}
               </div>
 
               {/* Product Info */}
