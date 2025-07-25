@@ -6,7 +6,8 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   MagnifyingGlassIcon,
-  ShoppingBagIcon
+  ShoppingBagIcon,
+  PhotoIcon
 } from '@heroicons/react/24/outline';
 import { Category, Product } from './productTypes';
 import { useAuth } from '../../context/AuthContext';
@@ -213,7 +214,7 @@ export default function ProductList({
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: 'var(--background-secondary)' }}>
-                    <span style={{ color: 'var(--text-tertiary)' }}>No Image</span>
+                    <PhotoIcon className="w-8 h-8" style={{ color: 'var(--text-tertiary)' }} />
                   </div>
                 )}
               </div>
