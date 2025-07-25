@@ -1,5 +1,6 @@
-import React from 'react';
-import { Edit3, Trash2, Plus } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Edit3, Trash2, Plus, ChevronLeft, ChevronRight, Users, CheckCircle, Clock, BarChart3 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface Table {
   _id: string;
@@ -45,6 +46,8 @@ export default function TableList({
                                     setFlashMessage,
                                     isProductFormActive,
                                   }: TableListProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Filter tables by active floor
   const filteredTables = tables.filter(table =>
@@ -60,10 +63,23 @@ export default function TableList({
     };
   });
 
+  // Pagination logic
+  const totalItems = tablesWithStatus.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentTables = tablesWithStatus.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFloor, itemsPerPage]);
+
   // Calculate counts
   const freeCount = tablesWithStatus.filter(table => table.status === 'free').length;
   const reservedCount = tablesWithStatus.filter(table => table.status === 'reserved').length;
   const totalTables = tablesWithStatus.length;
+  const { userPermissions, permissionsLoaded } = useAuth();
 
   // Calculate capacity percentage for progress bar
   const capacityPercentage = totalTables > 0 ? Math.round((reservedCount / totalTables) * 100) : 0;
@@ -72,289 +88,406 @@ export default function TableList({
     setActiveFloor(floorId);
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (items: number) => {
+    setItemsPerPage(items);
+    setCurrentPage(1);
+  };
+
+  // Enhanced professional color scheme
+  const getStatusColors = (status: 'free' | 'reserved') => {
+    if (status === 'free') {
+      return {
+        primary: '#3B82F6', // Blue-500
+        light: '#EFF6FF', // Blue-50
+        dark: '#1E40AF', // Blue-800
+        gradient: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)'
+      };
+    } else {
+      return {
+        primary: '#8B5CF6', // Violet-500
+        light: '#F5F3FF', // Violet-50
+        dark: '#6D28D9', // Violet-700
+        gradient: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)'
+      };
+    }
+  };
+
   return (
     <div className="p-6">
       {/* Header with Floor Buttons */}
-      <div className="mb-6">
-        <div className="flex flex-wrap gap-2 mb-4">
+      <div className="mb-8">
+        <div className="flex flex-wrap gap-3 mb-6">
           <button
             onClick={() => handleFloorClick(null)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
               activeFloor === null
-                ? 'shadow-lg transform scale-105'
-                : 'hover:opacity-80'
+                ? 'shadow-lg scale-105'
+                : 'hover:shadow-md'
             }`}
             style={{
-              backgroundColor: activeFloor === null ? 'var(--primary-color)' : 'var(--background-color)',
-              color: activeFloor === null ? 'var(--text-on-primary)' : 'var(--text-color)',
-              border: `1px solid ${activeFloor === null ? 'var(--primary-color)' : 'var(--border-color)'}`
+              background: activeFloor === null
+                ? 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)'
+                : 'var(--background-color)',
+              color: activeFloor === null ? '#FFFFFF' : 'var(--text-color)',
+              border: `2px solid ${activeFloor === null ? '#8B5CF6' : 'var(--border-color)'}`
             }}
           >
+            <i className="fas fa-layer-group mr-2"></i>
             All Floors
           </button>
           {floors.map(floor => (
             <button
               key={floor._id}
               onClick={() => handleFloorClick(floor._id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
                 activeFloor === floor._id
-                  ? 'shadow-lg transform scale-105'
-                  : 'hover:opacity-80'
+                  ? 'shadow-lg scale-105'
+                  : 'hover:shadow-md'
               }`}
               style={{
-                backgroundColor: activeFloor === floor._id ? 'var(--primary-color)' : 'var(--background-color)',
-                color: activeFloor === floor._id ? 'var(--text-on-primary)' : 'var(--text-color)',
-                border: `1px solid ${activeFloor === floor._id ? 'var(--primary-color)' : 'var(--border-color)'}`
+                background: activeFloor === floor._id
+                  ? 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)'
+                  : 'var(--background-color)',
+                color: activeFloor === floor._id ? '#FFFFFF' : 'var(--text-color)',
+                border: `2px solid ${activeFloor === floor._id ? '#8B5CF6' : 'var(--border-color)'}`
               }}
             >
+              <i className="fas fa-building mr-2"></i>
               {floor.name}
             </button>
           ))}
         </div>
 
-        {/* Status Cards */}
+        {/* Compact Status Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div
-            className="rounded-lg p-2 shadow-sm border"
+            className="rounded-lg p-4 shadow-sm border-0 transform hover:scale-102 transition-all duration-200"
             style={{
-              backgroundColor: 'var(--background-color)',
-              borderColor: 'var(--border-color)'
+              background: 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)',
+              color: '#FFFFFF'
             }}
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Seats</p>
-                <p className="text-2xl font-bold" style={{ color: 'var(--text-color)' }}>{totalTables}</p>
+                <p className="text-xs font-medium opacity-90">Total Tables</p>
+                <p className="text-2xl font-bold">{totalTables}</p>
               </div>
-              <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--primary-color)' }}>
-                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 'var(--text-on-primary)' }}></div>
+              <div className="w-8 h-8 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
+                <Users size={16} />
               </div>
             </div>
           </div>
 
           <div
-            className="rounded-lg p-2 shadow-sm border"
+            className="rounded-lg p-4 shadow-sm border-0 transform hover:scale-102 transition-all duration-200"
             style={{
-              backgroundColor: 'var(--background-color)',
-              borderColor: 'var(--border-color)'
+              background: 'linear-gradient(135deg, #F093FB 0%, #F5576C 100%)',
+              color: '#FFFFFF'
             }}
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Reserved</p>
-                <p className="text-2xl font-bold" style={{ color: 'var(--warning-color)' }}>{reservedCount}</p>
+                <p className="text-xs font-medium opacity-90">Reserved</p>
+                <p className="text-2xl font-bold">{reservedCount}</p>
               </div>
-              <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--warning-color)' }}>
-                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 'var(--text-on-primary)' }}></div>
+              <div className="w-8 h-8 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
+                <Clock size={16} />
               </div>
             </div>
           </div>
 
           <div
-            className="rounded-lg p-2 shadow-sm border"
+            className="rounded-lg p-4 shadow-sm border-0 transform hover:scale-102 transition-all duration-200"
             style={{
-              backgroundColor: 'var(--background-color)',
-              borderColor: 'var(--border-color)'
+              background: 'linear-gradient(135deg, #4FACFE 0%, #00F2FE 100%)',
+              color: '#FFFFFF'
             }}
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Free</p>
-                <p className="text-2xl font-bold" style={{ color: 'var(--success-color)' }}>{freeCount}</p>
+                <p className="text-xs font-medium opacity-90">Available</p>
+                <p className="text-2xl font-bold">{freeCount}</p>
               </div>
-              <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--success-color)' }}>
-                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 'var(--text-on-primary)' }}></div>
+              <div className="w-8 h-8 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
+                <CheckCircle size={16} />
               </div>
             </div>
           </div>
 
           <div
-            className="rounded-lg p-2 shadow-sm border"
+            className="rounded-lg p-4 shadow-sm border-0 transform hover:scale-102 transition-all duration-200"
             style={{
-              backgroundColor: 'var(--background-color)',
-              borderColor: 'var(--border-color)'
+              background: 'linear-gradient(135deg, #FA709A 0%, #FEE140 100%)',
+              color: '#FFFFFF'
             }}
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Actual Capacity</p>
-                <p className="text-2xl font-bold" style={{ color: 'var(--primary-color)' }}>{capacityPercentage}%</p>
+                <p className="text-xs font-medium opacity-90">Capacity</p>
+                <p className="text-2xl font-bold">{capacityPercentage}%</p>
               </div>
-              <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--primary-color)' }}>
-                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 'var(--text-on-primary)' }}></div>
+              <div className="w-8 h-8 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
+                <BarChart3 size={16} />
               </div>
             </div>
-            <div className="mt-2 w-full rounded-full h-2" style={{ backgroundColor: 'var(--border-color)' }}>
+            <div className="mt-2 w-full rounded-full h-1.5 bg-white bg-opacity-30">
               <div
-                className="h-2 rounded-full transition-all duration-300"
-                style={{
-                  width: `${capacityPercentage}%`,
-                  backgroundColor: 'var(--primary-color)'
-                }}
+                className="h-1.5 rounded-full transition-all duration-500 bg-white"
+                style={{ width: `${capacityPercentage}%` }}
               ></div>
             </div>
           </div>
         </div>
 
-        {/* Add Button */}
-        <div className="flex justify-end">
-          <button
-            onClick={onAdd}
-            className="flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-            style={{
-              backgroundColor: 'var(--primary-color)',
-              color: 'var(--text-on-primary)'
-            }}
-          >
-            <Plus size={18} />
-            <span>Add Table</span>
-          </button>
+        {/* Add Button Only */}
+        <div className="flex justify-end mb-6">
+          {userPermissions.includes('can_add_tables') && (
+            <button
+              onClick={onAdd}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+                color: '#FFFFFF'
+              }}
+            >
+              <Plus size={16} />
+              <span>Add New Table</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Table Grid */}
       {isLoading.fetch ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'var(--primary-color)' }}></div>
-          <span className="ml-2" style={{ color: 'var(--text-secondary)' }}>Loading tables...</span>
+        <div className="flex justify-center items-center py-20">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-200"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent absolute top-0"></div>
+          </div>
+          <span className="ml-4 text-lg font-medium" style={{ color: 'var(--text-secondary)' }}>
+            Loading tables...
+          </span>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-          {tablesWithStatus.map((table) => (
-            <div key={table._id} className="group relative">
-              <div
-                className="relative overflow-hidden rounded-xl p-6 transition-all duration-300 hover:shadow-xl hover:scale-105 border-2"
-                style={{
-                  backgroundColor: 'var(--background-color)',
-                  borderColor: table.status === 'free' ? 'var(--success-color)' : 'var(--warning-color)'
-                }}
-              >
-                {/* Status Badge */}
-                <div className="absolute top-3 right-3">
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 mb-6">
+            {currentTables.map((table) => {
+              const colors = getStatusColors(table.status);
+              return (
+                <div key={table._id} className="group relative">
                   <div
-                    className="px-3 py-1 rounded-full text-xs font-semibold text-white"
+                    className="relative overflow-hidden rounded-lg p-4 transition-all duration-200 hover:shadow-lg hover:scale-102 border"
                     style={{
-                      backgroundColor: table.status === 'free' ? 'var(--success-color)' : 'var(--warning-color)'
+                      backgroundColor: 'var(--background-color)',
+                      borderColor: colors.primary,
+                      borderWidth: '2px'
                     }}
                   >
-                    {table.status === 'free' ? '● Free' : '● Reserved'}
+                    {/* Compact Status Badge */}
+                    <div className="absolute top-2 right-2">
+                      <div
+                        className="px-2 py-1 rounded-full text-xs font-medium text-white shadow-sm flex items-center gap-1"
+                        style={{ background: colors.gradient }}
+                      >
+                        <i className={`fas ${table.status === 'free' ? 'fa-check-circle' : 'fa-clock'} text-xs`}></i>
+                        {table.status === 'free' ? 'Free' : 'Reserved'}
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      {userPermissions.includes('can_edit_tables') && (
+                        <button
+                          onClick={() => onEdit(table)}
+                          className="p-1.5 text-white rounded-full hover:scale-110 transition-all duration-200 shadow-sm"
+                          style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)' }}
+                          title="Edit Table"
+                        >
+                          <Edit3 size={12} />
+                        </button>
+                      )}
+                      {userPermissions.includes('can_delete_tables') && (
+                        <button
+                          onClick={() => onDelete(table._id)}
+                          disabled={itemBeingDeleted === table._id}
+                          className="p-1.5 text-white rounded-full hover:scale-110 transition-all duration-200 shadow-sm"
+                          style={{ background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)' }}
+                          title="Delete Table"
+                        >
+                          {itemBeingDeleted === table._id ? (
+                            <div className="animate-spin w-3 h-3 border border-white border-t-transparent rounded-full"></div>
+                          ) : (
+                            <Trash2 size={12} />
+                          )}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Compact Table Icon */}
+                    <div className="flex justify-center mb-3 mt-6">
+                      <div
+                        className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-sm"
+                        style={{ background: colors.gradient }}
+                      >
+                        <i className="fas fa-utensils text-sm"></i>
+                      </div>
+                    </div>
+
+                    {/* Table Info */}
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold mb-1" style={{ color: colors.dark }}>
+                        <i className="fas fa-hashtag mr-1 text-sm"></i>
+                        {table.number}
+                      </h3>
+                      <p className="text-xs font-medium flex items-center justify-center gap-1" style={{ color: 'var(--text-secondary)' }}>
+                        <i className="fas fa-map-marker-alt text-xs"></i>
+                        {table.floor_id.name}
+                      </p>
+                    </div>
+
+                    {/* Simple bottom border */}
+                    <div
+                      className="absolute bottom-0 left-0 right-0 h-1"
+                      style={{ background: colors.gradient }}
+                    ></div>
                   </div>
                 </div>
+              );
+            })}
+          </div>
 
-                {/* Action Buttons */}
-                <div className="absolute top-3 left-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <button
-                    onClick={() => onEdit(table)}
-                    className="p-2 text-white rounded-full hover:opacity-90 transition-all duration-200 shadow-md"
-                    style={{ backgroundColor: 'var(--primary-color)' }}
-                  >
-                    <Edit3 size={14} />
-                  </button>
-                  <button
-                    onClick={() => onDelete(table._id)}
-                    disabled={itemBeingDeleted === table._id}
-                    className="p-2 text-white rounded-full hover:opacity-90 transition-all duration-200 shadow-md"
-                    style={{ backgroundColor: 'var(--error-color)' }}
-                  >
-                    {itemBeingDeleted === table._id ? (
-                      <svg className="animate-spin w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                    ) : (
-                      <Trash2 size={14} />
-                    )}
-                  </button>
-                </div>
-
-                {/* Table Icon */}
-                <div className="flex justify-center mb-4 mt-4">
-                  <div
-                    className="w-16 h-16 rounded-full flex items-center justify-center text-white"
+          {/* Bottom Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
+              {/* Items per page and info */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                    Show:
+                  </span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                    className="px-3 py-1.5 rounded-md border text-sm font-medium focus:outline-none focus:ring-2 transition-all duration-200"
                     style={{
-                      backgroundColor: table.status === 'free' ? 'var(--success-color)' : 'var(--warning-color)'
+                      backgroundColor: 'var(--background-color)',
+                      borderColor: 'var(--border-color)',
+                      color: 'var(--text-color)'
                     }}
                   >
-                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                  </div>
+                    <option value={10}>10 per page</option>
+                    <option value={20}>20 per page</option>
+                    <option value={50}>50 per page</option>
+                    <option value={100}>100 per page</option>
+                  </select>
                 </div>
 
-                {/* Table Info */}
-                <div className="text-center">
-                  <h3 className="text-xl font-bold mb-1" style={{ color: 'var(--text-color)' }}>
-                    Table {table.number}
-                  </h3>
-                  <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                    {table.floor_id.name}
-                  </p>
+                <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Showing {Math.min(startIndex + 1, totalItems)}-{Math.min(endIndex, totalItems)} of {totalItems} tables
+                </div>
+              </div>
+
+              {/* Pagination */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+                  style={{
+                    backgroundColor: currentPage === 1 ? 'var(--border-color)' : '#8B5CF6',
+                    color: currentPage === 1 ? 'var(--text-secondary)' : '#FFFFFF'
+                  }}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <div className="flex gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`w-8 h-8 rounded-md text-sm font-medium transition-all duration-200 ${
+                          currentPage === pageNum ? 'scale-105 shadow-sm' : 'hover:scale-105'
+                        }`}
+                        style={{
+                          background: currentPage === pageNum
+                            ? 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)'
+                            : 'var(--background-color)',
+                          color: currentPage === pageNum ? '#FFFFFF' : 'var(--text-color)',
+                          border: `1px solid ${currentPage === pageNum ? '#8B5CF6' : 'var(--border-color)'}`
+                        }}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
                 </div>
 
-                {/* Decorative Elements */}
-                <div
-                  className="absolute bottom-0 left-0 right-0 h-1"
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
                   style={{
-                    backgroundColor: table.status === 'free' ? 'var(--success-color)' : 'var(--warning-color)'
+                    backgroundColor: currentPage === totalPages ? 'var(--border-color)' : '#8B5CF6',
+                    color: currentPage === totalPages ? 'var(--text-secondary)' : '#FFFFFF'
                   }}
-                ></div>
+                >
+                  <ChevronRight size={16} />
+                </button>
 
-                {/* Status Indicator Dots */}
-                <div className="absolute -top-2 -right-2 flex space-x-1">
-                  <div
-                    className="w-4 h-4 rounded-full animate-pulse"
-                    style={{
-                      backgroundColor: table.status === 'free' ? 'var(--success-color)' : 'var(--warning-color)'
-                    }}
-                  ></div>
+                <div className="text-sm font-medium ml-2" style={{ color: 'var(--text-secondary)' }}>
+                  Page {currentPage} of {totalPages}
                 </div>
-
-                {/* Side Indicators like in your image */}
-                <div
-                  className="absolute left-0 top-1/2 transform -translate-y-1/2 w-3 h-8 rounded-r-full"
-                  style={{
-                    backgroundColor: table.status === 'free' ? 'var(--success-color)' : 'var(--warning-color)'
-                  }}
-                ></div>
-                <div
-                  className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-8 rounded-l-full"
-                  style={{
-                    backgroundColor: table.status === 'free' ? 'var(--success-color)' : 'var(--warning-color)'
-                  }}
-                ></div>
               </div>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
-      {/* Empty State */}
+      {/* Enhanced Empty State */}
       {!isLoading.fetch && tablesWithStatus.length === 0 && (
-        <div className="text-center py-12">
+        <div className="text-center py-20">
           <div
-            className="rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4"
-            style={{ backgroundColor: 'var(--border-color)' }}
+            className="rounded-full w-32 h-32 flex items-center justify-center mx-auto mb-8 shadow-lg"
+            style={{ background: 'linear-gradient(135deg, #E5E7EB 0%, #D1D5DB 100%)' }}
           >
-            <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--text-secondary)' }}>
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-            </svg>
+            <i className="fas fa-utensils text-4xl" style={{ color: 'var(--text-secondary)' }}></i>
           </div>
-          <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-color)' }}>
+          <h3 className="text-2xl font-bold mb-4" style={{ color: 'var(--text-color)' }}>
             No tables found
           </h3>
-          <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-lg mb-8 max-w-md mx-auto" style={{ color: 'var(--text-secondary)' }}>
             {activeFloor ? 'This floor has no tables yet.' : 'No tables have been created yet.'}
           </p>
-          <button
-            onClick={onAdd}
-            className="px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-            style={{
-              backgroundColor: 'var(--primary-color)',
-              color: 'var(--text-on-primary)'
-            }}
-          >
-            Create First Table
-          </button>
+          {userPermissions.includes('can_add_tables') && (
+            <button
+              onClick={onAdd}
+              className="px-8 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+                color: '#FFFFFF'
+              }}
+            >
+              <i className="fas fa-plus mr-2"></i>
+              Create Your First Table
+            </button>
+          )}
         </div>
       )}
     </div>

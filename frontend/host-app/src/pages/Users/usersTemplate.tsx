@@ -7,7 +7,7 @@ import UserList from './userList';
 import UserCrud from './userCrud';
 import UserRole from './userRole';
 import { User, Role, UsersTemplateProps } from './userTypes';
-
+import { useAuth } from '../../context/AuthContext';
 const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -28,7 +28,7 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
   const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
-
+  const { userPermissions, permissionsLoaded } = useAuth();
   useEffect(() => {
     if (token) loadData();
   }, [token]);
@@ -171,6 +171,7 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
             <UserIcon className="w-4 h-4" />
             <span>User List</span>
           </button>
+          {userPermissions.includes('assign_roles') && (
           <button
             style={{
               background: activeSection === 'role' ? 'var(--primary-color)' : 'var(--surface-color)',
@@ -185,7 +186,7 @@ const UsersTemplate: React.FC<UsersTemplateProps> = ({ token, logout }) => {
           >
             <UserIcon className="w-4 h-4" />
             <span>Assign Role</span>
-          </button>
+          </button>)}
         </div>
       </div>
       {activeSection === 'list' && (

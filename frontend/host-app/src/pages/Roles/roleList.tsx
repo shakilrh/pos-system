@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MagnifyingGlassIcon, PencilIcon, TrashIcon, UserGroupIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { Role, RoleListProps } from './roleTypes';
-
+import { useAuth } from '../../context/AuthContext';
 const RoleList: React.FC<RoleListProps> = ({
                                              roles,
                                              setEditRole,
@@ -28,7 +28,7 @@ const RoleList: React.FC<RoleListProps> = ({
   const indexOfFirstRole = indexOfLastRole - rolesPerPage;
   const currentRoles = filteredRoles.slice(indexOfFirstRole, indexOfLastRole);
   const totalPages = Math.ceil(filteredRoles.length / rolesPerPage);
-
+  const { userPermissions, permissionsLoaded } = useAuth();
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
   const handleRoleClick = (role: Role) => {
@@ -61,6 +61,7 @@ const RoleList: React.FC<RoleListProps> = ({
             <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
           </div>
         </div>
+        {userPermissions.includes('can_add_roles') && (
         <button
           onClick={() => setShowCreateForm(true)}
           className="flex items-center space-x-1 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 self-end"
@@ -71,7 +72,7 @@ const RoleList: React.FC<RoleListProps> = ({
         >
           <PlusIcon className="w-5 h-5" />
           <span>Add Role</span>
-        </button>
+        </button>)}
       </div>
 
       {isLoading.fetch ? (
@@ -135,6 +136,7 @@ const RoleList: React.FC<RoleListProps> = ({
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-medium">
                   <div className="flex items-center justify-end space-x-2">
+                    {userPermissions.includes('can_edit_roles') && (
                     <button
                       onClick={() => setEditRole(role)}
                       className="p-1 rounded hover:bg-opacity-10 transition-colors duration-200"
@@ -142,7 +144,8 @@ const RoleList: React.FC<RoleListProps> = ({
                       title="Edit role"
                     >
                       <PencilIcon className="w-5 h-5" />
-                    </button>
+                    </button>)}
+                    {userPermissions.includes('can_delete_roles') && (
                     <button
                       onClick={() => setDeleteConfirm(role._id)}
                       disabled={isLoading.delete}
@@ -158,7 +161,7 @@ const RoleList: React.FC<RoleListProps> = ({
                       ) : (
                         <TrashIcon className="w-5 h-5" />
                       )}
-                    </button>
+                    </button>)}
                   </div>
                 </td>
               </tr>

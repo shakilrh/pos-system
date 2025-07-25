@@ -7,7 +7,7 @@ import PermissionList from './permissionList';
 import PermissionCrud from './permissionCrud';
 import RolePermissions from './rolePermissions';
 import { Role, Permission, PermissionsTemplateProps } from './permissionsTypes';
-
+import { useAuth } from '../../context/AuthContext';
 const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout }) => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -28,7 +28,7 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
   const [activeSection, setActiveSection] = useState<'list' | 'assign'>('list');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
-
+  const { userPermissions, permissionsLoaded } = useAuth();
   const loadPermissions = async () => {
     setIsLoading((prev) => ({ ...prev, fetch: true }));
     try {
@@ -121,6 +121,7 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
             <KeyIcon className="w-4 h-4" />
             <span>Permission List</span>
           </button>
+            {userPermissions.includes('assign_permissions') && (
           <button
             className={`flex items-center space-x-1 px-2.5 py-1.5 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none`}
             style={{
@@ -138,7 +139,7 @@ const PermissionsTemplate: React.FC<PermissionsTemplateProps> = ({ token, logout
           >
             <UserGroupIcon className="w-4 h-4" />
             <span>Assign Role Permissions</span>
-          </button>
+          </button>)}
         </div>
       </div>
       {(showCreateForm || editPermission) && (

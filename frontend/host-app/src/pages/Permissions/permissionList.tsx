@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { MagnifyingGlassIcon, PencilIcon, TrashIcon, KeyIcon, XMarkIcon, ChevronDownIcon, ChevronRightIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { Permission, PermissionListProps } from './permissionsTypes';
-
+import { useAuth } from '../../context/AuthContext';
 interface GroupedPermission {
   id: string;
   key: string;
@@ -34,7 +34,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [selectedPermission, setSelectedPermission] = useState<Permission | null>(null);
   const permissionsPerPage = 6;
-
+  const { userPermissions, permissionsLoaded } = useAuth();
   const groupedPermissions = useMemo(() => {
     const groups: GroupedPermission[] = [];
     const ungroupedPermissions: Permission[] = [];
@@ -80,6 +80,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
             permission.key.toLowerCase().startsWith('can_add_users') ||
               permission.key.toLowerCase().startsWith('can_edit_users') ||
               permission.key.toLowerCase().startsWith('can_delete_users') ||
+              permission.key.toLowerCase().startsWith('assign_roles') ||
               permission.key.toLowerCase().startsWith('can_add_roles') ||
               permission.key.toLowerCase().startsWith('can_edit_roles') ||
               permission.key.toLowerCase().startsWith('can_delete_roles') ||
@@ -182,6 +183,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
             <MagnifyingGlassIcon className="w-5 h-5 text-[--text-secondary] absolute left-3 top-1/2 transform -translate-y-1/2" />
           </div>
         </div>
+        {userPermissions.includes('can_add_permissions') && (
         <button
           onClick={() => setShowCreateForm(true)}
           className="flex items-center space-x-1 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 self-end"
@@ -192,7 +194,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
         >
           <PlusIcon className="w-5 h-5" />
           <span>Add Permission</span>
-        </button>
+        </button>)}
       </div>
 
       {isLoading.fetch ? (
@@ -245,13 +247,15 @@ const PermissionList: React.FC<PermissionListProps> = ({
                         )}
                       </div>
                       <div className="flex space-x-4">
+                        {userPermissions.includes('can_edit_permissions') && (
                         <button
                           onClick={() => setEditPermission(permission)}
                           className="text-[--primary-color] hover:opacity-80"
                           title="Edit permission"
                         >
                           <PencilIcon className="w-5 h-5" />
-                        </button>
+                        </button>)}
+                        {userPermissions.includes('can_delete_permissions') && (
                         <button
                           onClick={() => setDeleteConfirm(permission._id)}
                           disabled={isLoading.delete === permission._id}
@@ -282,7 +286,7 @@ const PermissionList: React.FC<PermissionListProps> = ({
                           ) : (
                             <TrashIcon className="w-5 h-5" />
                           )}
-                        </button>
+                        </button>)}
                       </div>
                     </div>
                   ))}

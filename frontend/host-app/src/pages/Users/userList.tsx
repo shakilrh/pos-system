@@ -2,6 +2,7 @@ import React from 'react';
 import { MagnifyingGlassIcon, PencilIcon, TrashIcon, UserIcon, PlusIcon,XMarkIcon  } from '@heroicons/react/24/outline';
 import { User, Role } from './userTypes';
 import UserCrud from './userCrud';
+import { useAuth } from '../../context/AuthContext';
 
 interface UserListProps {
   token: string | null;
@@ -58,6 +59,7 @@ const UserList: React.FC<UserListProps> = ({
   const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
   const totalPages = Math.ceil(users.length / usersPerPage);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+  const { userPermissions, permissionsLoaded } = useAuth();
 
   const handleUserClick = (user: User) => {
     setSelectedUser(user);
@@ -74,6 +76,16 @@ const UserList: React.FC<UserListProps> = ({
     setDeleteUserId(null);
   };
 
+  if (!permissionsLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 border-t-4 border-b-4 border-orange-500 rounded-full animate-spin"></div>
+          <p className="mt-4 text-lg font-semibold text-gray-700">Loading permissions...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="relative z-0">
       {showCreateForm ? (
@@ -123,7 +135,7 @@ const UserList: React.FC<UserListProps> = ({
                 <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
               </div>
             </div>
-
+            {userPermissions.includes('can_add_users') && (
             <button
               onClick={() => setShowCreateForm(true)}
               className="flex items-center space-x-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white"
@@ -131,7 +143,7 @@ const UserList: React.FC<UserListProps> = ({
             >
               <PlusIcon className="w-5 h-5" />
               <span>Add User</span>
-            </button>
+            </button>)}
           </div>
 
           {isLoading.fetch ? (
@@ -171,6 +183,7 @@ const UserList: React.FC<UserListProps> = ({
                     <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--text-color)' }}>{user.user_type || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--text-color)' }}>{roles.find((r) => r._id === user.role_id)?.name || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {userPermissions.includes('can_edit_users') && (
                       <button
                         onClick={() => {
                           setEditUser(user);
@@ -181,7 +194,8 @@ const UserList: React.FC<UserListProps> = ({
                         title="Edit user"
                       >
                         <PencilIcon className="w-5 h-5" />
-                      </button>
+                      </button>)}
+                      {userPermissions.includes('can_delete_users') && (
                       <button
                         onClick={() => setDeleteUserId(user._id)}
                         disabled={isLoading.delete}
@@ -197,7 +211,7 @@ const UserList: React.FC<UserListProps> = ({
                         ) : (
                           <TrashIcon className="w-5 h-5" />
                         )}
-                      </button>
+                      </button>)}
                     </td>
                   </tr>
                 ))}

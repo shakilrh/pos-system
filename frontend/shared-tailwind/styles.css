@@ -229,3 +229,21 @@ input[type="date"]::-moz-calendar-picker-indicator {
   display: none;
 }
 
+.product-image-container {
+  width: 64px; /* Match h-16 for consistency */
+  height: 64px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.product-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+}
+
+.no-image-icon {
+  font-size: 2rem;
+  color: var(--text-secondary);
+}

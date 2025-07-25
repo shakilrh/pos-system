@@ -47,9 +47,10 @@ const MAIN_PAGES = [
     description: 'Access to Roles Management page',
     subPermissions: [
       { key: 'can_view_rolemanagement', name: 'Can view RoleManagement', description: 'Manage user and roles accounts' },
-      { key: 'can_add_users', name: 'Manage Users', description: 'Add user accounts' },
+      { key: 'can_add_users', name: 'Add Users', description: 'Add user accounts' },
       { key: 'can_edit_users', name: 'Edit Users', description: 'Edit user accounts' },
       { key: 'can_delete_users', name: 'Delete Users', description: 'Delete user accounts' },
+      { key: 'assign_roles', name: 'Assign Roles', description: 'Assign roles to users' },
       { key: 'can_add_roles', name: 'Add Roles', description: 'Add roles' },
       { key: 'can_edit_roles', name: 'Edit Roles', description: 'Edit roles' },
       { key: 'can_delete_roles', name: 'Delete Roles', description: 'Delete roles' },

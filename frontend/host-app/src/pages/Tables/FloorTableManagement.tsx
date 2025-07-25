@@ -41,7 +41,7 @@ export default function FloorTableManagement({
   const [currentPage, setCurrentPage] = useState(1);
   const [isClient, setIsClient] = useState<boolean>(false);
   const [currentTheme, setCurrentTheme] = useState<string>('default');
-
+  const { userPermissions, permissionsLoaded } = useAuth();
   useEffect(() => {
     setIsClient(true);
     const theme = document.querySelector('html')?.getAttribute('data-theme') || 'default';
@@ -275,7 +275,9 @@ export default function FloorTableManagement({
               {[
                 { label: 'Tables', key: 'tables' },
                 { label: 'Floors', key: 'floors' },
-                { label: 'Assign Table', key: 'assignTable' },
+                ...(userPermissions.includes('can_add_products')
+                  ? [{ label: 'Assign Table', key: 'assignTable' }]
+                  : []),
               ].map(({ label, key }) => (
                 <button
                   key={key}

@@ -97,6 +97,7 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
               permission.key.toLowerCase().startsWith('can_add_users') ||
               permission.key.toLowerCase().startsWith('can_edit_users') ||
               permission.key.toLowerCase().startsWith('can_delete_users') ||
+              permission.key.toLowerCase().startsWith('assign_roles') ||
               permission.key.toLowerCase().startsWith('can_add_roles') ||
               permission.key.toLowerCase().startsWith('can_edit_roles') ||
               permission.key.toLowerCase().startsWith('can_delete_roles') ||

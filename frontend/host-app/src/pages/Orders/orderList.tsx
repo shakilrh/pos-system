@@ -464,13 +464,14 @@ export default function OrderList({
   const currentTab = (outerActiveTab === 'physical' ? physicalTabs : onlineTabs).find((tab) => tab.key === activeTab);
 
   const getMessageStyles = (message: string) => {
-    const [borderColor, bgColor, textColor] = message.includes('Failed') || message.includes('Please log in')
-      ? ['#d32f2f', '#ef9a9a', '#fff']
-      : message.includes('Order #') && (message.includes('ready') || message.includes('served') || message.includes('completed'))
-        ? ['#388e3c', '#c8e6c9', '#fff']
-        : message.includes('Overdue') || message.includes('needs to be ready')
-          ? ['#f57c00', '#ffe0b2', '#000']
-          : ['var(--border-color)', 'var(--background-secondary)', 'var(--text-secondary)'];
+    const [borderColor, bgColor, textColor] =
+      message.includes('Failed') || message.includes('Please log in')
+        ? ['#dc2626', 'rgb(255,235,238)', '#d32f2f'] // Darker red for errors
+        : message.includes('Order #') && (message.includes('ready') || message.includes('served') || message.includes('completed'))
+          ? ['#059669', 'rgb(232,245,233)', '#388e3c'] // Darker green for success
+          : message.includes('Overdue') || message.includes('needs to be ready')
+            ? ['#d97706', 'rgba(255,228,120,0.95)', '#ba7625'] // Slightly darker amber for warnings
+            : ['var(--border-color)', 'var(--background-secondary)', 'var(--text-secondary)']; // Default
     return { borderColor, backgroundColor: bgColor, color: textColor };
   };
 

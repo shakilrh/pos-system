@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MagnifyingGlassIcon, PencilIcon, TrashIcon, UserGroupIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
-
+import { useAuth } from '../../context/AuthContext';
 interface Floor {
   _id: string;
   name: string;
@@ -52,7 +52,7 @@ const FloorList: React.FC<FloorListProps> = ({
   const indexOfFirstFloor = indexOfLastFloor - floorsPerPage;
   const currentFloors = filteredFloors.slice(indexOfFirstFloor, indexOfLastFloor);
   const totalPages = Math.ceil(filteredFloors.length / floorsPerPage);
-
+  const { userPermissions, permissionsLoaded } = useAuth();
   const [selectedFloor, setSelectedFloor] = useState<Floor | null>(null);
 
   const handleFloorClick = (floor: Floor) => {
@@ -86,6 +86,7 @@ const FloorList: React.FC<FloorListProps> = ({
             <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
           </div>
         </div>
+        {userPermissions.includes('can_add_floors') && (
         <button
           onClick={onAdd}
           className="flex items-center space-x-1 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 self-end"
@@ -96,7 +97,7 @@ const FloorList: React.FC<FloorListProps> = ({
         >
           <PlusIcon className="w-5 h-5" />
           <span>Add Floor</span>
-        </button>
+        </button>)}
       </div>
 
       {isLoading.fetch ? (
@@ -143,6 +144,7 @@ const FloorList: React.FC<FloorListProps> = ({
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-medium">
                   <div className="flex items-center justify-end space-x-2">
+                    {userPermissions.includes('can_edit_floors') && (
                     <button
                       onClick={() => onEdit(floor)}
                       className="p-1 rounded hover:bg-opacity-10 transition-colors duration-200"
@@ -151,6 +153,8 @@ const FloorList: React.FC<FloorListProps> = ({
                     >
                       <PencilIcon className="w-5 h-5" />
                     </button>
+                      )}
+                    {userPermissions.includes('can_delete_floors') && (
                     <button
                       onClick={() => onDelete(floor._id)}
                       disabled={itemBeingDeleted === floor._id}
@@ -166,7 +170,7 @@ const FloorList: React.FC<FloorListProps> = ({
                       ) : (
                         <TrashIcon className="w-5 h-5" />
                       )}
-                    </button>
+                    </button>)}
                   </div>
                 </td>
               </tr>
