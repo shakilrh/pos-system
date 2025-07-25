@@ -524,7 +524,7 @@ export default function CreateOrder() {
         </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-4">
           <div
             className="rounded-lg shadow-md border p-4"
             style={{
@@ -560,7 +560,7 @@ export default function CreateOrder() {
             />
           </div>
         </div>
-        <div className="lg:col-span-7">
+        <div className="lg:col-span-6">
           <div
             className="rounded-lg shadow-md border p-4"
             style={{
