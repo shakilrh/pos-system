@@ -485,27 +485,6 @@ const UserCrud: React.FC<UserCrudProps> = ({
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  Role (Optional)
-                </label>
-                <select
-                  value={data?.role_id || ''}
-                  onChange={(e) => handleInputChange('role_id', e.target.value, isEdit)}
-                  className="w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200"
-                  style={{
-                    borderColor: 'var(--border-color)',
-                    backgroundColor: 'var(--background-color)',
-                    color: 'var(--text-color)',
-                    outlineColor: 'var(--focus-ring)',
-                  }}
-                >
-                  <option value="">Select Role</option>
-                  {roles.map((role: Role) => (
-                    <option key={role._id} value={role._id}>{role.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                   Phone Number (Optional)
                 </label>
                 <input
