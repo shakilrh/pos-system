@@ -55,6 +55,7 @@ const ALL_PERMISSIONS = [
   'can_add_users',
   'can_edit_users',
   'can_delete_users',
+  'assign_roles',
   'can_add_roles',
   'can_edit_roles',
   'can_delete_roles',
