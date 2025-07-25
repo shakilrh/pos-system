@@ -674,9 +674,11 @@ const Dashboard = () => {
     },
   ];
 
+// Replace the return statement in your Dashboard component with this:
+
   return (
     <div className="min-h-screen bg-[var(--background-color)] p-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-none mx-0"> {/* Changed from max-w-7xl mx-auto */}
         <div className="bg-[var(--background-secondary)] rounded-lg shadow-md p-4 mb-4 border border-[var(--border-color)]">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
             <div className="mb-3 lg:mb-0">
@@ -750,8 +752,6 @@ const Dashboard = () => {
             <CompletedOrdersTable orders={filteredOrders} onSearch={(term) => console.log(term)} />
           </div>
         </div>
-
-
       </div>
     </div>
   );
