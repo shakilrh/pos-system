@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminAuthService } from '../../services/adminAuthService';
 import FlashMessage from '../FlashMessage';
@@ -28,8 +28,10 @@ export default function RegisterAdmin() {
     address?: string[];
   }>({});
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Enhanced validation functions that return arrays of error messages
+  // Validation functions
   const validateName = (name: string): string[] => {
     const errors: string[] = [];
     if (!name.trim()) {
@@ -105,8 +107,8 @@ export default function RegisterAdmin() {
   const validatePhoneNumber = (phoneNumber: string): string[] => {
     if (!phoneNumber.trim()) return []; // Optional field
     const errors: string[] = [];
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    if (!phoneRegex.test(phoneNumber)) errors.push('Please enter a valid phone number (e.g., +1234567890)');
+    const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,6}$/;
+    if (!phoneRegex.test(phoneNumber)) errors.push('Please enter a valid phone number (e.g., +1234567890, (123) 456-7890)');
     return errors;
   };
 
@@ -163,24 +165,22 @@ export default function RegisterAdmin() {
     return requiredFieldsValid && optionalFieldsValid && logoValid;
   };
 
+  useEffect(() => {
+    const allFields = ['name', 'email', 'password', 'confirmPassword', 'storeName', 'phoneNumber', 'address', 'logo'];
+    const newErrors: any = {};
+    allFields.forEach(field => {
+      newErrors[field] = getFieldErrors(field);
+    });
+    setErrors(newErrors);
+  }, [formData, logo]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    if (touchedFields.has(name)) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: getFieldErrors(name === 'confirmPassword' ? 'confirmPassword' : name)
-      }));
-    }
-    if (name === 'password' && touchedFields.has('confirmPassword')) {
-      setErrors(prev => ({
-        ...prev,
-        confirmPassword: validateConfirmPassword(formData.confirmPassword, value)
-      }));
-    }
+    setTouchedFields(prev => new Set(prev).add(name));
   };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,30 +206,16 @@ export default function RegisterAdmin() {
 
   const handleFocus = (fieldName: string) => {
     setTouchedFields(prev => new Set(prev).add(fieldName));
-    setErrors(prev => ({
-      ...prev,
-      [fieldName]: getFieldErrors(fieldName)
-    }));
-  };
-
-  const handleBlur = (fieldName: string) => {
-    if (touchedFields.has(fieldName)) {
-      setErrors(prev => ({
-        ...prev,
-        [fieldName]: getFieldErrors(fieldName)
-      }));
-    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    const allFields = ['name', 'email', 'password', 'confirmPassword', 'storeName', 'phoneNumber', 'address'];
+    const allFields = ['name', 'email', 'password', 'confirmPassword', 'storeName', 'phoneNumber', 'address', 'logo'];
     setTouchedFields(new Set(allFields));
     const allErrors: any = {};
     allFields.forEach(field => {
       allErrors[field] = getFieldErrors(field);
     });
-    allErrors.logo = validateLogo(logo);
     setErrors(allErrors);
     const hasErrors = Object.values(allErrors).some((fieldErrors: any) => fieldErrors.length > 0);
     if (hasErrors) {
@@ -275,10 +261,15 @@ export default function RegisterAdmin() {
   const handleLoginRedirect = () => {
     router.push('/login');
   };
+  const handleBlur = (fieldName: string) => {
+    setTouchedFields(prev => new Set(prev).add(fieldName));
+  };
 
   const renderFieldErrors = (fieldName: string) => {
     const fieldErrors = errors[fieldName as keyof typeof errors] || [];
-    if (fieldErrors.length === 0) return null;
+    // Only show errors if the field has been touched/blurred or form has been submitted
+    if (fieldErrors.length === 0 || !touchedFields.has(fieldName)) return null;
+
     return (
       <div className="mt-1 space-y-1">
         {fieldErrors.map((error, index) => (
@@ -336,7 +327,9 @@ export default function RegisterAdmin() {
                     onBlur={() => handleBlur('name')}
                     placeholder="John Doe"
                     className={`w-full p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border ${
-                      errors.name && errors.name.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200 dark:border-gray-600'
+                      touchedFields.has('name') && errors.name && errors.name.length > 0
+                        ? 'border-red-500 ring-1 ring-red-500'
+                        : 'border-gray-200 dark:border-gray-600'
                     } focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 text-sm`}
                   />
                   {renderFieldErrors('name')}
@@ -346,16 +339,18 @@ export default function RegisterAdmin() {
                     Email Address *
                   </label>
                   <input
-                    type="email"
+                    type="text"
                     id="email"
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
                     onFocus={() => handleFocus('email')}
                     onBlur={() => handleBlur('email')}
-                    placeholder="john@example.com"
+                    placeholder="John@Example.com"
                     className={`w-full p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border ${
-                      errors.email && errors.email.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200 dark:border-gray-600'
+                      touchedFields.has('email') && errors.email && errors.email.length > 0
+                        ? 'border-red-500 ring-1 ring-red-500'
+                        : 'border-gray-200 dark:border-gray-600'
                     } focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 text-sm`}
                   />
                   {renderFieldErrors('email')}
@@ -363,12 +358,12 @@ export default function RegisterAdmin() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
+                <div className="relative">
                   <label htmlFor="password" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                     Password *
                   </label>
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     id="password"
                     name="password"
                     value={formData.password}
@@ -377,17 +372,35 @@ export default function RegisterAdmin() {
                     onBlur={() => handleBlur('password')}
                     placeholder="Enter password"
                     className={`w-full p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border ${
-                      errors.password && errors.password.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200 dark:border-gray-600'
+                      touchedFields.has('password') && errors.password && errors.password.length > 0
+                        ? 'border-red-500 ring-1 ring-red-500'
+                        : 'border-gray-200 dark:border-gray-600'
                     } focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 text-sm`}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-9 text-gray-600 dark:text-gray-300"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {showPassword ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      ) : (
+                        <>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </>
+                      )}
+                    </svg>
+                  </button>
                   {renderFieldErrors('password')}
                 </div>
-                <div>
+                <div className="relative">
                   <label htmlFor="confirmPassword" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                     Confirm Password *
                   </label>
                   <input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     id="confirmPassword"
                     name="confirmPassword"
                     value={formData.confirmPassword}
@@ -396,9 +409,27 @@ export default function RegisterAdmin() {
                     onBlur={() => handleBlur('confirmPassword')}
                     placeholder="Confirm password"
                     className={`w-full p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border ${
-                      errors.confirmPassword && errors.confirmPassword.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200 dark:border-gray-600'
+                      touchedFields.has('confirmPassword') && errors.confirmPassword && errors.confirmPassword.length > 0
+                        ? 'border-red-500 ring-1 ring-red-500'
+                        : 'border-gray-200 dark:border-gray-600'
                     } focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 text-sm`}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-2 top-9 text-gray-600 dark:text-gray-300"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {showConfirmPassword ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      ) : (
+                        <>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </>
+                      )}
+                    </svg>
+                  </button>
                   {renderFieldErrors('confirmPassword')}
                 </div>
               </div>
@@ -417,7 +448,9 @@ export default function RegisterAdmin() {
                   onBlur={() => handleBlur('storeName')}
                   placeholder="Amazing Restaurant & Cafe"
                   className={`w-full p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border ${
-                    errors.storeName && errors.storeName.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200 dark:border-gray-600'
+                    touchedFields.has('storeName') && errors.storeName && errors.storeName.length > 0
+                      ? 'border-red-500 ring-1 ring-red-500'
+                      : 'border-gray-200 dark:border-gray-600'
                   } focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 text-sm`}
                 />
                 {renderFieldErrors('storeName')}
@@ -434,8 +467,7 @@ export default function RegisterAdmin() {
                   value={formData.phoneNumber}
                   onChange={handleInputChange}
                   onFocus={() => handleFocus('phoneNumber')}
-                  onBlur={() => handleBlur('phoneNumber')}
-                  placeholder="+1234567890"
+                  placeholder="+1234567890 or (123) 456-7890"
                   className={`w-full p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border ${
                     errors.phoneNumber && errors.phoneNumber.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200 dark:border-gray-600'
                   } focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 text-sm`}
@@ -454,7 +486,6 @@ export default function RegisterAdmin() {
                   value={formData.address}
                   onChange={handleInputChange}
                   onFocus={() => handleFocus('address')}
-                  onBlur={() => handleBlur('address')}
                   placeholder="123 Main St, City, Country"
                   className={`w-full p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border ${
                     errors.address && errors.address.length > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200 dark:border-gray-600'
