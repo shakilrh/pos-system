@@ -677,7 +677,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-[var(--background-color)] p-4">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-[var(--background-secondary)] rounded-lg shadow-md p-4 mb-6 border border-[var(--border-color)]">
+        <div className="bg-[var(--background-secondary)] rounded-lg shadow-md p-4 mb-4 border border-[var(--border-color)]">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
             <div className="mb-3 lg:mb-0">
               <h1 className="text-2xl font-bold text-[var(--text-color)]">POS Dashboard</h1>
@@ -731,19 +731,19 @@ const Dashboard = () => {
 
         <StatsSection stats={stats} />
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4">
           <SalesOverview salesData={salesData} />
           <RevenueSection totalSales={totalSales} orders={filteredOrders} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
           <TopSellingItems items={topSellingItemsData} />
           <RoleList roles={roles} />
           <OrderStatusChart orders={filteredOrders} />
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
-        <div className="xl:col-span-1">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 items-stretch">
+          <div className="xl:col-span-1">
             <WaiterPerformanceChart orders={filteredOrders} />
           </div>
           <div className="xl:col-span-2">
