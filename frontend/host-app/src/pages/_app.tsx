@@ -48,36 +48,6 @@ const ALL_PERMISSIONS = [
   'can_view_rolemanagement',
   'can_view_tablemanagement',
   'can_view_storesettings',
-  'can_add_categories',
-  'can_edit_categories',
-  'can_delete_categories',
-  'can_add_products',
-  'can_edit_products',
-  'can_delete_products',
-  'manage_prepared_orders',
-  'manage_ready_orders',
-  'manage_served_orders',
-  'manage_completed_orders',
-  'accept_onlineorders',
-  'manage_cancelled_orders',
-  'can_add_users',
-  'can_edit_users',
-  'can_delete_users',
-  'assign_roles',
-  'can_add_roles',
-  'can_edit_roles',
-  'can_delete_roles',
-  'can_add_permissions',
-  'can_edit_permissions',
-  'can_delete_permissions',
-  'assign_permissions',
-  'can_add_floors',
-  'can_edit_floors',
-  'can_delete_floors',
-  'can_add_tables',
-  'can_edit_tables',
-  'can_delete_tables',
-  'assign_tables',
   'manage_store_settings',
   'manage_store_profile',
 ];
@@ -280,11 +250,13 @@ function AppContent({ Component, pageProps }: AppProps) {
   }
 
   const sidebarWidth = sidebarOpen ? 'w-64' : 'w-20';
-  const contentMargin = sidebarOpen ? 'ml-64' : 'ml-20';
+  // Adjust margin for zoom effect - increase margin to account for 0.8 zoom
+  const contentMargin = sidebarOpen ? 'ml-80' : 'ml-28';
   const headerHeight = 'h-16';
 
   return (
     <div className="flex flex-col min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
+      {/* Header remains at 100% scale */}
       <Header
         onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
         onLogout={handleLogout}
@@ -294,13 +266,21 @@ function AppContent({ Component, pageProps }: AppProps) {
         className={headerHeight}
       />
       <div className="flex flex-1 overflow-hidden mt-10" style={{ backgroundColor: 'var(--background-color)' }}>
+        {/* Sidebar remains at 100% scale */}
         <Sidebar
           className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 ${sidebarWidth} bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-2xl transition-all duration-300 ease-in-out`}
           setSidebarOpen={setSidebarOpen}
           sidebarOpen={sidebarOpen}
           userPermissions={userPermissions}
         />
-        <main className={`flex-1 ${contentMargin} overflow-auto p-4 transition-all duration-300 ease-in-out`} style={{ backgroundColor: 'var(--background-color)' }}>
+        {/* Main content with compact design using zoom */}
+        <main
+          className={`flex-1 ${contentMargin} overflow-auto p-4 transition-all duration-300 ease-in-out main-content-container`}
+          style={{
+            backgroundColor: 'var(--background-color)',
+            zoom: '0.8' // This will make content more compact while filling the available space
+          }}
+        >
           {isPageLoading ? (
             <div className="flex items-center justify-center min-h-screen">
               <div className="flex flex-col items-center">
@@ -313,6 +293,7 @@ function AppContent({ Component, pageProps }: AppProps) {
           )}
         </main>
       </div>
+      {/* Footer remains at 100% scale */}
       <Footer />
     </div>
   );
