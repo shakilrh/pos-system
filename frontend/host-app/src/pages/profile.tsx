@@ -16,13 +16,22 @@ export default function Profile() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{
+    name?: string[];
+    password?: string[];
+    confirmPassword?: string[];
+    storeName?: string[];
+    logo?: string[];
+    storeLogo?: string[];
+    phoneNumber?: string[];
+    address?: string[];
+    general?: string[];
+  }>({});
   const [success, setSuccess] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
+  const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const storeLogoInputRef = useRef<HTMLInputElement>(null);
-
-  console.log('Profile component rendered with user:', user);
 
   useEffect(() => {
     if (token) fetchProfile();
@@ -40,28 +49,19 @@ export default function Profile() {
 
   const fetchProfile = async (retryCount = 1) => {
     if (!token) {
-      setError('No authentication token');
+      setErrors({ general: ['No authentication token'] });
       setLoading(false);
       return;
     }
     setLoading(true);
-    setError(null);
+    setErrors({});
     try {
       const userData = await fetchUserProfile(token, logout);
-      console.log('Fetched user profile:', userData);
       setUser(userData);
-      setName(userData.name || '');
-      setEmail(userData.email || '');
-      setLogo(userData.logoUrl || '');
-      setStoreName(userData.store_name || '');
-      setStoreLogo(userData.store_logo || '');
-      setPhoneNumber(userData.phone_number || '');
-      setAddress(userData.address || '');
     } catch (err) {
       console.error('Fetch profile error:', err);
-      setError(err.message || 'Failed to fetch profile');
+      setErrors({ general: [(err as Error).message || 'Failed to fetch profile'] });
       if (retryCount > 0) {
-        console.warn(`Retrying fetchProfile, attempts left: ${retryCount}`);
         return setTimeout(() => fetchProfile(retryCount - 1), 1000);
       }
     } finally {
@@ -74,289 +74,335 @@ export default function Profile() {
     setTimeout(() => setSuccess(null), 3000);
   };
 
-  const handleApiError = (response: any, field: string): string => {
-    if (!response) {
-      return `Failed to update ${field}: No response from server`;
+  const validateName = (value: string): string[] => {
+    const errors: string[] = [];
+    if (!value.trim()) errors.push('Name is required');
+    else if (value.length < 2) errors.push('Name must be at least 2 characters');
+    return errors;
+  };
+
+  const validateStoreName = (value: string): string[] => {
+    const errors: string[] = [];
+    if (!value.trim()) errors.push('Store name is required');
+    else if (value.length < 3) errors.push('Store name must be at least 3 characters');
+    return errors;
+  };
+
+  const validatePhoneNumber = (value: string): string[] => {
+    if (!value.trim()) return [];
+    const errors: string[] = [];
+    const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,6}$/;
+    if (!phoneRegex.test(value)) errors.push('Please enter a valid phone number');
+    return errors;
+  };
+
+  const validateAddress = (value: string): string[] => {
+    if (!value.trim()) return [];
+    const errors: string[] = [];
+    if (value.length < 5) errors.push('Store address must be at least 5 characters');
+    return errors;
+  };
+
+  const validatePassword = (pwd: string): string[] => {
+    const errors: string[] = [];
+    if (!pwd.trim()) errors.push('Password is required');
+    else {
+      if (pwd.length < 8) errors.push('Password must be at least 8 characters');
+      if (!/[A-Z]/.test(pwd)) errors.push('Password must contain at least 1 capital letter');
+      if (!/\d/.test(pwd)) errors.push('Password must contain at least 1 number');
     }
-    if (typeof response === 'string') {
-      return `Failed to update ${field}: ${response}`;
+    return errors;
+  };
+
+  const validateConfirmPassword = (confirmPwd: string, pwd: string): string[] => {
+    const errors: string[] = [];
+    if (!confirmPwd.trim()) errors.push('Please confirm your password');
+    else if (confirmPwd !== pwd) errors.push('Passwords do not match');
+    return errors;
+  };
+
+  const validateLogo = (file: File | null): string[] => {
+    if (!file) return [];
+    const errors: string[] = [];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) errors.push('Please select a valid image file (JPEG, PNG, GIF, WebP)');
+    if (file.size > 5 * 1024 * 1024) errors.push('Image size must be less than 5MB');
+    return errors;
+  };
+
+  const getFieldErrors = (fieldName: string): string[] => {
+    switch (fieldName) {
+      case 'name': return validateName(name);
+      case 'storeName': return validateStoreName(storeName);
+      case 'phoneNumber': return validatePhoneNumber(phoneNumber);
+      case 'address': return validateAddress(address);
+      case 'password': return validatePassword(password);
+      case 'confirmPassword': return validateConfirmPassword(confirmPassword, password);
+      case 'logo': return validateLogo(logoFile);
+      case 'storeLogo': return validateLogo(storeLogoFile);
+      default: return [];
     }
-    if (response.status === 401) {
-      logout();
-      return 'Please log in to continue';
-    }
-    if (!response.ok) {
-      const message =
-        response.message ||
-        response.error ||
-        (response.errors && Array.isArray(response.errors) ? response.errors.join(', ') : null) ||
-        'An unexpected error occurred';
-      return `Failed to update ${field}: ${message}`;
-    }
-    return `Failed to update ${field}: Unknown error`;
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    if (field === 'name') setName(value);
+    if (field === 'storeName') setStoreName(value);
+    if (field === 'phoneNumber') setPhoneNumber(value);
+    if (field === 'address') setAddress(value);
+    if (field === 'password') setPassword(value);
+    if (field === 'confirmPassword') setConfirmPassword(value);
+    setErrors(prev => ({ ...prev, [field]: getFieldErrors(field) }));
+  };
+
+  const handleFocus = (fieldName: string) => {
+    setTouchedFields(prev => new Set(prev).add(fieldName));
+  };
+
+  const handleBlur = (fieldName: string) => {
+    setTouchedFields(prev => new Set(prev).add(fieldName));
+    setErrors(prev => ({ ...prev, [fieldName]: getFieldErrors(fieldName) }));
+  };
+
+  const renderFieldErrors = (fieldName: string) => {
+    const fieldErrors = errors[fieldName] || [];
+    if (fieldErrors.length === 0 || !touchedFields.has(fieldName)) return null;
+    return (
+      <div className="mt-1 space-y-1">
+        {fieldErrors.map((error, index) => (
+          <p key={index} className="text-red-500 text-xs flex items-start">
+            <svg className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            {error}
+          </p>
+        ))}
+      </div>
+    );
   };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Image size must be less than 5MB');
-        return;
-      }
+      const logoErrors = validateLogo(file);
+      setErrors(prev => ({ ...prev, logo: logoErrors }));
       setLogoFile(file);
       setLogo(URL.createObjectURL(file));
+      setTouchedFields(prev => new Set(prev).add('logo'));
     }
   };
 
   const handleStoreLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Store logo size must be less than 5MB');
-        return;
-      }
+      const logoErrors = validateLogo(file);
+      setErrors(prev => ({ ...prev, storeLogo: logoErrors }));
       setStoreLogoFile(file);
       setStoreLogo(URL.createObjectURL(file));
+      setTouchedFields(prev => new Set(prev).add('storeLogo'));
     }
   };
 
   const handleLogoSave = async () => {
-    if (!token || !logoFile ) return;
+    if (!token || !logoFile) return;
+    const logoErrors = validateLogo(logoFile);
+    setErrors(prev => ({ ...prev, logo: logoErrors }));
+    if (logoErrors.length > 0) return;
     setLoading(true);
-    setError(null);
     try {
       const formData = new FormData();
       formData.append('logo', logoFile);
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
       const data = await response.json();
-      console.log('Logo update response:', { status: response.status, headers: Object.fromEntries(response.headers), data });
-      if (!response.ok || !data.success) {
-        throw new Error(handleApiError(data, 'logo'));
-      }
-      await fetchProfile();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update logo');
+      const updatedUser = { ...user, logoUrl: data.data?.logoUrl || logo };
+      setUser(updatedUser);
       setLogoFile(null);
+      setErrors(prev => ({ ...prev, logo: [] }));
       showSuccess('Profile photo updated successfully');
     } catch (err) {
       console.error('Update logo error:', err);
-      setError(err.message || 'Failed to update logo');
+      setErrors(prev => ({ ...prev, logo: [(err as Error).message || 'Failed to update logo'] }));
     } finally {
       setLoading(false);
     }
   };
 
   const handleStoreLogoSave = async () => {
-    if (!token || !storeLogoFile ) return;
+    if (!token || !storeLogoFile) return;
+    const logoErrors = validateLogo(storeLogoFile);
+    setErrors(prev => ({ ...prev, storeLogo: logoErrors }));
+    if (logoErrors.length > 0) return;
     setLoading(true);
-    setError(null);
     try {
       const formData = new FormData();
-      console.log('Form data before appending store logo:', formData);
       formData.append('store_logo', storeLogoFile);
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
       const data = await response.json();
-      console.log('Store logo update response:', { status: response.status, headers: Object.fromEntries(response.headers), data });
-      if (!response.ok || !data.success) {
-        throw new Error(handleApiError(data, 'store logo'));
-      }
-      await fetchProfile();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update store logo');
+      const updatedUser = { ...user, store_logo: data.data?.store_logo || storeLogo };
+      setUser(updatedUser);
       setStoreLogoFile(null);
+      setErrors(prev => ({ ...prev, storeLogo: [] }));
       showSuccess('Store logo updated successfully');
     } catch (err) {
       console.error('Update store logo error:', err);
-      setError(err.message || 'Failed to update store logo');
+      setErrors(prev => ({ ...prev, storeLogo: [(err as Error).message || 'Failed to update store logo'] }));
     } finally {
       setLoading(false);
     }
   };
 
   const handleNameSave = async () => {
-    if (!token || !name.trim() ) return;
+    if (!token || !name.trim()) return;
+    const nameErrors = validateName(name);
+    setErrors(prev => ({ ...prev, name: nameErrors }));
+    if (nameErrors.length > 0) return;
     setLoading(true);
-    setError(null);
     try {
       const formData = new FormData();
       formData.append('name', name.trim());
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
       const data = await response.json();
-      console.log('Name update response:', { status: response.status, headers: Object.fromEntries(response.headers), data });
-      if (!response.ok || !data.success) {
-        throw new Error(handleApiError(data, 'name'));
-      }
-      await fetchProfile();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update name');
+      const updatedUser = { ...user, name: name.trim() };
+      setUser(updatedUser);
       setEditingField(null);
+      setErrors(prev => ({ ...prev, name: [] }));
       showSuccess('Name updated successfully');
     } catch (err) {
       console.error('Update name error:', err);
-      setError(err.message || 'Failed to update name');
+      setErrors(prev => ({ ...prev, name: [(err as Error).message || 'Failed to update name'] }));
     } finally {
       setLoading(false);
     }
   };
 
   const handleStoreNameSave = async () => {
-    if (!token || !storeName.trim() ) return;
+    if (!token || !storeName.trim()) return;
+    const storeNameErrors = validateStoreName(storeName);
+    setErrors(prev => ({ ...prev, storeName: storeNameErrors }));
+    if (storeNameErrors.length > 0) return;
     setLoading(true);
-    setError(null);
     try {
       const formData = new FormData();
       formData.append('store_name', storeName.trim());
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
       const data = await response.json();
-      console.log('Store name update response:', { status: response.status, headers: Object.fromEntries(response.headers), data });
-      if (!response.ok || !data.success) {
-        throw new Error(handleApiError(data, 'store name'));
-      }
-      await fetchProfile();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update store name');
+      const updatedUser = { ...user, store_name: storeName.trim() };
+      setUser(updatedUser);
       setEditingField(null);
+      setErrors(prev => ({ ...prev, storeName: [] }));
       showSuccess('Store name updated successfully');
     } catch (err) {
       console.error('Update store name error:', err);
-      setError(err.message || 'Failed to update store name');
+      setErrors(prev => ({ ...prev, storeName: [(err as Error).message || 'Failed to update store name'] }));
     } finally {
       setLoading(false);
     }
   };
 
   const handlePhoneNumberSave = async () => {
-    if (!token || !phoneNumber.trim()) return;
+    if (!token) return;
+    const phoneErrors = validatePhoneNumber(phoneNumber);
+    setErrors(prev => ({ ...prev, phoneNumber: phoneErrors }));
+    if (phoneErrors.length > 0) return;
     setLoading(true);
-    setError(null);
     try {
       const formData = new FormData();
-      formData.append('phone_number', phoneNumber.trim());
+      formData.append('phone_number', phoneNumber.trim() || '');
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
       const data = await response.json();
-      console.log('Phone number update response:', { status: response.status, headers: Object.fromEntries(response.headers), data });
-      if (!response.ok || !data.success) {
-        throw new Error(handleApiError(data, 'phone number'));
-      }
-      // FIX: Update local state directly instead of re-fetching to avoid race conditions.
-      const updatedUser = { ...user, phone_number: phoneNumber.trim() };
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update store contact number');
+      const updatedUser = { ...user, phone_number: phoneNumber.trim() || '' };
       setUser(updatedUser);
       setEditingField(null);
-      showSuccess('Phone number updated successfully');
+      setErrors(prev => ({ ...prev, phoneNumber: [] }));
+      showSuccess('Store contact number updated successfully');
     } catch (err) {
-      console.error('Update phone number error:', err);
-      setError(err.message || 'Failed to update phone number');
+      console.error('Update store contact number error:', err);
+      setErrors(prev => ({ ...prev, phoneNumber: [(err as Error).message || 'Failed to update store contact number'] }));
     } finally {
       setLoading(false);
     }
   };
 
   const handleAddressSave = async () => {
-    if (!token || !address.trim()) return;
+    if (!token) return;
+    const addressErrors = validateAddress(address);
+    setErrors(prev => ({ ...prev, address: addressErrors }));
+    if (addressErrors.length > 0) return;
     setLoading(true);
-    setError(null);
     try {
       const formData = new FormData();
-      formData.append('address', address.trim());
+      formData.append('address', address.trim() || '');
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
       const data = await response.json();
-      console.log('Address update response:', { status: response.status, headers: Object.fromEntries(response.headers), data });
-      if (!response.ok || !data.success) {
-        throw new Error(handleApiError(data, 'address'));
-      }
-      // FIX: Update local state directly instead of re-fetching to avoid race conditions.
-      const updatedUser = { ...user, address: address.trim() };
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update store address');
+      const updatedUser = { ...user, address: address.trim() || '' };
       setUser(updatedUser);
       setEditingField(null);
-      showSuccess('Address updated successfully');
+      setErrors(prev => ({ ...prev, address: [] }));
+      showSuccess('Store address updated successfully');
     } catch (err) {
-      console.error('Update address error:', err);
-      setError(err.message || 'Failed to update address');
+      console.error('Update store address error:', err);
+      setErrors(prev => ({ ...prev, address: [(err as Error).message || 'Failed to update store address'] }));
     } finally {
       setLoading(false);
     }
   };
 
-  const validatePassword = (pwd: string) => {
-    const minLength = pwd.length >= 8;
-    const hasCapital = /[A-Z]/.test(pwd);
-    const hasNumeric = /\d/.test(pwd);
-    return { minLength, hasCapital, hasNumeric };
-  };
-
   const handlePasswordSave = async () => {
-    if (!token || !password ) return;
-
-    const validation = validatePassword(password);
-    if (!validation.minLength) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
-    if (!validation.hasCapital) {
-      setError('Password must contain at least 1 capital letter');
-      return;
-    }
-    if (!validation.hasNumeric) {
-      setError('Password must contain at least 1 number');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+    if (!token || !password) return;
+    const passwordErrors = validatePassword(password);
+    const confirmPasswordErrors = validateConfirmPassword(confirmPassword, password);
+    setErrors(prev => ({ ...prev, password: passwordErrors, confirmPassword: confirmPasswordErrors }));
+    if (passwordErrors.length > 0 || confirmPasswordErrors.length > 0) return;
     setLoading(true);
-    setError(null);
     try {
       const formData = new FormData();
       formData.append('password', password);
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
       const data = await response.json();
-      console.log('Password update response:', { status: response.status, headers: Object.fromEntries(response.headers), data });
-      if (!response.ok || !data.success) {
-        throw new Error(handleApiError(data, 'password'));
-      }
-      await fetchProfile();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update password');
+      const updatedUser = { ...user };
+      setUser(updatedUser);
       setPassword('');
       setConfirmPassword('');
       setEditingField(null);
+      setErrors(prev => ({ ...prev, password: [], confirmPassword: [] }));
       showSuccess('Password updated successfully');
     } catch (err) {
       console.error('Update password error:', err);
-      setError(err.message || 'Failed to update password');
+      setErrors(prev => ({ ...prev, password: [(err as Error).message || 'Failed to update password'] }));
     } finally {
       setLoading(false);
     }
@@ -364,28 +410,25 @@ export default function Profile() {
 
   if (loading && !user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent mb-4"></div>
-        <p className="text-gray-600">Loading profile...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--background-color)]">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[var(--primary-color)] border-t-transparent mb-4"></div>
+        <p className="text-[var(--text-secondary)]">Loading profile...</p>
       </div>
     );
   }
 
+  const isAdmin = user?.user_type === 'isadmin';
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[var(--background-color)] py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 overflow-hidden">
+        <div className="bg-[var(--background-secondary)] rounded-xl shadow-sm border border-[var(--border-color)] mb-8 overflow-hidden">
           <div className="px-6 py-6">
-            {/* Profile Photo Section */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6">
               <div className="relative">
-                <div className="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100">
-                  <img
-                    src={logo || '/file.svg'}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
+                <div className="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-[var(--surface-color)]">
+                  <img src={logo || '/file.svg'} alt="Profile" className="w-full h-full object-cover" />
                 </div>
                 <input
                   ref={fileInputRef}
@@ -395,7 +438,7 @@ export default function Profile() {
                   onChange={handleLogoChange}
                 />
                 <button
-                  className="absolute -bottom-1 -right-1 bg-orange-500 hover:bg-orange-600 text-white rounded-full p-2 shadow-lg transition-colors"
+                  className="absolute -bottom-1 -right-1 bg-[var(--primary-color)] hover:bg-[var(--primary-hover)] text-white rounded-full p-2 shadow-lg transition-colors"
                   onClick={() => fileInputRef.current?.click()}
                   title="Change photo"
                   disabled={loading}
@@ -407,34 +450,38 @@ export default function Profile() {
                 </button>
               </div>
               <div className="mt-4 sm:mt-0 flex-1">
-                <h1 className="text-2xl font-bold text-gray-900">{name || 'Admin User'}</h1>
-                <p className="text-gray-600">{email || 'admin@rasant.com'}</p>
+                <h1 className="text-2xl font-bold text-[var(--text-color)]">{name || 'Admin User'}</h1>
+                <p className="text-[var(--text-secondary)]">{email || 'admin@rasant.com'}</p>
                 {logoFile && (
-                  <button
-                    className="mt-2 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
-                    onClick={handleLogoSave}
-                    disabled={loading}
-                  >
-                    {loading ? 'Saving...' : 'Save Photo'}
-                  </button>
+                  <div>
+                    <button
+                      className="mt-2 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-[var(--primary-color)] hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-color)] disabled:opacity-50 transition-colors"
+                      onClick={handleLogoSave}
+                      disabled={loading || errors.logo?.length > 0}
+                    >
+                      {loading ? 'Saving...' : 'Save Photo'}
+                    </button>
+                    {renderFieldErrors('logo')}
+                  </div>
                 )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Alerts */}
-        {error && (
+        {/* General Errors */}
+        {errors.general && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex">
               <svg className="h-5 w-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
-              <p className="text-red-800">{error}</p>
+              <p className="text-red-800">{errors.general[0]}</p>
             </div>
           </div>
         )}
 
+        {/* Success Message */}
         {success && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
             <div className="flex">
@@ -447,20 +494,19 @@ export default function Profile() {
         )}
 
         {/* Profile Settings */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Profile Settings</h2>
+        <div className="bg-[var(--background-secondary)] rounded-xl shadow-sm border border-[var(--border-color)]">
+          <div className="px-6 py-4 border-b border-[var(--border-color)]">
+            <h2 className="text-lg font-semibold text-[var(--text-color)]">Profile Settings</h2>
           </div>
-
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-[var(--border-color)]">
             {/* Name Field */}
             <div className="px-6 py-6">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Full Name</label>
+                <label className="text-sm font-medium text-[var(--text-color)]">Full Name</label>
                 {editingField !== 'name' && (
                   <button
                     onClick={() => setEditingField('name')}
-                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                    className="text-sm text-[var(--primary-color)] hover:text-[var(--primary-hover)] font-medium"
                   >
                     Edit
                   </button>
@@ -471,15 +517,22 @@ export default function Profile() {
                   <input
                     type="text"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    onFocus={() => handleFocus('name')}
+                    onBlur={() => handleBlur('name')}
+                    className={`block w-full px-3 py-2 rounded-lg bg-[var(--surface-color)] text-[var(--text-color)] border ${
+                      touchedFields.has('name') && errors.name?.length > 0
+                        ? 'border-red-500 ring-1 ring-red-500'
+                        : 'border-[var(--border-color)]'
+                    } focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] focus:border-transparent text-sm`}
                     placeholder="Enter your name"
                   />
+                  {renderFieldErrors('name')}
                   <div className="flex space-x-3">
                     <button
                       onClick={handleNameSave}
-                      disabled={loading || !name.trim()}
-                      className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
+                      disabled={loading || errors.name?.length > 0}
+                      className="px-4 py-2 bg-[var(--primary-color)] text-white text-sm font-medium rounded-lg hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-color)] disabled:opacity-50 transition-colors"
                     >
                       {loading ? 'Saving...' : 'Save'}
                     </button>
@@ -487,33 +540,34 @@ export default function Profile() {
                       onClick={() => {
                         setEditingField(null);
                         setName(user?.name || '');
+                        setErrors(prev => ({ ...prev, name: [] }));
                       }}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                      className="px-4 py-2 bg-[var(--surface-color)] text-[var(--text-color)] text-sm font-medium rounded-lg hover:bg-[var(--surface-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--border-color)] transition-colors"
                     >
                       Cancel
                     </button>
                   </div>
                 </div>
               ) : (
-                <p className="text-gray-900">{name || 'Not set'}</p>
+                <p className="text-[var(--text-color)]">{name || 'Not set'}</p>
               )}
             </div>
 
             {/* Email Field */}
             <div className="px-6 py-6">
-              <label className="text-sm font-medium text-gray-700 block mb-2">Email Address</label>
-              <p className="text-gray-900">{email || 'admin@rasant.com'}</p>
-              <p className="text-xs text-gray-500 mt-1">Contact support to change your email address</p>
+              <label className="text-sm font-medium text-[var(--text-color)] block mb-2">Email Address</label>
+              <p className="text-[var(--text-color)]">{email || 'admin@rasant.com'}</p>
+              <p className="text-xs text-[var(--text-secondary)] mt-1">Contact support to change your email address</p>
             </div>
 
             {/* Password Field */}
             <div className="px-6 py-6">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Password</label>
+                <label className="text-sm font-medium text-[var(--text-color)]">Password</label>
                 {editingField !== 'password' && (
                   <button
                     onClick={() => setEditingField('password')}
-                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                    className="text-sm text-[var(--primary-color)] hover:text-[var(--primary-hover)] font-medium"
                   >
                     Change
                   </button>
@@ -521,30 +575,48 @@ export default function Profile() {
               </div>
               {editingField === 'password' ? (
                 <div className="space-y-3">
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Enter new password"
-                  />
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Confirm new password"
-                  />
-                  <div className="text-xs text-gray-500 space-y-1">
+                  <div>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      onFocus={() => handleFocus('password')}
+                      onBlur={() => handleBlur('password')}
+                      className={`block w-full px-3 py-2 rounded-lg bg-[var(--surface-color)] text-[var(--text-color)] border ${
+                        touchedFields.has('password') && errors.password?.length > 0
+                          ? 'border-red-500 ring-1 ring-red-500'
+                          : 'border-[var(--border-color)]'
+                      } focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] focus:border-transparent text-sm`}
+                      placeholder="Enter new password"
+                    />
+                    {renderFieldErrors('password')}
+                  </div>
+                  <div>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                      onFocus={() => handleFocus('confirmPassword')}
+                      onBlur={() => handleBlur('confirmPassword')}
+                      className={`block w-full px-3 py-2 rounded-lg bg-[var(--surface-color)] text-[var(--text-color)] border ${
+                        touchedFields.has('confirmPassword') && errors.confirmPassword?.length > 0
+                          ? 'border-red-500 ring-1 ring-red-500'
+                          : 'border-[var(--border-color)]'
+                      } focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] focus:border-transparent text-sm`}
+                      placeholder="Confirm new password"
+                    />
+                    {renderFieldErrors('confirmPassword')}
+                  </div>
+                  <div className="text-xs text-[var(--text-secondary)] space-y-1">
                     <p>Password must contain:</p>
                     <ul className="ml-3 space-y-1">
-                      <li className={password ? (validatePassword(password).minLength ? 'text-green-600' : 'text-red-600') : 'text-gray-500'}>
+                      <li className={password ? (validatePassword(password).length === 0 ? 'text-green-600' : 'text-red-600') : 'text-[var(--text-secondary)]'}>
                         • At least 8 characters
                       </li>
-                      <li className={password ? (validatePassword(password).hasCapital ? 'text-green-600' : 'text-red-600') : 'text-gray-500'}>
+                      <li className={password ? (validatePassword(password).length === 0 ? 'text-green-600' : 'text-red-600') : 'text-[var(--text-secondary)]'}>
                         • 1 capital letter
                       </li>
-                      <li className={password ? (validatePassword(password).hasNumeric ? 'text-green-600' : 'text-red-600') : 'text-gray-500'}>
+                      <li className={password ? (validatePassword(password).length === 0 ? 'text-green-600' : 'text-red-600') : 'text-[var(--text-secondary)]'}>
                         • 1 number
                       </li>
                     </ul>
@@ -552,8 +624,8 @@ export default function Profile() {
                   <div className="flex space-x-3">
                     <button
                       onClick={handlePasswordSave}
-                      disabled={loading || !password || !confirmPassword}
-                      className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
+                      disabled={loading || errors.password?.length > 0 || errors.confirmPassword?.length > 0}
+                      className="px-4 py-2 bg-[var(--primary-color)] text-white text-sm font-medium rounded-lg hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-color)] disabled:opacity-50 transition-colors"
                     >
                       {loading ? 'Updating...' : 'Update Password'}
                     </button>
@@ -562,215 +634,250 @@ export default function Profile() {
                         setEditingField(null);
                         setPassword('');
                         setConfirmPassword('');
+                        setErrors(prev => ({ ...prev, password: [], confirmPassword: [] }));
                       }}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                      className="px-4 py-2 bg-[var(--surface-color)] text-[var(--text-color)] text-sm font-medium rounded-lg hover:bg-[var(--surface-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--border-color)] transition-colors"
                     >
                       Cancel
                     </button>
                   </div>
                 </div>
               ) : (
-                <p className="text-gray-900">••••••••</p>
+                <p className="text-[var(--text-color)]">••••••••</p>
               )}
             </div>
 
             {/* Store Name Field */}
-            <div className="px-6 py-6">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Store Name</label>
-                {editingField !== 'storeName' && (
-                  <button
-                    onClick={() => setEditingField('storeName')}
-                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
-                  >
-                    Edit
-                  </button>
+            {isAdmin && (
+              <div className="px-6 py-6">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-[var(--text-color)]">Store Name</label>
+                  {editingField !== 'storeName' && (
+                    <button
+                      onClick={() => setEditingField('storeName')}
+                      className="text-sm text-[var(--primary-color)] hover:text-[var(--primary-hover)] font-medium"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+                {editingField === 'storeName' ? (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      value={storeName}
+                      onChange={(e) => handleInputChange('storeName', e.target.value)}
+                      onFocus={() => handleFocus('storeName')}
+                      onBlur={() => handleBlur('storeName')}
+                      className={`block w-full px-3 py-2 rounded-lg bg-[var(--surface-color)] text-[var(--text-color)] border ${
+                        touchedFields.has('storeName') && errors.storeName?.length > 0
+                          ? 'border-red-500 ring-1 ring-red-500'
+                          : 'border-[var(--border-color)]'
+                      } focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] focus:border-transparent text-sm`}
+                      placeholder="Enter store name"
+                    />
+                    {renderFieldErrors('storeName')}
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={handleStoreNameSave}
+                        disabled={loading || errors.storeName?.length > 0}
+                        className="px-4 py-2 bg-[var(--primary-color)] text-white text-sm font-medium rounded-lg hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-color)] disabled:opacity-50 transition-colors"
+                      >
+                        {loading ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingField(null);
+                          setStoreName(user?.store_name || '');
+                          setErrors(prev => ({ ...prev, storeName: [] }));
+                        }}
+                        className="px-4 py-2 bg-[var(--surface-color)] text-[var(--text-color)] text-sm font-medium rounded-lg hover:bg-[var(--surface-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--border-color)] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[var(--text-color)]">{storeName || 'Not set'}</p>
                 )}
               </div>
-              {editingField === 'storeName' ? (
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={storeName}
-                    onChange={(e) => setStoreName(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Enter store name"
-                  />
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={handleStoreNameSave}
-                      disabled={loading || !storeName.trim()}
-                      className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
-                    >
-                      {loading ? 'Saving...' : 'Save'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingField(null);
-                        setStoreName(user?.store_name || '');
-                      }}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-gray-900">{storeName || 'Not set'}</p>
-              )}
-            </div>
+            )}
 
             {/* Store Logo Field */}
-            <div className="px-6 py-6">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Store Logo</label>
-                {editingField !== 'storeLogo' && (
-                  <button
-                    onClick={() => setEditingField('storeLogo')}
-                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
-                  >
-                    Change
-                  </button>
-                )}
-              </div>
-              {editingField === 'storeLogo' ? (
-                <div className="space-y-3">
-                  <div className="relative w-24 h-24 rounded-lg border-2 border-gray-300 overflow-hidden bg-gray-100">
+            {isAdmin && (
+              <div className="px-6 py-6">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-[var(--text-color)]">Store Logo</label>
+                  {editingField !== 'storeLogo' && (
+                    <button
+                      onClick={() => setEditingField('storeLogo')}
+                      className="text-sm text-[var(--primary-color)] hover:text-[var(--primary-hover)] font-medium"
+                    >
+                      Change
+                    </button>
+                  )}
+                </div>
+                {editingField === 'storeLogo' ? (
+                  <div className="space-y-3">
+                    <div className="relative w-24 h-24 rounded-lg border-2 border-[var(--border-color)] overflow-hidden bg-[var(--surface-color)]">
+                      <img
+                        src={storeLogo || '/file.svg'}
+                        alt="Store Logo"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <input
+                      ref={storeLogoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="block w-full text-sm text-[var(--text-color)] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[var(--primary-color)]/10 file:text-[var(--primary-color)] hover:file:bg-[var(--primary-hover)]/10"
+                      onChange={handleStoreLogoChange}
+                    />
+                    {renderFieldErrors('storeLogo')}
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={handleStoreLogoSave}
+                        disabled={loading || errors.storeLogo?.length > 0}
+                        className="px-4 py-2 bg-[var(--primary-color)] text-white text-sm font-medium rounded-lg hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-color)] disabled:opacity-50 transition-colors"
+                      >
+                        {loading ? 'Saving...' : 'Save Store Logo'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingField(null);
+                          setStoreLogoFile(null);
+                          setStoreLogo(user?.store_logo || '');
+                          setErrors(prev => ({ ...prev, storeLogo: [] }));
+                        }}
+                        className="px-4 py-2 bg-[var(--surface-color)] text-[var(--text-color)] text-sm font-medium rounded-lg hover:bg-[var(--surface-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--border-color)] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-24 h-24 rounded-lg border-2 border-[var(--border-color)] overflow-hidden bg-[var(--surface-color)]">
                     <img
                       src={storeLogo || '/file.svg'}
                       alt="Store Logo"
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <input
-                    ref={storeLogoInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
-                    onChange={handleStoreLogoChange}
-                  />
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={handleStoreLogoSave}
-                      disabled={loading || !storeLogoFile}
-                      className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
-                    >
-                      {loading ? 'Saving...' : 'Save Store Logo'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingField(null);
-                        setStoreLogoFile(null);
-                        setStoreLogo(user?.store_logo || '');
-                      }}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-24 h-24 rounded-lg border-2 border-gray-300 overflow-hidden bg-gray-100">
-                  <img
-                    src={storeLogo || '/file.svg'}
-                    alt="Store Logo"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-            </div>
-            
-            {/* Phone Number Field */}
-            <div className="px-6 py-6">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Phone Number</label>
-                {editingField !== 'phoneNumber' && (
-                  <button
-                    onClick={() => setEditingField('phoneNumber')}
-                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
-                  >
-                    Edit
-                  </button>
                 )}
               </div>
-              {editingField === 'phoneNumber' ? (
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Enter phone number"
-                  />
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={handlePhoneNumberSave}
-                      disabled={loading || !phoneNumber.trim()}
-                      className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
-                    >
-                      {loading ? 'Saving...' : 'Save'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingField(null);
-                        setPhoneNumber(user?.phone_number || '');
-                      }}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-gray-900">{phoneNumber || 'Not set'}</p>
-              )}
-            </div>
+            )}
 
-            {/* Address Field */}
-            <div className="px-6 py-6">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Address</label>
-                {editingField !== 'address' && (
-                  <button
-                    onClick={() => setEditingField('address')}
-                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
-                  >
-                    Edit
-                  </button>
+            {/* Store Contact Number Field */}
+            {isAdmin && (
+              <div className="px-6 py-6">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-[var(--text-color)]">Store Contact Number</label>
+                  {editingField !== 'phoneNumber' && (
+                    <button
+                      onClick={() => setEditingField('phoneNumber')}
+                      className="text-sm text-[var(--primary-color)] hover:text-[var(--primary-hover)] font-medium"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+                {editingField === 'phoneNumber' ? (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      value={phoneNumber}
+                      onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                      onFocus={() => handleFocus('phoneNumber')}
+                      onBlur={() => handleBlur('phoneNumber')}
+                      className={`block w-full px-3 py-2 rounded-lg bg-[var(--surface-color)] text-[var(--text-color)] border ${
+                        touchedFields.has('phoneNumber') && errors.phoneNumber?.length > 0
+                          ? 'border-red-500 ring-1 ring-red-500'
+                          : 'border-[var(--border-color)]'
+                      } focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] focus:border-transparent text-sm`}
+                      placeholder="Enter store contact number"
+                    />
+                    {renderFieldErrors('phoneNumber')}
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={handlePhoneNumberSave}
+                        disabled={loading || errors.phoneNumber?.length > 0}
+                        className="px-4 py-2 bg-[var(--primary-color)] text-white text-sm font-medium rounded-lg hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-color)] disabled:opacity-50 transition-colors"
+                      >
+                        {loading ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingField(null);
+                          setPhoneNumber(user?.phone_number || '');
+                          setErrors(prev => ({ ...prev, phoneNumber: [] }));
+                        }}
+                        className="px-4 py-2 bg-[var(--surface-color)] text-[var(--text-color)] text-sm font-medium rounded-lg hover:bg-[var(--surface-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--border-color)] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[var(--text-color)]">{phoneNumber || 'Not set'}</p>
                 )}
               </div>
-              {editingField === 'address' ? (
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Enter address"
-                  />
-                  <div className="flex space-x-3">
+            )}
+
+            {/* Store Address Field */}
+            {isAdmin && (
+              <div className="px-6 py-6">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-[var(--text-color)]">Store Address</label>
+                  {editingField !== 'address' && (
                     <button
-                      onClick={handleAddressSave}
-                      disabled={loading || !address.trim()}
-                      className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
+                      onClick={() => setEditingField('address')}
+                      className="text-sm text-[var(--primary-color)] hover:text-[var(--primary-hover)] font-medium"
                     >
-                      {loading ? 'Saving...' : 'Save'}
+                      Edit
                     </button>
-                    <button
-                      onClick={() => {
-                        setEditingField(null);
-                        setAddress(user?.address || '');
-                      }}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
+                  )}
                 </div>
-              ) : (
-                <p className="text-gray-900">{address || 'Not set'}</p>
-              )}
-            </div>
+                {editingField === 'address' ? (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      value={address}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
+                      onFocus={() => handleFocus('address')}
+                      onBlur={() => handleBlur('address')}
+                      className={`block w-full px-3 py-2 rounded-lg bg-[var(--surface-color)] text-[var(--text-color)] border ${
+                        touchedFields.has('address') && errors.address?.length > 0
+                          ? 'border-red-500 ring-1 ring-red-500'
+                          : 'border-[var(--border-color)]'
+                      } focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] focus:border-transparent text-sm`}
+                      placeholder="Enter store address"
+                    />
+                    {renderFieldErrors('address')}
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={handleAddressSave}
+                        disabled={loading || errors.address?.length > 0}
+                        className="px-4 py-2 bg-[var(--primary-color)] text-white text-sm font-medium rounded-lg hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-color)] disabled:opacity-50 transition-colors"
+                      >
+                        {loading ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingField(null);
+                          setAddress(user?.address || '');
+                          setErrors(prev => ({ ...prev, address: [] }));
+                        }}
+                        className="px-4 py-2 bg-[var(--surface-color)] text-[var(--text-color)] text-sm font-medium rounded-lg hover:bg-[var(--surface-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--border-color)] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[var(--text-color)]">{address || 'Not set'}</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

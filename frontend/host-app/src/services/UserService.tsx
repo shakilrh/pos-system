@@ -58,6 +58,19 @@ interface UserDetailsApiResponse {
   };
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  user_type: string;
+  phone_number: string;
+  store_name: string;
+  address: string;
+  logoUrl: string;
+  store_logo: string;
+}
+
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000';
 const TIMEOUT = 10000; // 10 seconds
 
@@ -264,25 +277,38 @@ export const fetchUsers = async (token: string, logout: () => void): Promise<Use
   }
 };
 
-// Updated fetchUserProfile to use the same logic as UserService.ts
-export const fetchUserProfile = async (token: string, logout: () => void): Promise<UserDetails> => {
+export const fetchUserProfile = async (token: string, logout: () => void): Promise<User> => {
   try {
-    return await getUserDetails(token, logout);
-  } catch (error) {
-    console.error('fetchUserProfile error:', error);
-
-    // If authentication failed, trigger logout
-    if (error.message.includes('401') || error.message.includes('Authentication failed')) {
-      console.log('Authentication failed, triggering logout...');
-      if (logout) {
+    const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/details`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      if (response.status === 401) {
         logout();
+        throw new Error('Session expired. Please log in again.');
       }
+      throw new Error(data.message || 'Failed to fetch user profile');
     }
-
-    throw error;
+    return {
+      id: data.data.data.user.id,
+      name: data.data.data.user.name,
+      email: data.data.data.user.email,
+      user_type: data.data.data.user.user_type,
+      phone_number: data.data.data.user.phone_number,
+      store_name: data.data.data.user.store_name,
+      address: data.data.data.user.address,
+      logoUrl: data.data.data.user.logoUrl,
+      store_logo: data.data.data.user.store_logo,
+    };
+  } catch (err) {
+    throw new Error(err.message || 'Failed to fetch user profile');
   }
 };
-
 // Keep the original fetchUserProfile function but update it to return UserDetails
 export const fetchUserProfileOriginal = async (token: string, logout: () => void): Promise<User> => {
   try {
