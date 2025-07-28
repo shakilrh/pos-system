@@ -387,23 +387,21 @@ const CreateOrderForm = ({
         </div>
       </div>
 
-      {/* Customer Name */}
-      <div className="rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-        {/*<label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-color)' }}>*/}
-        {/*  Customer Name*/}
-        {/*</label>*/}
-        {/*<input*/}
-        {/*  type="text"*/}
-        {/*  placeholder="Enter customer name (optional)"*/}
-        {/*  value={customerName}*/}
-        {/*  onChange={handleCustomerNameChange}*/}
-        {/*  onFocus={() => handleFocus('customerName')}*/}
-        {/*  onBlur={() => handleBlur('customerName')}*/}
-        {/*  className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-[var(--primary-color)] transition-all duration-200 ${errors.customerName && errors.customerName.length > 0 ? 'border-[var(--error-color)] ring-1 ring-[var(--error-color)]' : 'border-[var(--border-color)]'}`}*/}
-        {/*  style={{ backgroundColor: 'var(--background-color)', color: 'var(--text-color)' }}*/}
-        {/*/>*/}
-        {/*{renderFieldErrors('customerName')}*/}
-      </div>
+      {/*/!* Customer Name *!/*/}
+      {/*<div className="rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>*/}
+      {/*  /!*<label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-color)' }}>*!/*/}
+      {/*  /!*  Customer Name*!/*/}
+      {/*  /!*</label>*!/*/}
+      {/*  /!*<input*!/*/}
+      {/*  /!*  type="text"*!/*/}
+      {/*  /!*  placeholder="Enter customer name (optional)"*!/*/}
+      {/*  /!*  value={customerName}*!/*/}
+      {/*  /!*  onChange={handleCustomerNameChange}*!/*/}
+      {/*  /!*  onFocus={() => handleFocus('customerName')}*!/*/}
+      {/*  /!*  onBlur={() => handleBlur('customerName')}*!/*/}
+      {/*  /!*  className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-[var(--primary-color)] transition-all duration-200 ${errors.customerName && errors.customerName.length > 0 ? 'border-[var(--error-color)] ring-1 ring-[var(--error-color)]' : 'border-[var(--border-color)]'}`}*!/*/}
+      {/*  /!*  style={{ backgroundColor: 'var(--background-color)', color: 'var(--text-color)' }}*!/*/}
+      {/*</div>*/}
 
       {/* Order Summary */}
       <div className="rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
