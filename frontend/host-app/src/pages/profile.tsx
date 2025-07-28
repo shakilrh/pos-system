@@ -32,19 +32,23 @@ export default function Profile() {
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const storeLogoInputRef = useRef<HTMLInputElement>(null);
+  const [userId, setUserId] = useState<string>(''); // New state for user ID
 
   useEffect(() => {
     if (token) fetchProfile();
   }, [token]);
 
   useEffect(() => {
-    setName(user?.name || '');
-    setEmail(user?.email || '');
-    setLogo(user?.logoUrl || '');
-    setStoreName(user?.store_name || '');
-    setStoreLogo(user?.store_logo || '');
-    setPhoneNumber(user?.phone_number || '');
-    setAddress(user?.address || '');
+    if (user) {
+      setName(user?.name || '');
+      setEmail(user?.email || '');
+      setLogo(user?.logoUrl || '');
+      setStoreName(user?.store_name || '');
+      setStoreLogo(user?.store_logo || '');
+      setPhoneNumber(user?.phone_number || '');
+      setAddress(user?.address || '');
+      setUserId(user?.id || ''); // Set the user ID from user object
+    }
   }, [user]);
 
   const fetchProfile = async (retryCount = 1) => {
@@ -56,8 +60,23 @@ export default function Profile() {
     setLoading(true);
     setErrors({});
     try {
-      const userData = await fetchUserProfile(token, logout);
-      setUser(userData);
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/details`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to fetch profile');
+
+      // Extract user data from the nested response structure
+      const userData = data.data?.data?.user || {};
+      console.log('Fetched user data:', userData);
+
+      // Set the user data including the ID
+      setUser({
+        ...userData,
+        id: userData.id || userData._id // Handle both id and _id cases
+      });
+      setUserId(userData.id || userData._id || ''); // Also store ID separately
     } catch (err) {
       console.error('Fetch profile error:', err);
       setErrors({ general: [(err as Error).message || 'Failed to fetch profile'] });
@@ -68,6 +87,43 @@ export default function Profile() {
       setLoading(false);
     }
   };
+
+  const prepareRequestData = (field: string, value: string | File | null) => {
+    // For file uploads, we'll use FormData
+    if (value instanceof File) {
+      const formData = new FormData();
+      if (user?.user_type === 'worker' && userId) {
+        formData.append('_id', userId);
+      }
+      formData.append(field, value);
+      return {
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Don't set Content-Type for FormData - let the browser set it with boundary
+        }
+      };
+    }
+
+    // For regular fields, send as JSON
+    const payload: Record<string, any> = {
+      [field]: typeof value === 'string' ? value.trim() : value
+    };
+
+    // Include _id for worker users
+    if (user?.user_type === 'worker' && userId) {
+      payload._id = userId;
+    }
+
+    return {
+      body: JSON.stringify(payload),
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    };
+  };
+
 
   const showSuccess = (message: string) => {
     setSuccess(message);
@@ -179,6 +235,30 @@ export default function Profile() {
       </div>
     );
   };
+  const getApiEndpoint = () => {
+    return user?.user_type === 'isadmin'
+      ? `${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`
+      : `${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/profile`;
+  };
+
+  const prepareFormData = (field: string, value: string | File | null): FormData => {
+    const formData = new FormData();
+
+    // Always include _id for worker users
+    if (user?.user_type === 'worker' && userId) {
+      formData.append('_id', userId);
+    }
+
+    if (value !== null) {
+      if (typeof value === 'string') {
+        formData.append(field, value.trim());
+      } else {
+        formData.append(field, value);
+      }
+    }
+
+    return formData;
+  };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -202,30 +282,148 @@ export default function Profile() {
     }
   };
 
+  // ... (other imports and code remain unchanged)
+  const handlePasswordSave = async () => {
+    if (!token) {
+      setErrors(prev => ({ ...prev, password: ['No authentication token'] }));
+      return;
+    }
+    if (!password) {
+      setErrors(prev => ({ ...prev, password: ['Password is required'] }));
+      return;
+    }
+
+    const passwordErrors = validatePassword(password);
+    const confirmPasswordErrors = validateConfirmPassword(confirmPassword, password);
+    setErrors(prev => ({ ...prev, password: passwordErrors, confirmPassword: confirmPasswordErrors }));
+    if (passwordErrors.length > 0 || confirmPasswordErrors.length > 0) return;
+
+    setLoading(true);
+    try {
+      const requestData = prepareRequestData('password', password);
+
+      console.log('Updating password with payload:', {
+        _id: userId,
+        password
+      });
+
+      const response = await fetch(getApiEndpoint(), {
+        method: 'PUT',
+        ...requestData
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update password');
+
+      const updatedUser = { ...user };
+      setUser(updatedUser);
+      setPassword('');
+      setConfirmPassword('');
+      setEditingField(null);
+      setErrors(prev => ({ ...prev, password: [], confirmPassword: [] }));
+      showSuccess('Password updated successfully');
+    } catch (err) {
+      console.error('Update password error:', err);
+      setErrors(prev => ({
+        ...prev,
+        password: [(err as Error).message || 'Failed to update password']
+      }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLogoSave = async () => {
-    if (!token || !logoFile) return;
+    if (!token) {
+      setErrors(prev => ({ ...prev, logo: ['No authentication token'] }));
+      return;
+    }
+    if (!logoFile) {
+      setErrors(prev => ({ ...prev, logo: ['No logo file selected'] }));
+      return;
+    }
+
     const logoErrors = validateLogo(logoFile);
     setErrors(prev => ({ ...prev, logo: logoErrors }));
     if (logoErrors.length > 0) return;
+
     setLoading(true);
     try {
       const formData = new FormData();
       formData.append('logo', logoFile);
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+      const requestData = prepareRequestData('logo', formData);
+
+      console.log('Updating logo with form data:', {
+        _id: userId,
+        hasFile: !!logoFile
       });
+
+      const response = await fetch(getApiEndpoint(), {
+        method: 'PUT',
+        ...requestData
+      });
+
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update logo');
-      const updatedUser = { ...user, logoUrl: data.data?.logoUrl || logo };
+
+      const updatedUser = {
+        ...user,
+        logoUrl: data.data?.logoUrl || logo
+      };
       setUser(updatedUser);
       setLogoFile(null);
       setErrors(prev => ({ ...prev, logo: [] }));
       showSuccess('Profile photo updated successfully');
     } catch (err) {
       console.error('Update logo error:', err);
-      setErrors(prev => ({ ...prev, logo: [(err as Error).message || 'Failed to update logo'] }));
+      setErrors(prev => ({
+        ...prev,
+        logo: [(err as Error).message || 'Failed to update logo']
+      }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNameSave = async () => {
+    if (!token) {
+      setErrors(prev => ({ ...prev, name: ['No authentication token'] }));
+      return;
+    }
+    if (!name.trim()) {
+      setErrors(prev => ({ ...prev, name: ['Name is required'] }));
+      return;
+    }
+
+    const nameErrors = validateName(name);
+    setErrors(prev => ({ ...prev, name: nameErrors }));
+    if (nameErrors.length > 0) return;
+
+    setLoading(true);
+    try {
+      const requestData = prepareRequestData('name', name);
+
+      console.log('Saving name with payload:', {
+        _id: userId,
+        name: name.trim()
+      });
+
+      const response = await fetch(getApiEndpoint(), {
+        method: 'PUT',
+        ...requestData
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update name');
+
+      const updatedUser = { ...user, name: name.trim() };
+      setUser(updatedUser);
+      setEditingField(null);
+      setErrors(prev => ({ ...prev, name: [] }));
+      showSuccess('Name updated successfully');
+    } catch (err) {
+      console.error('Update error:', err);
+      setErrors(prev => ({ ...prev, name: [(err as Error).message || 'Failed to update name'] }));
     } finally {
       setLoading(false);
     }
@@ -255,35 +453,6 @@ export default function Profile() {
     } catch (err) {
       console.error('Update store logo error:', err);
       setErrors(prev => ({ ...prev, storeLogo: [(err as Error).message || 'Failed to update store logo'] }));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleNameSave = async () => {
-    if (!token || !name.trim()) return;
-    const nameErrors = validateName(name);
-    setErrors(prev => ({ ...prev, name: nameErrors }));
-    if (nameErrors.length > 0) return;
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('name', name.trim());
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update name');
-      const updatedUser = { ...user, name: name.trim() };
-      setUser(updatedUser);
-      setEditingField(null);
-      setErrors(prev => ({ ...prev, name: [] }));
-      showSuccess('Name updated successfully');
-    } catch (err) {
-      console.error('Update name error:', err);
-      setErrors(prev => ({ ...prev, name: [(err as Error).message || 'Failed to update name'] }));
     } finally {
       setLoading(false);
     }
@@ -347,67 +516,6 @@ export default function Profile() {
     }
   };
 
-  const handleAddressSave = async () => {
-    if (!token) return;
-    const addressErrors = validateAddress(address);
-    setErrors(prev => ({ ...prev, address: addressErrors }));
-    if (addressErrors.length > 0) return;
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('address', address.trim() || '');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update store address');
-      const updatedUser = { ...user, address: address.trim() || '' };
-      setUser(updatedUser);
-      setEditingField(null);
-      setErrors(prev => ({ ...prev, address: [] }));
-      showSuccess('Store address updated successfully');
-    } catch (err) {
-      console.error('Update store address error:', err);
-      setErrors(prev => ({ ...prev, address: [(err as Error).message || 'Failed to update store address'] }));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePasswordSave = async () => {
-    if (!token || !password) return;
-    const passwordErrors = validatePassword(password);
-    const confirmPasswordErrors = validateConfirmPassword(confirmPassword, password);
-    setErrors(prev => ({ ...prev, password: passwordErrors, confirmPassword: confirmPasswordErrors }));
-    if (passwordErrors.length > 0 || confirmPasswordErrors.length > 0) return;
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('password', password);
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update password');
-      const updatedUser = { ...user };
-      setUser(updatedUser);
-      setPassword('');
-      setConfirmPassword('');
-      setEditingField(null);
-      setErrors(prev => ({ ...prev, password: [], confirmPassword: [] }));
-      showSuccess('Password updated successfully');
-    } catch (err) {
-      console.error('Update password error:', err);
-      setErrors(prev => ({ ...prev, password: [(err as Error).message || 'Failed to update password'] }));
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (loading && !user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--background-color)]">
@@ -416,12 +524,13 @@ export default function Profile() {
       </div>
     );
   }
-
   const isAdmin = user?.user_type === 'isadmin';
 
   return (
     <div className="min-h-screen bg-[var(--background-color)] py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
+        {/* Hidden input for user ID */}
+        <input type="hidden" name="_id" value={userId} />
         {/* Header */}
         <div className="bg-[var(--background-secondary)] rounded-xl shadow-sm border border-[var(--border-color)] mb-8 overflow-hidden">
           <div className="px-6 py-6">
