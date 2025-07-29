@@ -351,16 +351,25 @@ export default function Profile() {
     try {
       const formData = new FormData();
       formData.append('logo', logoFile);
-      const requestData = prepareRequestData('logo', formData);
+
+      // Add _id for worker users
+      if (user?.user_type === 'worker' && userId) {
+        formData.append('_id', userId);
+      }
 
       console.log('Updating logo with form data:', {
         _id: userId,
-        hasFile: !!logoFile
+        hasFile: !!logoFile,
+        userType: user?.user_type
       });
 
       const response = await fetch(getApiEndpoint(), {
         method: 'PUT',
-        ...requestData
+        headers: {
+          'Authorization': `Bearer ${token}`
+          // Don't set Content-Type for FormData - let browser set it with boundary
+        },
+        body: formData
       });
 
       const data = await response.json();
