@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import {ExclamationCircleIcon, UserGroupIcon, UserIcon} from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon, UserGroupIcon, UserIcon, KeyIcon } from '@heroicons/react/24/outline';
 import { fetchRoles, deleteRole } from '../../services/RoleService';
+import { fetchPermissions } from '../../services/PermissionService';
 import FlashMessage from '../FlashMessage';
 import RoleList from './roleList';
 import RoleCrud from './roleCrud';
+import RolePermissions from './rolePermissions';
 import { Role, RolesTemplateProps } from './roleTypes';
+import { Permission } from './permissionsTypes';
 
 const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
   const [roles, setRoles] = useState<Role[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [editRole, setEditRole] = useState<Role | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
@@ -16,22 +20,30 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
     create: false,
     update: false,
     delete: false,
+    roleUpdate: false,
   });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [activeSection, setActiveSection] = useState<'list' | 'assign'>('list');
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [rolePermissions, setRolePermissions] = useState<string[]>([]);
 
-  const loadRoles = async () => {
+  const loadData = async () => {
     setIsLoading((prev) => ({ ...prev, fetch: true }));
     try {
-      const rolesData = await fetchRoles(token!, logout);
+      const [rolesData, permissionsData] = await Promise.all([
+        fetchRoles(token!, logout),
+        fetchPermissions(token!, logout),
+      ]);
       setRoles(rolesData.map((role) => ({
         ...role,
         permissions: role.permissions || [],
       })));
+      setPermissions(permissionsData);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to fetch roles');
+      setMessage(error instanceof Error ? error.message : 'Failed to fetch data');
       setIsSuccess(false);
     } finally {
       setIsLoading((prev) => ({ ...prev, fetch: false }));
@@ -40,7 +52,7 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
 
   useEffect(() => {
     if (token) {
-      loadRoles();
+      loadData();
     }
   }, [token]);
 
@@ -65,37 +77,75 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
 
   return (
     <div className="space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
-
-        {message && (
-          <FlashMessage
-            message={message}
-            type={isSuccess ? 'success' : 'error'}
-            onClose={() => setMessage(null)}
-          />
-        )}
+      {message && (
+        <FlashMessage
+          message={message}
+          type={isSuccess ? 'success' : 'error'}
+          onClose={() => setMessage(null)}
+        />
+      )}
       <div className="rounded-lg p-3 mb-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
         <div className="flex items-center mb-4">
           <button className="mr-2" style={{ color: 'var(--text-secondary)' }}>
             <UserIcon className="w-5 h-5" />
           </button>
-          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Role Management</h3></div></div>
-      <div className="flex justify-between items-center border-b" style={{ borderColor: 'var(--border-color)' }}>
-        <button
-          style={{
-            background: 'var(--primary-color)',
-            color: 'var(--surface-color)',
-            borderBottom: '2px solid var(--primary-color)',
-          }}
-          className="flex items-center space-x-1 px-2.5 py-1.5 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none"
-          onClick={() => {
-            setEditRole(null);
-            setShowCreateForm(false);
-          }}
-        >
-          <UserGroupIcon className="w-4 h-4" />
-          <span>Role List</span>
-        </button>
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Role Management</h3>
+        </div>
       </div>
+      <div className="flex justify-between items-center border-b" style={{ borderColor: 'var(--border-color)' }}>
+        <div className="flex flex-col sm:flex-row sm:gap-2">
+          <button
+            className={`flex items-center space-x-1 px-2.5 py-1.5 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none`}
+            style={{
+              background: activeSection === 'list' ? 'var(--primary-color)' : 'var(--surface-color)',
+              color: activeSection === 'list' ? 'var(--surface-color)' : 'var(--text-secondary)',
+              borderBottom: activeSection === 'list' ? '2px solid var(--primary-color)' : '2px solid transparent',
+            }}
+            onClick={() => {
+              setActiveSection('list');
+              setEditRole(null);
+              setShowCreateForm(false);
+              setSearchQuery('');
+              setCurrentPage(1);
+            }}
+          >
+            <UserGroupIcon className="w-4 h-4" />
+            <span>Role List</span>
+          </button>
+          <button
+            className={`flex items-center space-x-1 px-2.5 py-1.5 text-sm font-medium rounded-t-lg transition-colors duration-200 focus:outline-none`}
+            style={{
+              background: activeSection === 'assign' ? 'var(--primary-color)' : 'var(--surface-color)',
+              color: activeSection === 'assign' ? 'var(--surface-color)' : 'var(--text-secondary)',
+              borderBottom: activeSection === 'assign' ? '2px solid var(--primary-color)' : '2px solid transparent',
+            }}
+            onClick={() => {
+              setActiveSection('assign');
+              setEditRole(null);
+              setShowCreateForm(false);
+              setSearchQuery('');
+              setCurrentPage(1);
+            }}
+          >
+            <KeyIcon className="w-4 h-4" />
+            <span>Assign Role Permissions</span>
+          </button>
+        </div>
+      </div>
+      {activeSection === 'list' && !showCreateForm && !editRole && (
+        <RoleList
+          roles={roles}
+          setEditRole={setEditRole}
+          handleDeleteRole={handleDeleteRole}
+          isLoading={isLoading}
+          setDeleteConfirm={setDeleteConfirm}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          setShowCreateForm={setShowCreateForm}
+        />
+      )}
       {(showCreateForm || editRole) && (
         <RoleCrud
           token={token}
@@ -110,21 +160,28 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
           setIsSuccess={setIsSuccess}
           isLoading={isLoading}
           setIsLoading={setIsLoading}
-          loadRoles={loadRoles}
+          loadRoles={loadData}
         />
       )}
-      {!showCreateForm && !editRole && (
-        <RoleList
+      {activeSection === 'assign' && (
+        <RolePermissions
+          token={token}
+          logout={logout}
           roles={roles}
-          setEditRole={setEditRole}
-          handleDeleteRole={handleDeleteRole}
+          permissions={permissions}
+          selectedRole={selectedRole}
+          setSelectedRole={setSelectedRole}
+          rolePermissions={rolePermissions}
+          setRolePermissions={setRolePermissions}
+          setMessage={setMessage}
+          setIsSuccess={setIsSuccess}
           isLoading={isLoading}
-          setDeleteConfirm={setDeleteConfirm}
+          setIsLoading={setIsLoading}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
-          setShowCreateForm={setShowCreateForm}
+          setActiveSection={setActiveSection}
         />
       )}
       {deleteConfirm && (

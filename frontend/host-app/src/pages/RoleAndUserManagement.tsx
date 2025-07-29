@@ -3,7 +3,6 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import UsersTemplate from './Users/usersTemplate';
 import RolesTemplate from './Roles/rolesTemplate';
-import PermissionsTemplate from './Permissions/permissionsTemplate';
 
 export default function RoleAndUserManagement() {
   const { isAuthenticated, token, logout } = useAuth();
@@ -168,7 +167,7 @@ export default function RoleAndUserManagement() {
       >
         <div className="border-b mb-6 w-full" style={{ borderColor: themeColors.cardBorder }}>
           <nav className="flex space-x-6" aria-label="Tabs">
-            {['Users', 'Roles', 'Permissions'].map((tab) => (
+            {['Users', 'Roles'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -197,7 +196,7 @@ export default function RoleAndUserManagement() {
         <div>
           {activeTab === 'Users' && <UsersTemplate token={token} logout={logout} />}
           {activeTab === 'Roles' && <RolesTemplate token={token} logout={logout} />}
-          {activeTab === 'Permissions' && <PermissionsTemplate token={token} logout={logout} />}
+
         </div>
       </div>
     </div>
