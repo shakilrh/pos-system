@@ -17,6 +17,8 @@ const RoleCrud: React.FC<RoleCrudProps> = ({
                                              isLoading,
                                              setIsLoading,
                                              loadRoles,
+                                             setSelectedRole,
+                                             setActiveSection,
                                            }) => {
   const [formData, setFormData] = useState<FormData>({ name: '', description: '' });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -30,12 +32,15 @@ const RoleCrud: React.FC<RoleCrudProps> = ({
       });
       setFormErrors({});
       setShowCreateForm(false);
+      setSelectedRole(editRole._id);
+      setActiveSection('assign');
     } else {
       setFormData({ name: '', description: '' });
       setFormErrors({});
       setTouchedFields(new Set());
+      setSelectedRole(null);
     }
-  }, [editRole, setShowCreateForm]);
+  }, [editRole, setShowCreateForm, setSelectedRole, setActiveSection]);
 
   const validateName = (name: string): string[] => {
     const errors: string[] = [];
@@ -124,6 +129,8 @@ const RoleCrud: React.FC<RoleCrudProps> = ({
     setTouchedFields(new Set());
     setEditRole(null);
     setShowCreateForm(false);
+    setSelectedRole(null);
+    setActiveSection('list');
   };
 
   const handleCreateRole = async (e: React.FormEvent) => {

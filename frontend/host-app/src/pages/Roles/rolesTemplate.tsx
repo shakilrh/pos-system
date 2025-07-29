@@ -4,7 +4,7 @@ import { fetchRoles, deleteRole } from '../../services/RoleService';
 import { fetchPermissions } from '../../services/PermissionService';
 import FlashMessage from '../FlashMessage';
 import RoleList from './roleList';
-import RoleCrud from './roleCrud';
+import RoleCrud from './RoleCrud';
 import RolePermissions from './rolePermissions';
 import { Role, RolesTemplateProps } from './roleTypes';
 import { Permission } from './permissionsTypes';
@@ -107,6 +107,7 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
               setShowCreateForm(false);
               setSearchQuery('');
               setCurrentPage(1);
+              setSelectedRole(null);
             }}
           >
             <UserGroupIcon className="w-4 h-4" />
@@ -125,6 +126,7 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
               setShowCreateForm(false);
               setSearchQuery('');
               setCurrentPage(1);
+              setSelectedRole(null);
             }}
           >
             <KeyIcon className="w-4 h-4" />
@@ -161,6 +163,8 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
           isLoading={isLoading}
           setIsLoading={setIsLoading}
           loadRoles={loadData}
+          setSelectedRole={setSelectedRole}
+          setActiveSection={setActiveSection}
         />
       )}
       {activeSection === 'assign' && (

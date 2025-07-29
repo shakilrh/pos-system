@@ -106,10 +106,24 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
     }
   }, [token, logout, setMessage, setIsSuccess]);
 
+  // Initialize rolePermissions when selectedRole changes (e.g., from Edit Role)
+  useEffect(() => {
+    if (selectedRole) {
+      const role = roles.find(r => r._id === selectedRole);
+      if (role) {
+        setRolePermissions(role.permissions.map(p => p._id) || []);
+      }
+    } else {
+      setRolePermissions([]);
+    }
+    setSearchQuery('');
+    setCurrentPage(1);
+    setExpandedGroup(null);
+  }, [selectedRole, roles, setRolePermissions, setSearchQuery, setCurrentPage]);
+
   const groupedPermissions = useMemo(() => {
     const groups: GroupedPermission[] = [];
 
-    // Get all permission IDs that belong to main pages
     const mainPagePermissionIds = new Set<string>();
     mainPages.forEach(page => {
       page.permissions.forEach(permission => {
@@ -117,21 +131,15 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
       });
     });
 
-    // Get all main page access keys to exclude them from other permissions
     const mainPageAccessKeys = new Set<string>(mainPages.map(page => page.key));
 
-    // Filter out permissions that belong to main pages AND exclude main page access permissions
     const ungroupedPermissions: Permission[] = permissions.filter(p => {
-      // Exclude if it's a permission that belongs to a main page
       if (mainPagePermissionIds.has(p._id)) {
         return false;
       }
-
-      // Exclude if it's a main page access permission (like dashboard_access, menu_management_access)
       if (mainPageAccessKeys.has(p.key)) {
         return false;
       }
-
       return true;
     }).map(p => ({
       _id: p._id,
@@ -140,7 +148,6 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
       description: p.description || ''
     }));
 
-    // Add main pages as groups
     mainPages.forEach(page => {
       groups.push({
         id: page._id,
@@ -151,7 +158,6 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
       });
     });
 
-    // Add ungrouped permissions if any exist
     if (ungroupedPermissions.length > 0) {
       groups.push({
         id: 'ungrouped',
@@ -190,14 +196,12 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
       .filter(Boolean) as GroupedPermission[];
   }, [groupedPermissions, searchQuery]);
 
-  // Calculate total available permissions correctly
   const totalAvailablePermissions = useMemo(() => {
     return groupedPermissions.reduce((total, group) => {
       return total + (group.subPermissions?.length || 0);
     }, 0);
   }, [groupedPermissions]);
 
-  // Get assigned permission names for display
   const assignedPermissionNames = useMemo(() => {
     const names: string[] = [];
     groupedPermissions.forEach(group => {
@@ -210,7 +214,6 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
     return names;
   }, [groupedPermissions, rolePermissions]);
 
-  // Get group assigned count for display
   const getGroupAssignedCount = (group: GroupedPermission) => {
     if (!group.subPermissions) return 0;
     return group.subPermissions.filter(permission =>
@@ -310,12 +313,7 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
               value={selectedRole || ''}
               onChange={e => {
                 const roleId = e.target.value;
-                const role = roles.find(r => r._id === roleId);
-                setRolePermissions(role?.permissions.map(p => p._id) || []);
                 setSelectedRole(roleId);
-                setSearchQuery('');
-                setCurrentPage(1);
-                setExpandedGroup(null);
               }}
               className="w-full p-2.5 text-sm rounded-lg border border-[--border-color] bg-[--background-color] text-[--text-color] focus:ring-2 focus:ring-[--primary-color] transition-colors duration-200"
             >
@@ -370,7 +368,6 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
               </div>
             </div>
 
-            {/* Display assigned permissions */}
             {assignedPermissionNames.length > 0 && (
               <div className="mb-4 p-4 bg-[--surface-color] rounded-lg border border-[--border-color]">
                 <div className="flex items-center space-x-2 mb-2">
