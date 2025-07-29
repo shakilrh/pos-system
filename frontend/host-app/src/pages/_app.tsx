@@ -29,37 +29,26 @@ const Footer = dynamic(
 
 const publicRoutes = ['/Registration/login', '/Registration/forgotPassword', '/Registration/registerAdmin', '/NoAccess'];
 
-// Map routes to actual database permissions
-const routePermissions: { [key: string]: string } = {
-  '/Dashboard/dashboard': 'can_view_dashboard',
-  '/MenuManagement': 'can_view_menu',
-  '/Orders/orders': 'can_view_orders',
-  '/Orders/createOrder': 'create_orders',
-  '/RoleAndUserManagement': 'can_view_rolemanagement',
-  '/Tables/FloorTableManagement': 'can_view_tablemanagement',
-};
-
-// List of all actual database permissions for admin users
-const ALL_PERMISSIONS = [
-  'can_view_dashboard',
-  'can_view_menu',
-  'can_view_orders',
-  'create_orders',
-  'can_view_rolemanagement',
-  'can_view_tablemanagement',
-  'can_view_storesettings',
-  'manage_store_settings',
-  'manage_store_profile',
-];
-
 function AppContent({ Component, pageProps }: AppProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isPageLoading, setIsPageLoading] = useState(false);
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
-  const { isAuthenticated, isLoading, logout, token, user } = useAuth();
+  const { isAuthenticated, isLoading, logout, token, user, allPermissions } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+
+  const routePermissions = useMemo(() => {
+    const mapping: { [key: string]: string } = {};
+    if (allPermissions.includes('can_view_dashboard')) mapping['/Dashboard/dashboard'] = 'can_view_dashboard';
+    if (allPermissions.includes('can_view_menu')) mapping['/MenuManagement'] = 'can_view_menu';
+    if (allPermissions.includes('can_view_orders')) mapping['/Orders/orders'] = 'can_view_orders';
+    if (allPermissions.includes('create_orders')) mapping['/Orders/createOrder'] = 'create_orders';
+    if (allPermissions.includes('can_view_rolemanagement')) mapping['/RoleAndUserManagement'] = 'can_view_rolemanagement';
+    if (allPermissions.includes('can_view_tablemanagement')) mapping['/Tables/FloorTableManagement'] = 'can_view_tablemanagement';
+    if (allPermissions.includes('can_view_storesettings')) mapping['/Settings/storeSettings'] = 'can_view_storesettings';
+    return mapping;
+  }, [allPermissions]);
 
   const decodeToken = (token: string) => {
     try {
@@ -83,7 +72,7 @@ function AppContent({ Component, pageProps }: AppProps) {
       isAuthenticated,
       token: !!token,
       user_role_id: user?.role_id,
-      isLoading
+      isLoading,
     });
 
     if (isLoading) {
@@ -109,8 +98,8 @@ function AppContent({ Component, pageProps }: AppProps) {
     console.log('Decoded token:', decodedToken);
 
     if (decodedToken.user_type === 'isadmin') {
-      console.log('User is admin, granting all permissions:', ALL_PERMISSIONS);
-      setUserPermissions(ALL_PERMISSIONS);
+      console.log('User is admin, granting all permissions:', allPermissions);
+      setUserPermissions(allPermissions);
       setPermissionsLoaded(true);
 
       console.log('Admin User:', {
@@ -137,7 +126,7 @@ function AppContent({ Component, pageProps }: AppProps) {
       description: 'From token',
     });
     console.log('Assigned Permissions:', permissions);
-  }, [isAuthenticated, user, token, isLoading]);
+  }, [isAuthenticated, user, token, isLoading, allPermissions]);
 
   useEffect(() => {
     console.log('Route protection useEffect triggered', {
@@ -145,7 +134,7 @@ function AppContent({ Component, pageProps }: AppProps) {
       isAuthenticated,
       pathname,
       permissionsLoaded,
-      userPermissions
+      userPermissions,
     });
 
     if (isLoading) {
@@ -180,7 +169,7 @@ function AppContent({ Component, pageProps }: AppProps) {
         console.log(`Access granted to ${pathname}`);
       }
     }
-  }, [isAuthenticated, isLoading, pathname, router, userPermissions, permissionsLoaded]);
+  }, [isAuthenticated, isLoading, pathname, router, userPermissions, permissionsLoaded, routePermissions]);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -250,13 +239,11 @@ function AppContent({ Component, pageProps }: AppProps) {
   }
 
   const sidebarWidth = sidebarOpen ? 'w-64' : 'w-20';
-  // Adjust margin for zoom effect - increase margin to account for 0.8 zoom
   const contentMargin = sidebarOpen ? 'ml-80' : 'ml-28';
   const headerHeight = 'h-16';
 
   return (
     <div className="flex flex-col min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
-      {/* Header remains at 100% scale */}
       <Header
         onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
         onLogout={handleLogout}
@@ -266,19 +253,17 @@ function AppContent({ Component, pageProps }: AppProps) {
         className={headerHeight}
       />
       <div className="flex flex-1 overflow-hidden mt-10" style={{ backgroundColor: 'var(--background-color)' }}>
-        {/* Sidebar remains at 100% scale */}
         <Sidebar
           className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 ${sidebarWidth} bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-2xl transition-all duration-300 ease-in-out`}
           setSidebarOpen={setSidebarOpen}
           sidebarOpen={sidebarOpen}
           userPermissions={userPermissions}
         />
-        {/* Main content with compact design using zoom */}
         <main
           className={`flex-1 ${contentMargin} overflow-auto p-4 transition-all duration-300 ease-in-out main-content-container`}
           style={{
             backgroundColor: 'var(--background-color)',
-            zoom: '0.8' // This will make content more compact while filling the available space
+            zoom: '0.8',
           }}
         >
           {isPageLoading ? (
@@ -293,7 +278,6 @@ function AppContent({ Component, pageProps }: AppProps) {
           )}
         </main>
       </div>
-      {/* Footer remains at 100% scale */}
       <Footer />
     </div>
   );

@@ -14,6 +14,21 @@ interface User {
   store_logo?: string;
 }
 
+interface Permission {
+  _id: string;
+  key: string;
+  name: string;
+  description: string;
+}
+
+interface MainPage {
+  _id: string;
+  key: string;
+  name: string;
+  description: string;
+  permissions: Permission[];
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -23,6 +38,7 @@ interface AuthContextType {
   token: string | null;
   userPermissions: string[];
   permissionsLoaded: boolean;
+  allPermissions: string[];
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User | null) => void;
@@ -31,49 +47,29 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// List of all actual database permissions for admin users
-const ALL_PERMISSIONS = [
-  'can_view_dashboard',
-  'can_view_menu',
-  'can_view_orders',
-  'create_orders',
-  'can_view_rolemanagement',
-  'can_view_tablemanagement',
-  'can_view_storesettings',
-  'can_add_categories',
-  'can_edit_categories',
-  'can_delete_categories',
-  'can_add_products',
-  'can_edit_products',
-  'can_delete_products',
-  'manage_prepared_orders',
-  'manage_ready_orders',
-  'manage_served_orders',
-  'manage_completed_orders',
-  'accept_onlineorders',
-  'manage_cancelled_orders',
-  'can_add_users',
-  'can_edit_users',
-  'can_delete_users',
-  'assign_roles',
-  'can_add_roles',
-  'can_edit_roles',
-  'can_delete_roles',
-  'can_add_permissions',
-  'can_edit_permissions',
-  'can_delete_permissions',
-  'assign_permissions',
-  'can_add_floors',
-  'can_edit_floors',
-  'can_delete_floors',
-  'can_add_tables',
-  'can_edit_tables',
-  'can_delete_tables',
-  'manage_floors',
-  'assign_tables',
-  'manage_store_settings',
-  'manage_store_profile',
-];
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000';
+
+const fetchMainPages = async (token: string, logout: () => void): Promise<MainPage[]> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/rolepermission/api/v1/pages/list`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (response.status === 401) {
+      logout();
+      throw new Error('Unauthorized');
+    }
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Failed to fetch main pages');
+    }
+    if (data.success && data.type === 1 && data.data && 'data' in data.data) {
+      return (data.data as { data: MainPage[] }).data || [];
+    }
+    throw new Error('Invalid response format');
+  } catch (err) {
+    throw new Error(err instanceof Error ? err.message : 'Failed to fetch main pages');
+  }
+};
 
 const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -84,6 +80,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null);
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  const [allPermissions, setAllPermissions] = useState<string[]>([]);
 
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 1000; // 1 second
@@ -152,7 +149,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   };
 
   useEffect(() => {
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       const storedToken = localStorage.getItem('authToken');
       const storedUser = localStorage.getItem('authUser');
 
@@ -175,6 +172,17 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
           setIsAuthenticated(true);
           console.log('Token loaded from localStorage:', storedToken);
           console.log('User loaded from localStorage:', normalizedUser);
+
+          // Fetch all permissions
+          try {
+            const mainPages = await fetchMainPages(storedToken, logout);
+            const permissions = mainPages.flatMap((page) => page.permissions.map((perm) => perm.key));
+            setAllPermissions(permissions);
+            console.log('Fetched all permissions:', permissions);
+          } catch (error) {
+            console.error('Failed to fetch permissions:', error);
+            setAllPermissions([]);
+          }
         } catch (error) {
           console.error('Error parsing user data:', error);
           logout();
@@ -210,8 +218,8 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     console.log('Decoded token:', decodedToken);
 
     if (decodedToken.user_type === 'isadmin') {
-      console.log('User is admin, granting all permissions:', ALL_PERMISSIONS);
-      setUserPermissions(ALL_PERMISSIONS);
+      console.log('User is admin, granting all permissions:', allPermissions);
+      setUserPermissions(allPermissions);
       setPermissionsLoaded(true);
       return;
     }
@@ -223,12 +231,12 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     console.log('Mapped permissions for non-admin user:', permissions);
     setUserPermissions(permissions);
     setPermissionsLoaded(true);
-  }, [isAuthenticated, token, isLoading]);
+  }, [isAuthenticated, token, isLoading, allPermissions]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://192.168.18.107:3000/users/api/v1/login', {
+      const response = await fetch(`${API_BASE_URL}/users/api/v1/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -264,6 +272,18 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       setToken(token);
       setUser(normalizedUser);
       setIsAuthenticated(true);
+
+      // Fetch all permissions after login
+      try {
+        const mainPages = await fetchMainPages(token, logout);
+        const permissions = mainPages.flatMap((page) => page.permissions.map((perm) => perm.key));
+        setAllPermissions(permissions);
+        console.log('Fetched all permissions after login:', permissions);
+      } catch (error) {
+        console.error('Failed to fetch permissions after login:', error);
+        setAllPermissions([]);
+      }
+
       console.log('Auth state updated, token stored:', token);
     } catch (error) {
       console.error('Login error:', error);
@@ -283,6 +303,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     setProfileError(null);
     setUserPermissions([]);
     setPermissionsLoaded(false);
+    setAllPermissions([]);
     console.log('Logged out, token removed from localStorage');
   };
 
@@ -297,6 +318,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         token,
         userPermissions,
         permissionsLoaded,
+        allPermissions,
         login,
         logout,
         setUser,
