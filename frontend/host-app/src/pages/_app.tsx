@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { AppProps } from 'next/app';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthProvider, useAuth } from '../context/AuthContext';
@@ -34,9 +34,19 @@ function AppContent({ Component, pageProps }: AppProps) {
   const [isPageLoading, setIsPageLoading] = useState(false);
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState('default');
+  const [themeLoaded, setThemeLoaded] = useState(false);
+
+  // Theme polling ref
+  const themePollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastKnownThemeRef = useRef<string>('default');
+
   const { isAuthenticated, isLoading, logout, token, user, allPermissions } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+
+  const API_BASE_URL = 'http://192.168.18.107:3000';
+  const USER_DETAILS_ENDPOINT = '/users/api/v1/details';
 
   const routePermissions = useMemo(() => {
     const mapping: { [key: string]: string } = {};
@@ -66,6 +76,291 @@ function AppContent({ Component, pageProps }: AppProps) {
       return null;
     }
   };
+
+  // Theme management functions
+  const applyThemeToDOM = (selectedTheme: string) => {
+    console.log('Applying theme to DOM:', selectedTheme);
+
+    // Remove any existing theme classes
+    document.documentElement.classList.remove(
+      'theme-default', 'theme-blue', 'theme-green',
+      'theme-professional', 'theme-warm-minimal', 'theme-dark-pro'
+    );
+
+    // Add new theme class
+    document.documentElement.classList.add(`theme-${selectedTheme}`);
+
+    // Set data attribute for CSS variables
+    document.documentElement.setAttribute('data-theme', selectedTheme);
+
+    // Dispatch custom event for other components
+    window.dispatchEvent(new CustomEvent('themeChange', {
+      detail: { theme: selectedTheme }
+    }));
+
+    // Save to localStorage
+    localStorage.setItem('appTheme', selectedTheme);
+
+    // Force a repaint to ensure theme changes are immediately visible
+    document.documentElement.style.display = 'none';
+    document.documentElement.offsetHeight; // Trigger reflow
+    document.documentElement.style.display = '';
+  };
+
+  const loadUserTheme = async () => {
+    if (!token) {
+      const savedTheme = localStorage.getItem('appTheme') || 'default';
+      console.log('No token, using saved theme:', savedTheme);
+      setCurrentTheme(savedTheme);
+      applyThemeToDOM(savedTheme);
+      lastKnownThemeRef.current = savedTheme;
+      setThemeLoaded(true);
+      return;
+    }
+
+    try {
+      console.log('Fetching user theme from API...');
+      const response = await fetch(`${API_BASE_URL}${USER_DETAILS_ENDPOINT}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.log('Token expired, logging out');
+          logout();
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to fetch user details');
+      }
+
+      // Extract theme from the API response
+      const userTheme = data.data?.data?.user?.theme || 'default';
+      console.log('Loaded user theme from API:', userTheme);
+
+      setCurrentTheme(userTheme);
+      applyThemeToDOM(userTheme);
+      lastKnownThemeRef.current = userTheme;
+      setThemeLoaded(true);
+
+    } catch (error) {
+      console.error('Error loading user theme:', error);
+      const savedTheme = localStorage.getItem('appTheme') || 'default';
+      console.log('API failed, using saved theme:', savedTheme);
+      setCurrentTheme(savedTheme);
+      applyThemeToDOM(savedTheme);
+      lastKnownThemeRef.current = savedTheme;
+      setThemeLoaded(true);
+    }
+  };
+
+  const startThemePolling = () => {
+    if (themePollingIntervalRef.current) {
+      clearInterval(themePollingIntervalRef.current);
+    }
+
+    themePollingIntervalRef.current = setInterval(async () => {
+      await checkForThemeUpdates();
+    }, 3000); // Poll every 3 seconds
+  };
+
+  const checkForThemeUpdates = async () => {
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}${USER_DETAILS_ENDPOINT}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          logout();
+          return;
+        }
+        return; // Silently fail for polling
+      }
+
+      const data = await response.json();
+      if (!data.success) return;
+
+      // Extract theme from the API response
+      const serverTheme = data.data?.data?.user?.theme || 'default';
+
+      // Only update if theme actually changed
+      if (serverTheme !== lastKnownThemeRef.current && serverTheme !== currentTheme) {
+        console.log(`Theme changed externally from ${lastKnownThemeRef.current} to ${serverTheme}`);
+        setCurrentTheme(serverTheme);
+        applyThemeToDOM(serverTheme);
+        lastKnownThemeRef.current = serverTheme;
+
+        // Show notification about theme change
+        showThemeChangeNotification(serverTheme);
+      }
+    } catch (error) {
+      // Silently fail for polling - don't show errors
+      console.log('Theme polling error (ignored):', error);
+    }
+  };
+
+  const showThemeChangeNotification = (themeName: string) => {
+    // Remove any existing notifications first
+    const existingNotifications = document.querySelectorAll('.theme-change-notification');
+    existingNotifications.forEach(notification => notification.remove());
+
+    // Create the main notification container
+    const notification = document.createElement('div');
+    notification.className = 'theme-change-notification fixed top-6 right-6 z-[9999] transform translate-x-full opacity-0 transition-all duration-500 ease-out';
+
+    // Set up the notification HTML with modern styling
+    notification.innerHTML = `
+      <div class="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-2xl shadow-2xl border border-white/20 backdrop-blur-sm overflow-hidden min-w-[320px] max-w-[400px]">
+        <!-- Animated background overlay -->
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-purple-400/10 to-pink-400/10 animate-pulse"></div>
+
+        <!-- Decorative top border -->
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-green-400 to-blue-400"></div>
+
+        <!-- Main content -->
+        <div class="relative p-4 flex items-center space-x-4">
+          <!-- Icon with animation -->
+          <div class="flex-shrink-0">
+            <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm animate-bounce">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a4 4 0 004-4V5z"></path>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Text content -->
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-white/90 mb-1">Theme Updated</div>
+            <div class="text-lg font-bold text-white capitalize">${themeName} Theme Active</div>
+            <div class="text-xs text-white/70 mt-1">Changes synced across devices</div>
+          </div>
+
+          <!-- Success checkmark -->
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
+          <div class="progress-bar h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-[4000ms] ease-linear" style="width: 100%"></div>
+        </div>
+
+        <!-- Floating particles effect -->
+        <div class="absolute inset-0 pointer-events-none overflow-hidden">
+          <div class="particle absolute w-2 h-2 bg-white/30 rounded-full animate-ping" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
+          <div class="particle absolute w-1 h-1 bg-white/40 rounded-full animate-ping" style="top: 60%; right: 15%; animation-delay: 0.5s;"></div>
+          <div class="particle absolute w-1.5 h-1.5 bg-white/25 rounded-full animate-ping" style="bottom: 30%; left: 20%; animation-delay: 1s;"></div>
+        </div>
+      </div>
+    `;
+
+    // Add to DOM
+    document.body.appendChild(notification);
+
+    // Trigger entrance animation
+    setTimeout(() => {
+      notification.classList.remove('translate-x-full', 'opacity-0');
+      notification.classList.add('translate-x-0', 'opacity-100');
+    }, 50);
+
+    // Add hover effects
+    notification.addEventListener('mouseenter', () => {
+      notification.style.transform = 'translateX(0) scale(1.02)';
+    });
+
+    notification.addEventListener('mouseleave', () => {
+      notification.style.transform = 'translateX(0) scale(1)';
+    });
+
+    // Start progress bar animation
+    setTimeout(() => {
+      const progressBar = notification.querySelector('.progress-bar') as HTMLElement;
+      if (progressBar) {
+        progressBar.style.width = '0%';
+      }
+    }, 100);
+
+    // Enhanced exit animation after 4 seconds
+    setTimeout(() => {
+      notification.classList.add('animate-pulse');
+
+      setTimeout(() => {
+        notification.style.transform = 'translateX(full) scale(0.8)';
+        notification.style.opacity = '0';
+
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+          }
+        }, 500);
+      }, 200);
+    }, 4000);
+
+    // Add click to dismiss
+    notification.addEventListener('click', () => {
+      notification.style.transform = 'translateX(full) scale(0.8)';
+      notification.style.opacity = '0';
+
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 300);
+    });
+  };
+
+  // Theme loading effect
+  useEffect(() => {
+    console.log('Theme loading useEffect triggered', {
+      isAuthenticated,
+      token: !!token,
+      isLoading,
+      themeLoaded,
+    });
+
+    if (isLoading) {
+      console.log('Still loading auth, skipping theme loading');
+      return;
+    }
+
+    if (!themeLoaded) {
+      loadUserTheme();
+    }
+
+    // Start theme polling if authenticated
+    if (isAuthenticated && token && themeLoaded) {
+      console.log('Starting theme polling...');
+      startThemePolling();
+    }
+
+    // Cleanup polling on unmount or auth change
+    return () => {
+      if (themePollingIntervalRef.current) {
+        clearInterval(themePollingIntervalRef.current);
+      }
+    };
+  }, [isAuthenticated, isLoading, token, themeLoaded]);
+
+  // Cleanup theme polling on unmount
+  useEffect(() => {
+    return () => {
+      if (themePollingIntervalRef.current) {
+        clearInterval(themePollingIntervalRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     console.log('Permission extraction useEffect triggered', {
@@ -194,10 +489,16 @@ function AppContent({ Component, pageProps }: AppProps) {
 
   const handleLogout = async () => {
     try {
+      // Stop theme polling
+      if (themePollingIntervalRef.current) {
+        clearInterval(themePollingIntervalRef.current);
+      }
+
       await logout();
       setSidebarOpen(false);
       setUserPermissions([]);
       setPermissionsLoaded(false);
+      setThemeLoaded(false);
       console.log('User logged out successfully');
       await router.push('/Registration/login');
     } catch (error) {
@@ -222,12 +523,14 @@ function AppContent({ Component, pageProps }: AppProps) {
     return null;
   }
 
-  if (isAuthenticated && !permissionsLoaded) {
+  if (isAuthenticated && (!permissionsLoaded || !themeLoaded)) {
     return (
       <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
         <div className="flex flex-col items-center">
           <div className="w-16 h-16 border-t-4 border-b-4 border-orange-500 rounded-full animate-spin"></div>
-          <p className="mt-4 text-lg font-semibold text-gray-700">Loading permissions...</p>
+          <p className="mt-4 text-lg font-semibold text-gray-700">
+            {!permissionsLoaded ? 'Loading permissions...' : 'Loading theme...'}
+          </p>
         </div>
       </div>
     );
