@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { AppProps } from 'next/app';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthProvider, useAuth } from '../context/AuthContext';
