@@ -167,7 +167,7 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
           setActiveSection={setActiveSection}
         />
       )}
-      {activeSection === 'assign' && (
+      {editRole && (
         <RolePermissions
           token={token}
           logout={logout}
@@ -186,6 +186,29 @@ const RolesTemplate: React.FC<RolesTemplateProps> = ({ token, logout }) => {
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
           setActiveSection={setActiveSection}
+          fromEdit={true}
+        />
+      )}
+      {activeSection === 'assign' && !editRole && (
+        <RolePermissions
+          token={token}
+          logout={logout}
+          roles={roles}
+          permissions={permissions}
+          selectedRole={selectedRole}
+          setSelectedRole={setSelectedRole}
+          rolePermissions={rolePermissions}
+          setRolePermissions={setRolePermissions}
+          setMessage={setMessage}
+          setIsSuccess={setIsSuccess}
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          setActiveSection={setActiveSection}
+          fromEdit={false}
         />
       )}
       {deleteConfirm && (

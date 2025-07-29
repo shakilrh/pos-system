@@ -87,6 +87,7 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
                                                            currentPage,
                                                            setCurrentPage,
                                                            setActiveSection,
+                                                           fromEdit = false,
                                                          }) => {
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [mainPages, setMainPages] = useState<MainPage[]>([]);
@@ -106,7 +107,6 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
     }
   }, [token, logout, setMessage, setIsSuccess]);
 
-  // Initialize rolePermissions when selectedRole changes (e.g., from Edit Role)
   useEffect(() => {
     if (selectedRole) {
       const role = roles.find(r => r._id === selectedRole);
@@ -307,28 +307,30 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
 
       <div className="p-6 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-[--text-color] mb-1">Select Role</label>
-            <select
-              value={selectedRole || ''}
-              onChange={e => {
-                const roleId = e.target.value;
-                setSelectedRole(roleId);
-              }}
-              className="w-full p-2.5 text-sm rounded-lg border border-[--border-color] bg-[--background-color] text-[--text-color] focus:ring-2 focus:ring-[--primary-color] transition-colors duration-200"
-            >
-              <option value="">Choose a role</option>
-              {Array.isArray(roles) &&
-                roles.map(role => (
-                  <option key={role._id} value={role._id}>
-                    {role.name} ({role.permissions?.length || 0} permissions)
-                  </option>
-                ))}
-            </select>
-          </div>
+          {!fromEdit && (
+            <div>
+              <label className="block text-sm font-medium text-[--text-color] mb-1">Select Role</label>
+              <select
+                value={selectedRole || ''}
+                onChange={e => {
+                  const roleId = e.target.value;
+                  setSelectedRole(roleId);
+                }}
+                className="w-full p-2.5 text-sm rounded-lg border border-[--border-color] bg-[--background-color] text-[--text-color] focus:ring-2 focus:ring-[--primary-color] transition-colors duration-200"
+              >
+                <option value="">Choose a role</option>
+                {Array.isArray(roles) &&
+                  roles.map(role => (
+                    <option key={role._id} value={role._id}>
+                      {role.name} ({role.permissions?.length || 0} permissions)
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
 
           {selectedRole && (
-            <div className="relative">
+            <div className={fromEdit ? 'col-span-2' : ''}>
               <label className="block text-sm font-medium text-[--text-color] mb-1">Search Permissions</label>
               <div className="relative">
                 <input
