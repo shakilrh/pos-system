@@ -1,3 +1,4 @@
+
 import dynamic from 'next/dynamic';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { AppProps } from 'next/app';
@@ -217,54 +218,54 @@ function AppContent({ Component, pageProps }: AppProps) {
 
     // Set up the notification HTML with modern styling
     notification.innerHTML = `
-      <div class="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-2xl shadow-2xl border border-white/20 backdrop-blur-sm overflow-hidden min-w-[320px] max-w-[400px]">
-        <!-- Animated background overlay -->
-        <div class="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-purple-400/10 to-pink-400/10 animate-pulse"></div>
+<div class="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-2xl shadow-2xl border border-white/20 backdrop-blur-sm overflow-hidden min-w-[320px] max-w-[400px]">
+  <!-- Animated background overlay -->
+<div class="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-purple-400/10 to-pink-400/10 animate-pulse"></div>
 
-        <!-- Decorative top border -->
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-green-400 to-blue-400"></div>
+<!-- Decorative top border -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-green-400 to-blue-400"></div>
 
-        <!-- Main content -->
-        <div class="relative p-4 flex items-center space-x-4">
-          <!-- Icon with animation -->
-          <div class="flex-shrink-0">
-            <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm animate-bounce">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a4 4 0 004-4V5z"></path>
-              </svg>
-            </div>
-          </div>
+<!-- Main content -->
+<div class="relative p-4 flex items-center space-x-4">
+  <!-- Icon with animation -->
+  <div class="flex-shrink-0">
+    <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm animate-bounce">
+      <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a4 4 0 004-4V5z"></path>
+      </svg>
+    </div>
+  </div>
 
-          <!-- Text content -->
-          <div class="flex-1 min-w-0">
-            <div class="text-sm font-medium text-white/90 mb-1">Theme Updated</div>
-            <div class="text-lg font-bold text-white capitalize">${themeName} Theme Active</div>
-            <div class="text-xs text-white/70 mt-1">Changes synced across devices</div>
-          </div>
+  <!-- Text content -->
+  <div className="flex-1 min-w-0">
+    <div className="text-sm font-medium text-white/90 mb-1">Theme Updated</div>
+    <div className="text-lg font-bold text-white capitalize">${themeName} Theme Active</div>
+    <div className="text-xs text-white/70 mt-1">Changes synced across devices</div>
+  </div>
 
-          <!-- Success checkmark -->
-          <div class="flex-shrink-0">
-            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-              </svg>
-            </div>
-          </div>
-        </div>
+  <!-- Success checkmark -->
+  <div className="flex-shrink-0">
+    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
+      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+      </svg>
+    </div>
+  </div>
+</div>
 
-        <!-- Progress bar -->
-        <div class="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
-          <div class="progress-bar h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-[4000ms] ease-linear" style="width: 100%"></div>
-        </div>
+<!-- Progress bar -->
+<div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
+  <div className="progress-bar h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-[4000ms] ease-linear" style="width: 100%"></div>
+</div>
 
-        <!-- Floating particles effect -->
-        <div class="absolute inset-0 pointer-events-none overflow-hidden">
-          <div class="particle absolute w-2 h-2 bg-white/30 rounded-full animate-ping" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
-          <div class="particle absolute w-1 h-1 bg-white/40 rounded-full animate-ping" style="top: 60%; right: 15%; animation-delay: 0.5s;"></div>
-          <div class="particle absolute w-1.5 h-1.5 bg-white/25 rounded-full animate-ping" style="bottom: 30%; left: 20%; animation-delay: 1s;"></div>
-        </div>
-      </div>
-    `;
+<!-- Floating particles effect -->
+<div className="absolute inset-0 pointer-events-none overflow-hidden">
+  <div className="particle absolute w-2 h-2 bg-white/30 rounded-full animate-ping" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
+  <div className="particle absolute w-1 h-1 bg-white/40 rounded-full animate-ping" style="top: 60%; right: 15%; animation-delay: 0.5s;"></div>
+  <div className="particle absolute w-1.5 h-1.5 bg-white/25 rounded-full animate-ping" style="bottom: 30%; left: 20%; animation-delay: 1s;"></div>
+</div>
+</div>
+`;
 
     // Add to DOM
     document.body.appendChild(notification);
@@ -581,7 +582,10 @@ function AppContent({ Component, pageProps }: AppProps) {
           )}
         </main>
       </div>
-      <Footer />
+      <Footer
+        className={`p-4 shadow-inner ${contentMargin} transition-all duration-300 ease-in-out`}
+        sidebarOpen={sidebarOpen}
+      />
     </div>
   );
 }

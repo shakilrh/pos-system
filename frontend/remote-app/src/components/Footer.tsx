@@ -1,6 +1,10 @@
 import { useEffect } from 'react';
 
-export default function Footer() {
+interface FooterProps {
+  sidebarOpen?: boolean;
+}
+
+export default function Footer({ sidebarOpen = true }: FooterProps) {
   useEffect(() => {
     const handleThemeChange = (e: CustomEvent) => {
       const { theme } = e.detail;
@@ -11,11 +15,16 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer className="p-4 w-full shadow-inner"
+    <footer
+      className={`mt-auto p-4 shadow-inner transition-all duration-300 ease-in-out`}
       style={{
         backgroundColor: 'var(--background-secondary)',
-        borderColor: 'var(--border-color)'
-      }}>
+        borderColor: 'var(--border-color)',
+        width: sidebarOpen ? 'calc(100% - 256px)' : 'calc(100% - 80px)',
+        marginLeft: sidebarOpen ? '256px' : '80px'
+      }}
+    >
+      {/* Main footer content */}
       <div className="container mx-auto flex flex-col md:flex-row items-center justify-between text-sm">
         <div className="flex items-center gap-2 mb-2 md:mb-0">
           <span className="text-indigo-400">🍽️</span>

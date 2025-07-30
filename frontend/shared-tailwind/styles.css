@@ -247,3 +247,9 @@ input[type="date"]::-moz-calendar-picker-indicator {
   font-size: 2rem;
   color: var(--text-secondary);
 }
+
+.main-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
