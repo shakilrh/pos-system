@@ -11,6 +11,7 @@ interface PaymentModalProps {
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   orders: Order[];
   setMessage: (message: string) => void;
+  currentCurrency?: string;
 }
 
 interface OrderSearchProps {
@@ -28,6 +29,70 @@ const OrderSearch: React.FC<OrderSearchProps> = ({
                                                    setSearchTerm,
                                                    statusFilter
                                                  }) => {
+  const [activeCurrency, setActiveCurrency] = useState('pkr');
+
+  // Function to get currency symbol based on current currency
+  const getCurrencySymbol = (currency: string) => {
+    const symbols = {
+      pkr: '₨',
+      dollar: '$',
+      euro: '€'
+    };
+    return symbols[currency as keyof typeof symbols] || '₨';
+  };
+
+  // Function to format price with currency
+  const formatPrice = (price: number, currency: string) => {
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${price.toFixed(2)}`;
+  };
+
+  // Function to get current currency from various sources
+  const getCurrentCurrency = () => {
+    const domCurrency = document.documentElement.getAttribute('data-currency');
+    const storedCurrency = localStorage.getItem('appCurrency');
+    return domCurrency || storedCurrency || 'pkr';
+  };
+
+  // Listen for currency changes
+  useEffect(() => {
+    const handleCurrencyChange = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency && newCurrency !== activeCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleSettingsLoaded = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleForceRerender = (event: CustomEvent) => {
+      if (event.detail.type === 'currency') {
+        const newCurrency = event.detail.value;
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    window.addEventListener('currencyChange', handleCurrencyChange as EventListener);
+    window.addEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+    window.addEventListener('forceRerender', handleForceRerender as EventListener);
+
+    const initialCurrency = getCurrentCurrency();
+    if (initialCurrency !== activeCurrency) {
+      setActiveCurrency(initialCurrency);
+    }
+
+    return () => {
+      window.removeEventListener('currencyChange', handleCurrencyChange as EventListener);
+      window.removeEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+      window.removeEventListener('forceRerender', handleForceRerender as EventListener);
+    };
+  }, [activeCurrency]);
+
   const filteredOrders = orders.filter(order => {
     const matchesStatus = statusFilter === 'all' || order.status.toLowerCase() === statusFilter.toLowerCase();
     const matchesSearch = !searchTerm ||
@@ -78,7 +143,7 @@ const OrderSearch: React.FC<OrderSearchProps> = ({
                     )}
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-medium">${order.combined_total_amount?.toFixed(2) || '0.00'}</div>
+                    <div className="text-sm font-medium">{formatPrice(order.combined_total_amount || 0, activeCurrency)}</div>
                     <div className="text-xs text-[var(--text-secondary)]">{order.items?.length || 0} items</div>
                   </div>
                 </div>
@@ -102,7 +167,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                                                      onClose,
                                                      setOrders,
                                                      orders,
-                                                     setMessage
+                                                     setMessage,
+                                                     currentCurrency = 'pkr',
                                                    }) => {
   const [receivedAmount, setReceivedAmount] = useState<string>(order.combined_total_amount?.toString() || '0');
   const [paymentMethod, setPaymentMethod] = useState<string>('cash');
@@ -110,6 +176,74 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<Order>(order);
   const [changeAmount, setChangeAmount] = useState<number>(0);
+  const [activeCurrency, setActiveCurrency] = useState(currentCurrency);
+
+  // Function to get currency symbol based on current currency
+  const getCurrencySymbol = (currency: string) => {
+    const symbols = {
+      pkr: '₨',
+      dollar: '$',
+      euro: '€'
+    };
+    return symbols[currency as keyof typeof symbols] || '₨';
+  };
+
+  // Function to format price with currency
+  const formatPrice = (price: number, currency: string) => {
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${price.toFixed(2)}`;
+  };
+
+  // Function to get current currency from various sources
+  const getCurrentCurrency = () => {
+    const domCurrency = document.documentElement.getAttribute('data-currency');
+    const storedCurrency = localStorage.getItem('appCurrency');
+    return domCurrency || currentCurrency || storedCurrency || 'pkr';
+  };
+
+  // Update currency when prop changes
+  useEffect(() => {
+    setActiveCurrency(currentCurrency);
+  }, [currentCurrency]);
+
+  // Listen for currency changes
+  useEffect(() => {
+    const handleCurrencyChange = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency && newCurrency !== activeCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleSettingsLoaded = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleForceRerender = (event: CustomEvent) => {
+      if (event.detail.type === 'currency') {
+        const newCurrency = event.detail.value;
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    window.addEventListener('currencyChange', handleCurrencyChange as EventListener);
+    window.addEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+    window.addEventListener('forceRerender', handleForceRerender as EventListener);
+
+    const initialCurrency = getCurrentCurrency();
+    if (initialCurrency !== activeCurrency) {
+      setActiveCurrency(initialCurrency);
+    }
+
+    return () => {
+      window.removeEventListener('currencyChange', handleCurrencyChange as EventListener);
+      window.removeEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+      window.removeEventListener('forceRerender', handleForceRerender as EventListener);
+    };
+  }, [activeCurrency]);
 
   useEffect(() => {
     setCurrentOrder(order);
@@ -134,7 +268,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     }
 
     if (amount < (currentOrder.combined_total_amount || 0)) {
-      setMessage(`Payment amount too low. Required: $${(currentOrder.combined_total_amount || 0).toFixed(2)}`);
+      setMessage(`Payment amount too low. Required: ${formatPrice(currentOrder.combined_total_amount || 0, activeCurrency)}`);
       return;
     }
 
@@ -151,7 +285,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           o.order_number === updatedOrder.order_number ? newOrder : o
         )
       );
-      setMessage(`Payment processed successfully for Order #${currentOrder.order_number}`);
+      setMessage(`Payment of ${formatPrice(currentOrder.combined_total_amount || 0, activeCurrency)} processed successfully for Order #${currentOrder.order_number}`);
       setShowReceiptModal(true);
     } catch (error) {
       console.error('Payment processing error:', error);
@@ -227,9 +361,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                       </div>
                       <div className="text-right ml-2">
                         <div className="font-medium">x{item.quantity || 0}</div>
-                        <div className="text-[var(--text-secondary)] text-xs">
-                          ${((item.product?.price || 0) * (item.quantity || 0)).toFixed(2)}
-                        </div>
+                        <div className="text-[var(--text-secondary)] text-xs">{formatPrice((item.product?.price || 0) * (item.quantity || 0), activeCurrency)}</div>
                       </div>
                     </div>
                   ))
@@ -241,7 +373,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
             <div className="flex justify-between text-lg font-bold text-[var(--text-color)]">
               <span>Total:</span>
-              <span>${currentOrder.combined_total_amount?.toFixed(2) || '0.00'}</span>
+              <span>{formatPrice(currentOrder.combined_total_amount || 0, activeCurrency)}</span>
             </div>
 
             {currentOrder.payment_status === 'not_paid' ? (
@@ -287,9 +419,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
                 {paymentMethod === 'cash' && parseFloat(receivedAmount) > (currentOrder.combined_total_amount || 0) && (
                   <div className="p-3 bg-[var(--success-light)] border border-[var(--success-border)] rounded-lg">
-                    <div className="text-sm font-medium text-[var(--text-success)]">
-                      💰 Change: ${calculateChange().toFixed(2)}
-                    </div>
+                    <div className="text-sm font-medium text-[var(--text-success)]">💰 Change: {formatPrice(calculateChange(), activeCurrency)}</div>
                   </div>
                 )}
 
@@ -332,6 +462,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           title="Payment Confirmed"
           paymentMethod={paymentMethod}
           selectedTable={{ number: currentOrder.table_number }}
+          currentCurrency={activeCurrency}
         />
       )}
     </>

@@ -7,7 +7,8 @@ import { OrderItem, ThemeColors, OrderDetailsProps } from './orderDetails';
 const ParentOrderCard: React.FC<{
   parentOrder: Order | null;
   themeColors: ThemeColors;
-}> = ({ parentOrder, themeColors }) => {
+  activeCurrency: string;
+}> = ({ parentOrder, themeColors, activeCurrency }) => {
   if (!parentOrder) return null;
 
   const getStatusColor = (status: string) => {
@@ -39,6 +40,22 @@ const ParentOrderCard: React.FC<{
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
       </svg>
     );
+  };
+
+  // Function to get currency symbol
+  const getCurrencySymbol = (currency: string) => {
+    const symbols = {
+      pkr: '₨',
+      dollar: '$',
+      euro: '€'
+    };
+    return symbols[currency as keyof typeof symbols] || '₨';
+  };
+
+  // Function to format price with currency
+  const formatPrice = (price: number, currency: string) => {
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${price.toFixed(2)}`;
   };
 
   return (
@@ -164,7 +181,9 @@ const ParentOrderCard: React.FC<{
               </div>
               <div>
                 <p className="text-xs uppercase tracking-wide" style={{ color: themeColors.cardText }}>Total Amount</p>
-                <p className="font-bold text-xl" style={{ color: themeColors.headingText }}>${parentOrder.total_amount.toFixed(2)}</p>
+                <p className="font-bold text-xl" style={{ color: themeColors.headingText }} key={`parent-total-${activeCurrency}`}>
+                  {formatPrice(parentOrder.total_amount, activeCurrency)}
+                </p>
               </div>
             </div>
 
@@ -212,6 +231,8 @@ const AddToOrderForm = ({
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
   const [parentOrderNumber, setParentOrderNumber] = useState<string>('');
   const [parentOrder, setParentOrder] = useState<Order | null>(null);
+  const [activeCurrency, setActiveCurrency] = useState('pkr');
+
   const getThemeColors = (theme?: string): ThemeColors => ({
     cardBackground: 'var(--background-color)',
     cardBorder: 'var(--border-color)',
@@ -219,6 +240,84 @@ const AddToOrderForm = ({
     headingText: 'var(--heading-text)',
   });
   const themeColors = getThemeColors(currentTheme);
+
+  // Function to get currency symbol
+  const getCurrencySymbol = (currency: string) => {
+    const symbols = {
+      pkr: '₨',
+      dollar: '$',
+      euro: '€'
+    };
+    return symbols[currency as keyof typeof symbols] || '₨';
+  };
+
+  // Function to format price with currency
+  const formatPrice = (price: number, currency: string) => {
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${price.toFixed(2)}`;
+  };
+
+  // Function to get current currency
+  const getCurrentCurrency = () => {
+    const domCurrency = document.documentElement.getAttribute('data-currency');
+    const storedCurrency = localStorage.getItem('appCurrency');
+    return domCurrency || storedCurrency || 'pkr';
+  };
+
+  // Initialize and listen for currency changes
+  useEffect(() => {
+    const handleCurrencyChange = (event: CustomEvent) => {
+      console.log('AddToOrder: Received currency change event:', event.detail);
+      const newCurrency = event.detail.currency;
+      if (newCurrency && newCurrency !== activeCurrency) {
+        setActiveCurrency(newCurrency);
+        console.log('AddToOrder: Currency updated to:', newCurrency);
+      }
+    };
+
+    const handleSettingsLoaded = (event: CustomEvent) => {
+      console.log('AddToOrder: Received settings loaded event:', event.detail);
+      const newCurrency = event.detail.currency;
+      if (newCurrency) {
+        setActiveCurrency(newCurrency);
+        console.log('AddToOrder: Currency loaded as:', newCurrency);
+      }
+    };
+
+    const handleForceRerender = (event: CustomEvent) => {
+      console.log('AddToOrder: Received force rerender event:', event.detail);
+      if (event.detail.type === 'currency') {
+        const newCurrency = event.detail.value;
+        setActiveCurrency(newCurrency);
+        console.log('AddToOrder: Currency force updated to:', newCurrency);
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('currencyChange', handleCurrencyChange as EventListener);
+    window.addEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+    window.addEventListener('forceRerender', handleForceRerender as EventListener);
+
+    // Initial currency check
+    const initialCurrency = getCurrentCurrency();
+    if (initialCurrency !== activeCurrency) {
+      console.log('AddToOrder: Setting initial currency to:', initialCurrency);
+      setActiveCurrency(initialCurrency);
+    }
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('currencyChange', handleCurrencyChange as EventListener);
+      window.removeEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+      window.removeEventListener('forceRerender', handleForceRerender as EventListener);
+    };
+  }, [activeCurrency]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('AddToOrder: Active currency is now:', activeCurrency);
+    console.log('AddToOrder: Currency symbol:', getCurrencySymbol(activeCurrency));
+  }, [activeCurrency]);
 
   const totalAmount = calculateTotalOrderAmount();
 
@@ -446,7 +545,6 @@ const AddToOrderForm = ({
   return (
     <div className="space-y-4">
       {/* Header */}
-      {/* Header - Always visible */}
       <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
         <div className="flex items-center mb-4">
           <button className="mr-2" style={{ color: 'var(--text-secondary)' }}>
@@ -500,11 +598,11 @@ const AddToOrderForm = ({
                   {item.product?.name || `Product ${item.product_id}`}
                 </div>
                 <div className="text-center" style={{ color: 'var(--text-color)' }}>{item.quantity}</div>
-                <div className="text-right" style={{ color: 'var(--text-color)' }}>
-                  ${(item.product?.price || 0).toFixed(2)}
+                <div className="text-right" style={{ color: 'var(--text-color)' }} key={`item-price-${item.product_id}-${activeCurrency}`}>
+                  {formatPrice(item.product?.price || 0, activeCurrency)}
                 </div>
-                <div className="text-right font-medium" style={{ color: 'var(--text-color)' }}>
-                  ${(item.sub_total || 0).toFixed(2)}
+                <div className="text-right font-medium" style={{ color: 'var(--text-color)' }} key={`item-total-${item.product_id}-${activeCurrency}`}>
+                  {formatPrice(item.sub_total || 0, activeCurrency)}
                 </div>
                 <div className="flex justify-end">
                   <button
@@ -521,8 +619,8 @@ const AddToOrderForm = ({
             ))}
             <div className="flex justify-between items-center pt-2">
               <span className="font-bold" style={{ color: 'var(--text-color)' }}>Total</span>
-              <span className="font-bold text-lg" style={{ color: 'var(--text-color)' }}>
-                ${totalAmount.toFixed(2)}
+              <span className="font-bold text-lg" style={{ color: 'var(--text-color)' }} key={`total-${activeCurrency}`}>
+                {formatPrice(totalAmount, activeCurrency)}
               </span>
             </div>
             {renderFieldErrors('orderItems')}
@@ -531,7 +629,7 @@ const AddToOrderForm = ({
       </div>
 
       {/* Parent Order Card */}
-      <ParentOrderCard parentOrder={parentOrder} themeColors={themeColors} />
+      <ParentOrderCard parentOrder={parentOrder} themeColors={themeColors} activeCurrency={activeCurrency} />
 
       {/* Add to Order Button */}
       <button

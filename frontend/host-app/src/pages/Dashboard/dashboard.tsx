@@ -75,13 +75,29 @@ const getOrderTypeData = (orders: Order[]) => {
   ];
 };
 
-const StatsSection = ({ stats }: { stats: { title: string; value: string; icon: React.ReactNode; color: string; bgColor: string; gradient: string }[] }) => (
+// Function to get currency symbol
+const getCurrencySymbol = (currency: string) => {
+  const symbols = {
+    pkr: '₨',
+    dollar: '$',
+    euro: '€'
+  };
+  return symbols[currency as keyof typeof symbols] || '₨';
+};
+
+// Function to format price with currency
+const formatPrice = (price: number, currency: string) => {
+  const symbol = getCurrencySymbol(currency);
+  return `${symbol}${price.toLocaleString()}`;
+};
+
+const StatsSection = ({ stats, activeCurrency }: { stats: { title: string; value: string; icon: React.ReactNode; color: string; bgColor: string; gradient: string }[]; activeCurrency: string }) => (
   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     {stats.map((stat, index) => (
       <div key={index} className={`relative overflow-hidden rounded-xl p-6 text-white shadow-lg ${stat.gradient} transform hover:scale-105 transition-all duration-300 hover:shadow-xl`}>
         <div className="relative z-10 flex items-center justify-between h-full">
           <div className="flex flex-col justify-center">
-            <div className="text-3xl font-bold mb-2">{stat.value.replace('PKR', '$')}</div>
+            <div className="text-3xl font-bold mb-2">{stat.value}</div>
             <p className="text-white/90 text-sm font-semibold uppercase tracking-wide">{stat.title}</p>
           </div>
           <div className="flex items-center justify-center opacity-80">
@@ -95,7 +111,7 @@ const StatsSection = ({ stats }: { stats: { title: string; value: string; icon: 
   </div>
 );
 
-const SalesOverview = ({ salesData }: { salesData: { time: string; value: number }[] }) => {
+const SalesOverview = ({ salesData, activeCurrency }: { salesData: { time: string; value: number }[]; activeCurrency: string }) => {
   return (
     <div className="bg-[var(--background-secondary)] rounded-xl shadow-xl p-6 border border-[var(--border-color)] hover:shadow-2xl transition-all duration-300">
       <h3 className="text-lg font-bold text-[var(--text-color)] mb-4 flex items-center">
@@ -136,7 +152,7 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
                 fontSize: '13px',
                 color: 'var(--text-color)',
               }}
-              formatter={(value: number) => [`$${value.toLocaleString()}`, 'Sales']}
+              formatter={(value: number) => [formatPrice(value, activeCurrency), 'Sales']}
             />
             <Area
               type="monotone"
@@ -170,7 +186,7 @@ const SalesOverview = ({ salesData }: { salesData: { time: string; value: number
   );
 };
 
-const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Order[] }) => {
+const RevenueSection = ({ totalSales, orders, activeCurrency }: { totalSales: number; orders: Order[]; activeCurrency: string }) => {
   const orderTypeData = getOrderTypeData(orders);
   const COLORS = ['#10B981', '#EF4444'];
 
@@ -181,7 +197,9 @@ const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Or
         Revenue by Order Type
       </h3>
       <div className="text-center mb-2">
-        <div className="text-xl font-bold text-[var(--text-color)] mb-1">${totalSales.toLocaleString()}</div>
+        <div className="text-xl font-bold text-[var(--text-color)] mb-1" key={`total-revenue-${activeCurrency}`}>
+          {formatPrice(totalSales, activeCurrency)}
+        </div>
         <div className="text-xs text-[var(--text-secondary)] font-medium">Total Revenue</div>
       </div>
       <div className="h-32">
@@ -201,7 +219,7 @@ const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Or
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number) => [`$${value.toLocaleString()}`, 'Revenue']}
+              formatter={(value: number) => [formatPrice(value, activeCurrency), 'Revenue']}
               contentStyle={{
                 backgroundColor: 'var(--background-secondary)',
                 border: '1px solid var(--border-color)',
@@ -225,7 +243,9 @@ const RevenueSection = ({ totalSales, orders }: { totalSales: number; orders: Or
               <span className="font-medium text-[var(--text-color)] text-xs">{entry.name}</span>
             </div>
             <div className="text-right">
-              <div className="font-bold text-[var(--text-color)] text-xs">${entry.value.toLocaleString()}</div>
+              <div className="font-bold text-[var(--text-color)] text-xs" key={`order-type-${entry.name}-${activeCurrency}`}>
+                {formatPrice(entry.value, activeCurrency)}
+              </div>
               <div className="text-xs text-[var(--text-secondary)]">
                 {totalSales > 0 ? ((entry.value / totalSales) * 100).toFixed(1) : 0}%
               </div>
@@ -359,7 +379,7 @@ const OrderStatusChart = ({ orders }: { orders: Order[] }) => {
   );
 };
 
-const WaiterPerformanceChart = ({ orders }: { orders: Order[] }) => {
+const WaiterPerformanceChart = ({ orders, activeCurrency }: { orders: Order[]; activeCurrency: string }) => {
   const completedOrders = orders.filter(order => order.status === 'completed');
   const waiterStats = completedOrders.reduce((acc, order) => {
     if (order.waiter_name) {
@@ -413,7 +433,7 @@ const WaiterPerformanceChart = ({ orders }: { orders: Order[] }) => {
               }}
               formatter={(value: number, name: string) => {
                 if (name === 'Orders') return [`${value} (${Math.round((value / totalOrders) * 100)}%)`, 'Orders'];
-                return [`$${value}`, 'Revenue'];
+                return [formatPrice(value, activeCurrency), 'Revenue'];
               }}
             />
             <Bar
@@ -446,7 +466,7 @@ const WaiterPerformanceChart = ({ orders }: { orders: Order[] }) => {
   );
 };
 
-const CompletedOrdersTable = ({ orders, onSearch }: { orders: Order[], onSearch: (term: string) => void }) => {
+const CompletedOrdersTable = ({ orders, onSearch, activeCurrency }: { orders: Order[], onSearch: (term: string) => void, activeCurrency: string }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -539,8 +559,8 @@ const CompletedOrdersTable = ({ orders, onSearch }: { orders: Order[], onSearch:
                   </div>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-[var(--text-color)]">
-                    <span className="px-2 py-1 rounded-full bg-[var(--primary-color)] text-[var(--sidebar-text)]">
-                      ${order.total_amount}
+                    <span className="px-2 py-1 rounded-full bg-[var(--primary-color)] text-[var(--sidebar-text)]" key={`order-amount-${order._id}-${activeCurrency}`}>
+                      {formatPrice(order.total_amount, activeCurrency)}
                     </span>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-[var(--text-secondary)]">
@@ -572,6 +592,7 @@ const CompletedOrdersTable = ({ orders, onSearch }: { orders: Order[], onSearch:
     </div>
   );
 };
+
 // Main Dashboard Component
 const Dashboard = () => {
   const { isAuthenticated, isLoading, token, logout } = useAuth();
@@ -581,6 +602,69 @@ const Dashboard = () => {
   const [endDate, setEndDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeCurrency, setActiveCurrency] = useState('pkr');
+
+  // Function to get current currency
+  const getCurrentCurrency = () => {
+    const domCurrency = document.documentElement.getAttribute('data-currency');
+    const storedCurrency = localStorage.getItem('appCurrency');
+    return domCurrency || storedCurrency || 'pkr';
+  };
+
+  // Initialize and listen for currency changes
+  useEffect(() => {
+    const handleCurrencyChange = (event: CustomEvent) => {
+      console.log('Dashboard: Received currency change event:', event.detail);
+      const newCurrency = event.detail.currency;
+      if (newCurrency && newCurrency !== activeCurrency) {
+        setActiveCurrency(newCurrency);
+        console.log('Dashboard: Currency updated to:', newCurrency);
+      }
+    };
+
+    const handleSettingsLoaded = (event: CustomEvent) => {
+      console.log('Dashboard: Received settings loaded event:', event.detail);
+      const newCurrency = event.detail.currency;
+      if (newCurrency) {
+        setActiveCurrency(newCurrency);
+        console.log('Dashboard: Currency loaded as:', newCurrency);
+      }
+    };
+
+    const handleForceRerender = (event: CustomEvent) => {
+      console.log('Dashboard: Received force rerender event:', event.detail);
+      if (event.detail.type === 'currency') {
+        const newCurrency = event.detail.value;
+        setActiveCurrency(newCurrency);
+        console.log('Dashboard: Currency force updated to:', newCurrency);
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('currencyChange', handleCurrencyChange as EventListener);
+    window.addEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+    window.addEventListener('forceRerender', handleForceRerender as EventListener);
+
+    // Initial currency check
+    const initialCurrency = getCurrentCurrency();
+    if (initialCurrency !== activeCurrency) {
+      console.log('Dashboard: Setting initial currency to:', initialCurrency);
+      setActiveCurrency(initialCurrency);
+    }
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('currencyChange', handleCurrencyChange as EventListener);
+      window.removeEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+      window.removeEventListener('forceRerender', handleForceRerender as EventListener);
+    };
+  }, [activeCurrency]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Dashboard: Active currency is now:', activeCurrency);
+    console.log('Dashboard: Currency symbol:', getCurrencySymbol(activeCurrency));
+  }, [activeCurrency]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -642,7 +726,7 @@ const Dashboard = () => {
   const stats = [
     {
       title: 'Total Sales',
-      value: `$${totalSales.toLocaleString()}`,
+      value: formatPrice(totalSales, activeCurrency),
       icon: <FontAwesomeIcon icon={faChartLine} />,
       color: 'text-white',
       bgColor: 'bg-cyan-500',
@@ -674,11 +758,9 @@ const Dashboard = () => {
     },
   ];
 
-// Replace the return statement in your Dashboard component with this:
-
   return (
     <div className="min-h-screen bg-[var(--background-color)] p-4">
-      <div className="max-w-none mx-0"> {/* Changed from max-w-7xl mx-auto */}
+      <div className="max-w-none mx-0">
         <div className="bg-[var(--background-secondary)] rounded-lg shadow-md p-4 mb-4 border border-[var(--border-color)]">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
             <div className="mb-3 lg:mb-0">
@@ -731,11 +813,11 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <StatsSection stats={stats} />
+        <StatsSection stats={stats} activeCurrency={activeCurrency} />
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4">
-          <SalesOverview salesData={salesData} />
-          <RevenueSection totalSales={totalSales} orders={filteredOrders} />
+          <SalesOverview salesData={salesData} activeCurrency={activeCurrency} />
+          <RevenueSection totalSales={totalSales} orders={filteredOrders} activeCurrency={activeCurrency} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
@@ -746,10 +828,10 @@ const Dashboard = () => {
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 items-stretch">
           <div className="xl:col-span-1">
-            <WaiterPerformanceChart orders={filteredOrders} />
+            <WaiterPerformanceChart orders={filteredOrders} activeCurrency={activeCurrency} />
           </div>
           <div className="xl:col-span-2">
-            <CompletedOrdersTable orders={filteredOrders} onSearch={(term) => console.log(term)} />
+            <CompletedOrdersTable orders={filteredOrders} onSearch={(term) => console.log(term)} activeCurrency={activeCurrency} />
           </div>
         </div>
       </div>
@@ -758,4 +840,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

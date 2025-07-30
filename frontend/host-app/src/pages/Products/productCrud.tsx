@@ -18,6 +18,7 @@ interface ProductCrudProps {
   isCategoryFormActive: boolean;
   mode: 'add' | 'edit' | 'delete';
   setFlashMessageInParent?: (message: { message: string; type: 'success' | 'error' }) => void;
+  currentCurrency?: string;
 }
 
 export default function ProductCrud({
@@ -34,6 +35,7 @@ export default function ProductCrud({
                                       isCategoryFormActive,
                                       mode,
                                       setFlashMessageInParent,
+                                      currentCurrency: propCurrency = 'pkr',
                                     }: ProductCrudProps) {
   const [newProductName, setNewProductName] = useState(product?.name || '');
   const [newProductPrice, setNewProductPrice] = useState(product?.price.toString() || '');
@@ -53,6 +55,71 @@ export default function ProductCrud({
     timeRequired?: string[];
   }>({});
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+  const [activeCurrency, setActiveCurrency] = useState(propCurrency);
+
+  // Function to get currency symbol based on current currency
+  const getCurrencySymbol = (currency: string) => {
+    const symbols = {
+      pkr: '₨',
+      dollar: '$',
+      euro: '€'
+    };
+    return symbols[currency as keyof typeof symbols] || '₨';
+  };
+
+  // Function to get current currency from various sources
+  const getCurrentCurrency = () => {
+    const domCurrency = document.documentElement.getAttribute('data-currency');
+    const storedCurrency = localStorage.getItem('appCurrency');
+    return domCurrency || propCurrency || storedCurrency || 'pkr';
+  };
+
+  // Update currency when prop changes
+  useEffect(() => {
+    setActiveCurrency(propCurrency);
+  }, [propCurrency]);
+
+  // Listen for currency changes from the app
+  useEffect(() => {
+    const handleCurrencyChange = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency && newCurrency !== activeCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleSettingsLoaded = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleForceRerender = (event: CustomEvent) => {
+      if (event.detail.type === 'currency') {
+        const newCurrency = event.detail.value;
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('currencyChange', handleCurrencyChange as EventListener);
+    window.addEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+    window.addEventListener('forceRerender', handleForceRerender as EventListener);
+
+    // Initial currency check
+    const initialCurrency = getCurrentCurrency();
+    if (initialCurrency !== activeCurrency) {
+      setActiveCurrency(initialCurrency);
+    }
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('currencyChange', handleCurrencyChange as EventListener);
+      window.removeEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+      window.removeEventListener('forceRerender', handleForceRerender as EventListener);
+    };
+  }, [activeCurrency, propCurrency]);
 
   useEffect(() => {
     setNewProductName(product?.name || '');
@@ -433,7 +500,7 @@ export default function ProductCrud({
             </div>
             <div>
               <label htmlFor="productPrice" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                Price *
+                Price ({getCurrencySymbol(activeCurrency)}) *
               </label>
               <input
                 id="productPrice"

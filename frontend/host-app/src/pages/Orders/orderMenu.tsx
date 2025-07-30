@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {ShoppingBagIcon, XMarkIcon} from '@heroicons/react/24/outline';
 import { PhotoIcon } from '@heroicons/react/24/outline';
+
 interface Product {
   _id: string;
   name: string;
@@ -27,6 +28,7 @@ export interface OrderMenuProps {
   categories: Category[];
   filteredProducts: Product[];
   addProductToOrder: (product: Product) => void;
+  currentCurrency?: string;
 }
 
 const OrderMenu = ({
@@ -37,7 +39,98 @@ const OrderMenu = ({
                      categories,
                      filteredProducts,
                      addProductToOrder,
+                     currentCurrency: propCurrency = 'pkr',
                    }: OrderMenuProps) => {
+
+  // Local state for currency to ensure reactivity
+  const [activeCurrency, setActiveCurrency] = useState(propCurrency);
+
+  // Function to get currency symbol based on current currency
+  const getCurrencySymbol = (currency: string) => {
+    const symbols = {
+      pkr: '₨',
+      dollar: '$',
+      euro: '€'
+    };
+    return symbols[currency as keyof typeof symbols] || '₨';
+  };
+
+  // Function to format price with currency
+  const formatPrice = (price: number, currency: string) => {
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${price.toFixed(2)}`;
+  };
+
+  // Function to get current currency from various sources
+  const getCurrentCurrency = () => {
+    // Priority: DOM attribute > prop > localStorage > default
+    const domCurrency = document.documentElement.getAttribute('data-currency');
+    const storedCurrency = localStorage.getItem('appCurrency');
+
+    return domCurrency || propCurrency || storedCurrency || 'pkr';
+  };
+
+  // Update currency when prop changes
+  useEffect(() => {
+    console.log('OrderMenu: Currency prop changed to:', propCurrency);
+    setActiveCurrency(propCurrency);
+  }, [propCurrency]);
+
+  // Listen for currency changes from the app
+  useEffect(() => {
+    const handleCurrencyChange = (event: CustomEvent) => {
+      console.log('OrderMenu: Received currency change event:', event.detail);
+      const newCurrency = event.detail.currency;
+      if (newCurrency && newCurrency !== activeCurrency) {
+        setActiveCurrency(newCurrency);
+        console.log('OrderMenu: Currency updated to:', newCurrency);
+      }
+    };
+
+    const handleSettingsLoaded = (event: CustomEvent) => {
+      console.log('OrderMenu: Received settings loaded event:', event.detail);
+      const newCurrency = event.detail.currency;
+      if (newCurrency) {
+        setActiveCurrency(newCurrency);
+        console.log('OrderMenu: Currency loaded as:', newCurrency);
+      }
+    };
+
+    const handleForceRerender = (event: CustomEvent) => {
+      console.log('OrderMenu: Received force rerender event:', event.detail);
+      if (event.detail.type === 'currency') {
+        const newCurrency = event.detail.value;
+        setActiveCurrency(newCurrency);
+        console.log('OrderMenu: Currency force updated to:', newCurrency);
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('currencyChange', handleCurrencyChange as EventListener);
+    window.addEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+    window.addEventListener('forceRerender', handleForceRerender as EventListener);
+
+    // Initial currency check
+    const initialCurrency = getCurrentCurrency();
+    if (initialCurrency !== activeCurrency) {
+      console.log('OrderMenu: Setting initial currency to:', initialCurrency);
+      setActiveCurrency(initialCurrency);
+    }
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('currencyChange', handleCurrencyChange as EventListener);
+      window.removeEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+      window.removeEventListener('forceRerender', handleForceRerender as EventListener);
+    };
+  }, [activeCurrency]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('OrderMenu: Active currency is now:', activeCurrency);
+    console.log('OrderMenu: Currency symbol:', getCurrencySymbol(activeCurrency));
+  }, [activeCurrency]);
+
   return (
     <div className="relative space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
       {/* Header */}
@@ -46,7 +139,9 @@ const OrderMenu = ({
           <button className="mr-2" style={{ color: 'var(--text-secondary)' }}>
             <ShoppingBagIcon className="w-5 h-5" />
           </button>
-          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Menu Items</h3>
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>
+            Menu Items
+          </h3>
         </div>
       </div>
 
@@ -130,7 +225,6 @@ const OrderMenu = ({
               )}
 
               {/* Product Image */}
-
               <div className="w-20 h-20 mb-3 flex items-center justify-center overflow-hidden rounded-md" style={{ backgroundColor: product.pictureUrl ? 'transparent' : 'var(--background-secondary)' }}>
                 {product.pictureUrl ? (
                   <img
@@ -159,8 +253,9 @@ const OrderMenu = ({
                 <span
                   className="text-sm font-bold mt-auto"
                   style={{ color: 'var(--success-color)' }}
+                  key={`${product._id}-${activeCurrency}`} // Force re-render when currency changes
                 >
-                  ${product.price.toFixed(2)}
+                  {formatPrice(product.price, activeCurrency)}
                 </span>
               </div>
 

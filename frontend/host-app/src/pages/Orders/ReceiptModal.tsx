@@ -75,6 +75,7 @@ interface ReceiptModalProps {
   paymentMethod?: string;
   selectedTable?: any;
   selectedWaiter?: Waiter | null;
+  currentCurrency?: string;
 }
 
 const ReceiptModal: React.FC<ReceiptModalProps> = ({
@@ -89,20 +90,87 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({
                                                      paymentMethod,
                                                      selectedTable,
                                                      selectedWaiter,
+                                                     currentCurrency = 'pkr',
                                                    }) => {
   const printRef = React.useRef<HTMLDivElement>(null);
   const { user, token } = useAuth();
-
-  // Store information state
   const [storeInfo, setStoreInfo] = useState<StoreInfo>({
     storeName: 'POS Store',
     phoneNumber: null,
     address: null,
   });
   const [isLoadingStore, setIsLoadingStore] = useState(false);
+  const [activeCurrency, setActiveCurrency] = useState(currentCurrency);
 
   const isPaymentProcessed = order.payment_status === 'paid';
   const shouldShowPaymentMethod = paymentMethod && isPaymentProcessed;
+
+  // Function to get currency symbol based on current currency
+  const getCurrencySymbol = (currency: string) => {
+    const symbols = {
+      pkr: '₨',
+      dollar: '$',
+      euro: '€'
+    };
+    return symbols[currency as keyof typeof symbols] || '₨';
+  };
+
+  // Function to format price with currency
+  const formatPrice = (price: number, currency: string) => {
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${price.toFixed(2)}`;
+  };
+
+  // Function to get current currency from various sources
+  const getCurrentCurrency = () => {
+    const domCurrency = document.documentElement.getAttribute('data-currency');
+    const storedCurrency = localStorage.getItem('appCurrency');
+    return domCurrency || currentCurrency || storedCurrency || 'pkr';
+  };
+
+  // Update currency when prop changes
+  useEffect(() => {
+    setActiveCurrency(currentCurrency);
+  }, [currentCurrency]);
+
+  // Listen for currency changes
+  useEffect(() => {
+    const handleCurrencyChange = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency && newCurrency !== activeCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleSettingsLoaded = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleForceRerender = (event: CustomEvent) => {
+      if (event.detail.type === 'currency') {
+        const newCurrency = event.detail.value;
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    window.addEventListener('currencyChange', handleCurrencyChange as EventListener);
+    window.addEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+    window.addEventListener('forceRerender', handleForceRerender as EventListener);
+
+    const initialCurrency = getCurrentCurrency();
+    if (initialCurrency !== activeCurrency) {
+      setActiveCurrency(initialCurrency);
+    }
+
+    return () => {
+      window.removeEventListener('currencyChange', handleCurrencyChange as EventListener);
+      window.removeEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+      window.removeEventListener('forceRerender', handleForceRerender as EventListener);
+    };
+  }, [activeCurrency]);
 
   // Fetch store information
   useEffect(() => {
@@ -390,7 +458,7 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({
     font-size: 8px;
     margin-top: 8px;
     padding-top: 6px;
-    border-top: 1px solidify var(--border-color);
+    border-top: 1px solid var(--border-color);
     color: var(--text-secondary);
   }
 
@@ -483,8 +551,8 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({
           <tr>
             <td class="item-name">${item.product?.name || 'Unknown Item'}</td>
             <td class="item-center">${item.quantity}</td>
-            <td class="item-right">$${(item.product?.price || 0).toFixed(2)}</td>
-            <td class="item-right">$${(item.sub_total || 0).toFixed(2)}</td>
+            <td class="item-right">${formatPrice(item.product?.price || 0, activeCurrency)}</td>
+            <td class="item-right">${formatPrice(item.sub_total || 0, activeCurrency)}</td>
           </tr>
         `).join('')}
       </tbody>
@@ -494,12 +562,12 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({
   <div class="total-section">
     <div class="total-row grand-total">
       <span>TOTAL</span>
-      <span>$${(order.total_amount || 0).toFixed(2)}</span>
+      <span>${formatPrice(order.total_amount || 0, activeCurrency)}</span>
     </div>
     ${changeAmount > 0 && isPaymentProcessed ? `
     <div class="total-row">
       <span>Change Given:</span>
-      <span>$${changeAmount.toFixed(2)}</span>
+      <span>${formatPrice(changeAmount, activeCurrency)}</span>
     </div>` : ''}
   </div>
 
@@ -643,8 +711,8 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 <tr key={index}>
                   <td className="py-0.5 break-words max-w-[80px] leading-tight" style={{ color: 'var(--text-secondary)' }}>{item.product?.name || 'Unknown Item'}</td>
                   <td className="py-0.5 text-center" style={{ color: 'var(--text-secondary)' }}>{item.quantity}</td>
-                  <td className="py-0.5 text-right" style={{ color: 'var(--text-secondary)' }}>${(item.product?.price || 0).toFixed(2)}</td>
-                  <td className="py-0.5 text-right font-semibold" style={{ color: 'var(--text-color)' }}>${(item.sub_total || 0).toFixed(2)}</td>
+                  <td className="py-0.5 text-right" style={{ color: 'var(--text-secondary)' }}>{formatPrice(item.product?.price || 0, activeCurrency)}</td>
+                  <td className="py-0.5 text-right font-semibold" style={{ color: 'var(--text-color)' }}>{formatPrice(item.sub_total || 0, activeCurrency)}</td>
                 </tr>
               ))}
               </tbody>
@@ -655,12 +723,12 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({
           <div className="border-t pt-1 mb-2" style={{ borderColor: 'var(--border-color)' }}>
             <div className="flex justify-between items-center font-bold text-sm" style={{ color: 'var(--text-color)' }}>
               <span>TOTAL</span>
-              <span>${(order.total_amount || 0).toFixed(2)}</span>
+              <span>{formatPrice(order.total_amount || 0, activeCurrency)}</span>
             </div>
             {changeAmount > 0 && isPaymentProcessed && (
               <div className="flex justify-between items-center text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                 <span className="font-semibold">Change Given:</span>
-                <span>${changeAmount.toFixed(2)}</span>
+                <span>{formatPrice(changeAmount, activeCurrency)}</span>
               </div>
             )}
           </div>

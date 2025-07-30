@@ -1,13 +1,86 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import { Product } from './productTypes';
 
 interface ProductDetailsProps {
   product: Product;
   onCancel: () => void;
+  currentCurrency?: string;
 }
 
-export default function ProductDetails({ product, onCancel }: ProductDetailsProps) {
+export default function ProductDetails({ product, onCancel, currentCurrency: propCurrency = 'pkr' }: ProductDetailsProps) {
+  const [activeCurrency, setActiveCurrency] = useState(propCurrency);
+
+  // Function to get currency symbol based on current currency
+  const getCurrencySymbol = (currency: string) => {
+    const symbols = {
+      pkr: '₨',
+      dollar: '$',
+      euro: '€'
+    };
+    return symbols[currency as keyof typeof symbols] || '₨';
+  };
+
+  // Function to format price with currency
+  const formatPrice = (price: number, currency: string) => {
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${price.toFixed(2)}`;
+  };
+
+  // Function to get current currency from various sources
+  const getCurrentCurrency = () => {
+    const domCurrency = document.documentElement.getAttribute('data-currency');
+    const storedCurrency = localStorage.getItem('appCurrency');
+    return domCurrency || propCurrency || storedCurrency || 'pkr';
+  };
+
+  // Update currency when prop changes
+  useEffect(() => {
+    setActiveCurrency(propCurrency);
+  }, [propCurrency]);
+
+  // Listen for currency changes from the app
+  useEffect(() => {
+    const handleCurrencyChange = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency && newCurrency !== activeCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleSettingsLoaded = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleForceRerender = (event: CustomEvent) => {
+      if (event.detail.type === 'currency') {
+        const newCurrency = event.detail.value;
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('currencyChange', handleCurrencyChange as EventListener);
+    window.addEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+    window.addEventListener('forceRerender', handleForceRerender as EventListener);
+
+    // Initial currency check
+    const initialCurrency = getCurrentCurrency();
+    if (initialCurrency !== activeCurrency) {
+      setActiveCurrency(initialCurrency);
+    }
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('currencyChange', handleCurrencyChange as EventListener);
+      window.removeEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+      window.removeEventListener('forceRerender', handleForceRerender as EventListener);
+    };
+  }, [activeCurrency, propCurrency]);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style={{ zIndex: 9998 }}>
       <div className="rounded-xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all duration-300 scale-100 hover:scale-[1.01]" style={{ backgroundColor: 'var(--surface-color)' }}>
@@ -60,7 +133,9 @@ export default function ProductDetails({ product, onCancel }: ProductDetailsProp
           {/* Product Name */}
           <div className="text-center">
             <h4 className="text-xl font-bold" style={{ color: 'var(--text-color)' }}>{product.name}</h4>
-            <p className="text-2xl font-bold mt-1" style={{ color: 'var(--primary-color)' }}>{product.displayPrice}</p>
+            <p className="text-2xl font-bold mt-1" style={{ color: 'var(--primary-color)' }} key={`${product._id}-${activeCurrency}`}>
+              {formatPrice(product.price, activeCurrency)}
+            </p>
           </div>
 
           {/* Info Grid */}

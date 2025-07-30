@@ -72,6 +72,7 @@ interface OrderDetailsProps {
   freeWaiters: Waiter[];
   isAddToOrder: boolean;
   currentTheme?: string;
+  currentCurrency?: string;
 }
 
 const CreateOrderForm = ({
@@ -96,6 +97,7 @@ const CreateOrderForm = ({
                            token,
                            logout,
                            currentTheme,
+                           currentCurrency = 'pkr',
                          }: OrderDetailsProps) => {
   const [errors, setErrors] = useState<{
     customerName?: string[];
@@ -104,9 +106,77 @@ const CreateOrderForm = ({
     orderItems?: string[];
   }>({});
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+  const [activeCurrency, setActiveCurrency] = useState(currentCurrency);
 
   const totalAmount = calculateTotalOrderAmount();
   const showPayment = serviceType === 'take_away';
+
+  // Function to get currency symbol based on current currency
+  const getCurrencySymbol = (currency: string) => {
+    const symbols = {
+      pkr: '₨',
+      dollar: '$',
+      euro: '€'
+    };
+    return symbols[currency as keyof typeof symbols] || '₨';
+  };
+
+  // Function to format price with currency
+  const formatPrice = (price: number, currency: string) => {
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${price.toFixed(2)}`;
+  };
+
+  // Function to get current currency from various sources
+  const getCurrentCurrency = () => {
+    const domCurrency = document.documentElement.getAttribute('data-currency');
+    const storedCurrency = localStorage.getItem('appCurrency');
+    return domCurrency || currentCurrency || storedCurrency || 'pkr';
+  };
+
+  // Update currency when prop changes
+  useEffect(() => {
+    setActiveCurrency(currentCurrency);
+  }, [currentCurrency]);
+
+  // Listen for currency changes
+  useEffect(() => {
+    const handleCurrencyChange = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency && newCurrency !== activeCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleSettingsLoaded = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleForceRerender = (event: CustomEvent) => {
+      if (event.detail.type === 'currency') {
+        const newCurrency = event.detail.value;
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    window.addEventListener('currencyChange', handleCurrencyChange as EventListener);
+    window.addEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+    window.addEventListener('forceRerender', handleForceRerender as EventListener);
+
+    const initialCurrency = getCurrentCurrency();
+    if (initialCurrency !== activeCurrency) {
+      setActiveCurrency(initialCurrency);
+    }
+
+    return () => {
+      window.removeEventListener('currencyChange', handleCurrencyChange as EventListener);
+      window.removeEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+      window.removeEventListener('forceRerender', handleForceRerender as EventListener);
+    };
+  }, [activeCurrency]);
 
   const validateCustomerName = (name: string): string[] => {
     const errors: string[] = [];
@@ -126,7 +196,7 @@ const CreateOrderForm = ({
       if (!amount || amount <= 0) {
         errors.push('Received amount is required for takeaway orders');
       } else if (amount < totalAmount) {
-        errors.push(`Received amount must be at least $${totalAmount.toFixed(2)}`);
+        errors.push(`Received amount must be at least ${formatPrice(totalAmount, activeCurrency)}`);
       } else if (amount > 999999) {
         errors.push('Received amount is too large');
       }
@@ -343,7 +413,6 @@ const CreateOrderForm = ({
   return (
     <div className="space-y-4">
       {/* Header */}
-      {/* Header - Always visible */}
       <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
         <div className="flex items-center mb-4">
           <button className="mr-2" style={{ color: 'var(--text-secondary)' }}>
@@ -433,10 +502,10 @@ const CreateOrderForm = ({
                 </div>
                 <div className="text-center" style={{ color: 'var(--text-color)' }}>{item.quantity}</div>
                 <div className="text-right" style={{ color: 'var(--text-color)' }}>
-                  ${(item.product?.price || 0).toFixed(2)}
+                  {formatPrice(item.product?.price || 0, activeCurrency)}
                 </div>
                 <div className="text-right font-medium" style={{ color: 'var(--text-color)' }}>
-                  ${(item.sub_total || 0).toFixed(2)}
+                  {formatPrice(item.sub_total || 0, activeCurrency)}
                 </div>
                 <div className="flex justify-end">
                   <button
@@ -454,7 +523,7 @@ const CreateOrderForm = ({
             <div className="flex justify-between items-center pt-2">
               <span className="font-bold" style={{ color: 'var(--text-color)' }}>Total</span>
               <span className="font-bold text-lg" style={{ color: 'var(--text-color)' }}>
-                ${totalAmount.toFixed(2)}
+                {formatPrice(totalAmount, activeCurrency)}
               </span>
             </div>
             {renderFieldErrors('orderItems')}
@@ -517,7 +586,7 @@ const CreateOrderForm = ({
               step="0.01"
               className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-[var(--primary-color)] transition-all duration-200 ${errors.receivedAmount && errors.receivedAmount.length > 0 ? 'border-[var(--error-color)] ring-1 ring-[var(--error-color)]' : 'border-[var(--border-color)]'}`}
               style={{ backgroundColor: 'var(--background-color)', color: 'var(--text-color)' }}
-              placeholder={`Minimum: $${totalAmount.toFixed(2)}`}
+              placeholder={`Minimum: ${formatPrice(totalAmount, activeCurrency)}`}
             />
             {renderFieldErrors('receivedAmount')}
           </div>
@@ -578,7 +647,6 @@ const OrderDetails = (props: OrderDetailsProps) => {
               color: 'var(--text-color)',
             }}
           >
-
             {props.isAddToOrder ? (
               <AddToOrderForm {...props} />
             ) : (

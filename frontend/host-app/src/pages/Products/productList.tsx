@@ -27,6 +27,7 @@ interface ProductListProps {
   onDelete: (id: string) => void;
   onViewDetails: (product: Product) => void;
   onToggleActive: (product: Product) => void;
+  currentCurrency?: string;
 }
 
 export default function ProductList({
@@ -44,11 +45,83 @@ export default function ProductList({
                                       onDelete,
                                       onViewDetails,
                                       onToggleActive,
+                                      currentCurrency: propCurrency = 'pkr',
                                     }: ProductListProps) {
   const { userPermissions, permissionsLoaded } = useAuth();
   const [currentProductPage, setCurrentProductPage] = React.useState(1);
   const [itemsPerPage, setItemsPerPage] = React.useState(10);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [activeCurrency, setActiveCurrency] = React.useState(propCurrency);
+
+  // Function to get currency symbol based on current currency
+  const getCurrencySymbol = (currency: string) => {
+    const symbols = {
+      pkr: '₨',
+      dollar: '$',
+      euro: '€'
+    };
+    return symbols[currency as keyof typeof symbols] || '₨';
+  };
+
+  // Function to format price with currency
+  const formatPrice = (price: number, currency: string) => {
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${price.toFixed(2)}`;
+  };
+
+  // Function to get current currency from various sources
+  const getCurrentCurrency = () => {
+    const domCurrency = document.documentElement.getAttribute('data-currency');
+    const storedCurrency = localStorage.getItem('appCurrency');
+    return domCurrency || propCurrency || storedCurrency || 'pkr';
+  };
+
+  // Update currency when prop changes
+  React.useEffect(() => {
+    setActiveCurrency(propCurrency);
+  }, [propCurrency]);
+
+  // Listen for currency changes from the app
+  React.useEffect(() => {
+    const handleCurrencyChange = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency && newCurrency !== activeCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleSettingsLoaded = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleForceRerender = (event: CustomEvent) => {
+      if (event.detail.type === 'currency') {
+        const newCurrency = event.detail.value;
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('currencyChange', handleCurrencyChange as EventListener);
+    window.addEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+    window.addEventListener('forceRerender', handleForceRerender as EventListener);
+
+    // Initial currency check
+    const initialCurrency = getCurrentCurrency();
+    if (initialCurrency !== activeCurrency) {
+      setActiveCurrency(initialCurrency);
+    }
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('currencyChange', handleCurrencyChange as EventListener);
+      window.removeEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+      window.removeEventListener('forceRerender', handleForceRerender as EventListener);
+    };
+  }, [activeCurrency, propCurrency]);
 
   const calculateItemsPerPage = React.useCallback(() => {
     const screenWidth = window.innerWidth;
@@ -222,30 +295,32 @@ export default function ProductList({
                 <div>
                   <h3 className="text-md font-semibold truncate" style={{ color: 'var(--text-color)' }}>{product.name}</h3>
                   <div className="flex items-center justify-between mt-1">
-                    <p className="font-medium text-sm" style={{ color: 'var(--primary-color)' }}>{product.displayPrice}</p>
+                    <p className="font-medium text-sm" style={{ color: 'var(--primary-color)' }} key={`${product._id}-${activeCurrency}`}>
+                      {formatPrice(product.price, activeCurrency)}
+                    </p>
                     <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{product.categoryName}</p>
                   </div>
                 </div>
                 <div className="flex justify-between items-center mt-2">
                   {userPermissions.includes('can_edit_products') && (
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={product.isActive}
-                        onChange={() => !isCategoryFormActive && onToggleActive(product)}
-                        className="sr-only"
-                        disabled={isCategoryFormActive}
-                      />
-                      <div
-                        className={`w-10 h-5 rounded-full transition duration-200 ${product.isActive ? 'bg-[var(--primary-color)]' : 'bg-[var(--background-secondary)]'}`}
-                      ></div>
-                      <div
-                        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-[var(--surface-color)] rounded-full shadow transition duration-200 transform ${product.isActive ? 'translate-x-5' : 'translate-x-0'}`}
-                      ></div>
-                    </div>
-                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{product.isActive ? 'Active' : 'Deactive'}</span>
-                  </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          checked={product.isActive}
+                          onChange={() => !isCategoryFormActive && onToggleActive(product)}
+                          className="sr-only"
+                          disabled={isCategoryFormActive}
+                        />
+                        <div
+                          className={`w-10 h-5 rounded-full transition duration-200 ${product.isActive ? 'bg-[var(--primary-color)]' : 'bg-[var(--background-secondary)]'}`}
+                        ></div>
+                        <div
+                          className={`absolute top-0.5 left-0.5 w-4 h-4 bg-[var(--surface-color)] rounded-full shadow transition duration-200 transform ${product.isActive ? 'translate-x-5' : 'translate-x-0'}`}
+                        ></div>
+                      </div>
+                      <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{product.isActive ? 'Active' : 'Deactive'}</span>
+                    </label>
                   )}
                   <div className="flex space-x-1">
                     {userPermissions.includes('can_edit_products') && (

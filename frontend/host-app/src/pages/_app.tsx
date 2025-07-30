@@ -1,4 +1,3 @@
-
 import dynamic from 'next/dynamic';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { AppProps } from 'next/app';
@@ -36,11 +35,12 @@ function AppContent({ Component, pageProps }: AppProps) {
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [currentTheme, setCurrentTheme] = useState('default');
+  const [currentCurrency, setCurrentCurrency] = useState('pkr');
   const [themeLoaded, setThemeLoaded] = useState(false);
 
-  // Theme polling ref
   const themePollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastKnownThemeRef = useRef<string>('default');
+  const lastKnownCurrencyRef = useRef<string>('pkr');
 
   const { isAuthenticated, isLoading, logout, token, user, allPermissions } = useAuth();
   const router = useRouter();
@@ -78,49 +78,54 @@ function AppContent({ Component, pageProps }: AppProps) {
     }
   };
 
-  // Theme management functions
   const applyThemeToDOM = (selectedTheme: string) => {
     console.log('Applying theme to DOM:', selectedTheme);
-
-    // Remove any existing theme classes
     document.documentElement.classList.remove(
       'theme-default', 'theme-blue', 'theme-green',
       'theme-professional', 'theme-warm-minimal', 'theme-dark-pro'
     );
-
-    // Add new theme class
     document.documentElement.classList.add(`theme-${selectedTheme}`);
-
-    // Set data attribute for CSS variables
     document.documentElement.setAttribute('data-theme', selectedTheme);
-
-    // Dispatch custom event for other components
-    window.dispatchEvent(new CustomEvent('themeChange', {
-      detail: { theme: selectedTheme }
-    }));
-
-    // Save to localStorage
+    window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme: selectedTheme } }));
     localStorage.setItem('appTheme', selectedTheme);
-
-    // Force a repaint to ensure theme changes are immediately visible
     document.documentElement.style.display = 'none';
-    document.documentElement.offsetHeight; // Trigger reflow
+    document.documentElement.offsetHeight;
     document.documentElement.style.display = '';
   };
 
-  const loadUserTheme = async () => {
+  const applyCurrencyToDOM = (selectedCurrency: string) => {
+    console.log('Applying currency to DOM:', selectedCurrency);
+    const currencySymbol = {
+      pkr: '₨',
+      dollar: '$',
+      euro: '€'
+    }[selectedCurrency] || '₨';
+    document.documentElement.setAttribute('data-currency', selectedCurrency);
+    document.documentElement.setAttribute('data-currency-symbol', currencySymbol);
+    window.dispatchEvent(new CustomEvent('currencyChange', { detail: { currency: selectedCurrency, symbol: currencySymbol } }));
+    localStorage.setItem('appCurrency', selectedCurrency);
+    document.documentElement.style.setProperty('--current-currency', selectedCurrency);
+    document.documentElement.style.setProperty('--current-currency-symbol', currencySymbol);
+    console.log('Currency applied successfully:', { selectedCurrency, currencySymbol });
+  };
+
+  const loadUserSettings = async () => {
     if (!token) {
       const savedTheme = localStorage.getItem('appTheme') || 'default';
-      console.log('No token, using saved theme:', savedTheme);
+      const savedCurrency = localStorage.getItem('appCurrency') || 'pkr';
+      console.log('No token, using saved settings:', { theme: savedTheme, currency: savedCurrency });
       setCurrentTheme(savedTheme);
+      setCurrentCurrency(savedCurrency);
       applyThemeToDOM(savedTheme);
+      applyCurrencyToDOM(savedCurrency);
       lastKnownThemeRef.current = savedTheme;
+      lastKnownCurrencyRef.current = savedCurrency;
       setThemeLoaded(true);
       return;
     }
 
     try {
-      console.log('Fetching user theme from API...');
+      console.log('Fetching user settings from API...');
       const response = await fetch(`${API_BASE_URL}${USER_DETAILS_ENDPOINT}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -139,144 +144,91 @@ function AppContent({ Component, pageProps }: AppProps) {
         throw new Error(data.message || 'Failed to fetch user details');
       }
 
-      // Extract theme from the API response
       const userTheme = data.data?.data?.user?.theme || 'default';
-      console.log('Loaded user theme from API:', userTheme);
+      const userCurrency = data.data?.data?.user?.currency || 'pkr';
+      console.log('Loaded user settings from API:', { theme: userTheme, currency: userCurrency });
 
       setCurrentTheme(userTheme);
+      setCurrentCurrency(userCurrency);
       applyThemeToDOM(userTheme);
+      applyCurrencyToDOM(userCurrency);
       lastKnownThemeRef.current = userTheme;
+      lastKnownCurrencyRef.current = userCurrency;
       setThemeLoaded(true);
 
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('settingsLoaded', {
+          detail: { theme: userTheme, currency: userCurrency }
+        }));
+      }, 100);
     } catch (error) {
-      console.error('Error loading user theme:', error);
+      console.error('Error loading user settings:', error);
       const savedTheme = localStorage.getItem('appTheme') || 'default';
-      console.log('API failed, using saved theme:', savedTheme);
+      const savedCurrency = localStorage.getItem('appCurrency') || 'pkr';
+      console.log('API failed, using saved settings:', { theme: savedTheme, currency: savedCurrency });
       setCurrentTheme(savedTheme);
+      setCurrentCurrency(savedCurrency);
       applyThemeToDOM(savedTheme);
+      applyCurrencyToDOM(savedCurrency);
       lastKnownThemeRef.current = savedTheme;
+      lastKnownCurrencyRef.current = savedCurrency;
       setThemeLoaded(true);
     }
   };
 
-  const startThemePolling = () => {
-    if (themePollingIntervalRef.current) {
-      clearInterval(themePollingIntervalRef.current);
-    }
-
-    themePollingIntervalRef.current = setInterval(async () => {
-      await checkForThemeUpdates();
-    }, 3000); // Poll every 3 seconds
-  };
-
-  const checkForThemeUpdates = async () => {
-    if (!token) return;
-
-    try {
-      const response = await fetch(`${API_BASE_URL}${USER_DETAILS_ENDPOINT}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          logout();
-          return;
-        }
-        return; // Silently fail for polling
-      }
-
-      const data = await response.json();
-      if (!data.success) return;
-
-      // Extract theme from the API response
-      const serverTheme = data.data?.data?.user?.theme || 'default';
-
-      // Only update if theme actually changed
-      if (serverTheme !== lastKnownThemeRef.current && serverTheme !== currentTheme) {
-        console.log(`Theme changed externally from ${lastKnownThemeRef.current} to ${serverTheme}`);
-        setCurrentTheme(serverTheme);
-        applyThemeToDOM(serverTheme);
-        lastKnownThemeRef.current = serverTheme;
-
-        // Show notification about theme change
-        showThemeChangeNotification(serverTheme);
-      }
-    } catch (error) {
-      // Silently fail for polling - don't show errors
-      console.log('Theme polling error (ignored):', error);
-    }
+  const handleSettingsChange = () => {
+    console.log('Settings changed, reloading user settings...');
+    loadUserSettings();
   };
 
   const showThemeChangeNotification = (themeName: string) => {
-    // Remove any existing notifications first
     const existingNotifications = document.querySelectorAll('.theme-change-notification');
     existingNotifications.forEach(notification => notification.remove());
 
-    // Create the main notification container
     const notification = document.createElement('div');
     notification.className = 'theme-change-notification fixed top-6 right-6 z-[9999] transform translate-x-full opacity-0 transition-all duration-500 ease-out';
-
-    // Set up the notification HTML with modern styling
     notification.innerHTML = `
-<div class="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-2xl shadow-2xl border border-white/20 backdrop-blur-sm overflow-hidden min-w-[320px] max-w-[400px]">
-  <!-- Animated background overlay -->
-<div class="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-purple-400/10 to-pink-400/10 animate-pulse"></div>
+      <div class="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-2xl shadow-2xl border border-white/20 backdrop-blur-sm overflow-hidden min-w-[320px] max-w-[400px]">
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-purple-400/10 to-pink-400/10 animate-pulse"></div>
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-green-400 to-blue-400"></div>
+        <div class="relative p-4 flex items-center space-x-4">
+          <div class="flex-shrink-0">
+            <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm animate-bounce">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a4 4 0 004-4V5z"></path>
+              </svg>
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-white/90 mb-1">Theme Updated</div>
+            <div className="text-lg font-bold text-white capitalize">${themeName} Theme Active</div>
+            <div className="text-xs text-white/70 mt-1">Changes synced across devices</div>
+          </div>
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
+          <div className="progress-bar h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-[4000ms] ease-linear" style="width: 100%"></div>
+        </div>
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="particle absolute w-2 h-2 bg-white/30 rounded-full animate-ping" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
+          <div className="particle absolute w-1 h-1 bg-white/40 rounded-full animate-ping" style="top: 60%; right: 15%; animation-delay: 0.5s;"></div>
+          <div className="particle absolute w-1.5 h-1.5 bg-white/25 rounded-full animate-ping" style="bottom: 30%; left: 20%; animation-delay: 1s;"></div>
+        </div>
+      </div>
+    `;
 
-<!-- Decorative top border -->
-<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-green-400 to-blue-400"></div>
-
-<!-- Main content -->
-<div class="relative p-4 flex items-center space-x-4">
-  <!-- Icon with animation -->
-  <div class="flex-shrink-0">
-    <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm animate-bounce">
-      <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a4 4 0 004-4V5z"></path>
-      </svg>
-    </div>
-  </div>
-
-  <!-- Text content -->
-  <div className="flex-1 min-w-0">
-    <div className="text-sm font-medium text-white/90 mb-1">Theme Updated</div>
-    <div className="text-lg font-bold text-white capitalize">${themeName} Theme Active</div>
-    <div className="text-xs text-white/70 mt-1">Changes synced across devices</div>
-  </div>
-
-  <!-- Success checkmark -->
-  <div className="flex-shrink-0">
-    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
-      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-      </svg>
-    </div>
-  </div>
-</div>
-
-<!-- Progress bar -->
-<div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
-  <div className="progress-bar h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-[4000ms] ease-linear" style="width: 100%"></div>
-</div>
-
-<!-- Floating particles effect -->
-<div className="absolute inset-0 pointer-events-none overflow-hidden">
-  <div className="particle absolute w-2 h-2 bg-white/30 rounded-full animate-ping" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
-  <div className="particle absolute w-1 h-1 bg-white/40 rounded-full animate-ping" style="top: 60%; right: 15%; animation-delay: 0.5s;"></div>
-  <div className="particle absolute w-1.5 h-1.5 bg-white/25 rounded-full animate-ping" style="bottom: 30%; left: 20%; animation-delay: 1s;"></div>
-</div>
-</div>
-`;
-
-    // Add to DOM
     document.body.appendChild(notification);
-
-    // Trigger entrance animation
     setTimeout(() => {
       notification.classList.remove('translate-x-full', 'opacity-0');
       notification.classList.add('translate-x-0', 'opacity-100');
     }, 50);
 
-    // Add hover effects
     notification.addEventListener('mouseenter', () => {
       notification.style.transform = 'translateX(0) scale(1.02)';
     });
@@ -285,7 +237,6 @@ function AppContent({ Component, pageProps }: AppProps) {
       notification.style.transform = 'translateX(0) scale(1)';
     });
 
-    // Start progress bar animation
     setTimeout(() => {
       const progressBar = notification.querySelector('.progress-bar') as HTMLElement;
       if (progressBar) {
@@ -293,14 +244,11 @@ function AppContent({ Component, pageProps }: AppProps) {
       }
     }, 100);
 
-    // Enhanced exit animation after 4 seconds
     setTimeout(() => {
       notification.classList.add('animate-pulse');
-
       setTimeout(() => {
         notification.style.transform = 'translateX(full) scale(0.8)';
         notification.style.opacity = '0';
-
         setTimeout(() => {
           if (document.body.contains(notification)) {
             document.body.removeChild(notification);
@@ -309,11 +257,9 @@ function AppContent({ Component, pageProps }: AppProps) {
       }, 200);
     }, 4000);
 
-    // Add click to dismiss
     notification.addEventListener('click', () => {
       notification.style.transform = 'translateX(full) scale(0.8)';
       notification.style.opacity = '0';
-
       setTimeout(() => {
         if (document.body.contains(notification)) {
           document.body.removeChild(notification);
@@ -322,9 +268,95 @@ function AppContent({ Component, pageProps }: AppProps) {
     });
   };
 
-  // Theme loading effect
+  const showCurrencyChangeNotification = (currencyName: string) => {
+    const existingNotifications = document.querySelectorAll('.currency-change-notification');
+    existingNotifications.forEach(notification => notification.remove());
+
+    const notification = document.createElement('div');
+    notification.className = 'currency-change-notification fixed top-6 right-6 z-[9999] transform translate-x-full opacity-0 transition-all duration-500 ease-out';
+    notification.innerHTML = `
+      <div class="relative bg-gradient-to-r from-green-600 via-teal-600 to-blue-600 text-white rounded-2xl shadow-2xl border border-white/20 backdrop-blur-sm overflow-hidden min-w-[320px] max-w-[400px]">
+        <div class="absolute inset-0 bg-gradient-to-r from-green-400/10 via-teal-400/10 to-blue-400/10 animate-pulse"></div>
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-green-400 to-blue-400"></div>
+        <div class="relative p-4 flex items-center space-x-4">
+          <div class="flex-shrink-0">
+            <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm animate-bounce">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .672-3 1.5S10.343 11 12 11s3-.672 3-1.5S13.657 8 12 8zm0 8c-1.657 0-3 .672-3 1.5S10.343 19 12 19s3-.672 3-1.5S13.657 16 12 16zm0-12c-1.657 0-3 .672-3 1.5S10.343 7 12 7s3-.672 3-1.5S13.657 4 12 4z"></path>
+              </svg>
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-white/90 mb-1">Currency Updated</div>
+            <div className="text-lg font-bold text-white capitalize">${currencyName} Currency Active</div>
+            <div className="text-xs text-white/70 mt-1">Changes synced across devices</div>
+          </div>
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
+          <div className="progress-bar h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-[4000ms] ease-linear" style="width: 100%"></div>
+        </div>
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="particle absolute w-2 h-2 bg-white/30 rounded-full animate-ping" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
+          <div className="particle absolute w-1 h-1 bg-white/40 rounded-full animate-ping" style="top: 60%; right: 15%; animation-delay: 0.5s;"></div>
+          <div className="particle absolute w-1.5 h-1.5 bg-white/25 rounded-full animate-ping" style="bottom: 30%; left: 20%; animation-delay: 1s;"></div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(notification);
+    setTimeout(() => {
+      notification.classList.remove('translate-x-full', 'opacity-0');
+      notification.classList.add('translate-x-0', 'opacity-100');
+    }, 50);
+
+    notification.addEventListener('mouseenter', () => {
+      notification.style.transform = 'translateX(0) scale(1.02)';
+    });
+
+    notification.addEventListener('mouseleave', () => {
+      notification.style.transform = 'translateX(0) scale(1)';
+    });
+
+    setTimeout(() => {
+      const progressBar = notification.querySelector('.progress-bar') as HTMLElement;
+      if (progressBar) {
+        progressBar.style.width = '0%';
+      }
+    }, 100);
+
+    setTimeout(() => {
+      notification.classList.add('animate-pulse');
+      setTimeout(() => {
+        notification.style.transform = 'translateX(full) scale(0.8)';
+        notification.style.opacity = '0';
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+          }
+        }, 500);
+      }, 200);
+    }, 4000);
+
+    notification.addEventListener('click', () => {
+      notification.style.transform = 'translateX(full) scale(0.8)';
+      notification.style.opacity = '0';
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 300);
+    });
+  };
+
   useEffect(() => {
-    console.log('Theme loading useEffect triggered', {
+    console.log('Settings loading useEffect triggered', {
       isAuthenticated,
       token: !!token,
       isLoading,
@@ -332,29 +364,25 @@ function AppContent({ Component, pageProps }: AppProps) {
     });
 
     if (isLoading) {
-      console.log('Still loading auth, skipping theme loading');
+      console.log('Still loading auth, skipping settings loading');
       return;
     }
 
     if (!themeLoaded) {
-      loadUserTheme();
+      loadUserSettings();
     }
 
-    // Start theme polling if authenticated
-    if (isAuthenticated && token && themeLoaded) {
-      console.log('Starting theme polling...');
-      startThemePolling();
-    }
+    // Listen for settings changes from the Settings component
+    window.addEventListener('settingsChanged', handleSettingsChange);
 
-    // Cleanup polling on unmount or auth change
     return () => {
+      window.removeEventListener('settingsChanged', handleSettingsChange);
       if (themePollingIntervalRef.current) {
         clearInterval(themePollingIntervalRef.current);
       }
     };
   }, [isAuthenticated, isLoading, token, themeLoaded]);
 
-  // Cleanup theme polling on unmount
   useEffect(() => {
     return () => {
       if (themePollingIntervalRef.current) {
@@ -490,7 +518,6 @@ function AppContent({ Component, pageProps }: AppProps) {
 
   const handleLogout = async () => {
     try {
-      // Stop theme polling
       if (themePollingIntervalRef.current) {
         clearInterval(themePollingIntervalRef.current);
       }
@@ -530,7 +557,7 @@ function AppContent({ Component, pageProps }: AppProps) {
         <div className="flex flex-col items-center">
           <div className="w-16 h-16 border-t-4 border-b-4 border-orange-500 rounded-full animate-spin"></div>
           <p className="mt-4 text-lg font-semibold text-gray-700">
-            {!permissionsLoaded ? 'Loading permissions...' : 'Loading theme...'}
+            {!permissionsLoaded ? 'Loading permissions...' : 'Loading settings...'}
           </p>
         </div>
       </div>
@@ -578,7 +605,7 @@ function AppContent({ Component, pageProps }: AppProps) {
               </div>
             </div>
           ) : (
-            <Component {...pageProps} key={pathname} />
+            <Component {...pageProps} key={pathname} currentCurrency={currentCurrency} />
           )}
         </main>
       </div>
@@ -589,7 +616,6 @@ function AppContent({ Component, pageProps }: AppProps) {
     </div>
   );
 }
-
 export default function MyApp({ Component, pageProps }: AppProps) {
   return (
     <AuthProvider>
