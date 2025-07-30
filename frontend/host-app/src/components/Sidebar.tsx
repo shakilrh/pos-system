@@ -218,7 +218,9 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen, userPe
 
       {/* --- Navigation Links --- */}
       <nav
-        className={`flex-1 flex flex-col overflow-y-auto py-4 space-y-2 ${sidebarOpen ? 'px-2' : 'items-center'}`}
+        className={`flex-1 flex flex-col py-4 space-y-2 overflow-y-auto overflow-x-hidden ${
+          sidebarOpen ? 'px-2' : 'items-center'
+        }`}
       >
         {filteredNavItems.length === 0 ? (
           <p className="text-center text-sm text-gray-400">No accessible pages</p>
