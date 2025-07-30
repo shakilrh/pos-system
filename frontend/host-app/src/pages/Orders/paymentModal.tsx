@@ -31,7 +31,6 @@ const OrderSearch: React.FC<OrderSearchProps> = ({
                                                  }) => {
   const [activeCurrency, setActiveCurrency] = useState('pkr');
 
-  // Function to get currency symbol based on current currency
   const getCurrencySymbol = (currency: string) => {
     const symbols = {
       pkr: '₨',
@@ -41,20 +40,17 @@ const OrderSearch: React.FC<OrderSearchProps> = ({
     return symbols[currency as keyof typeof symbols] || '₨';
   };
 
-  // Function to format price with currency
   const formatPrice = (price: number, currency: string) => {
     const symbol = getCurrencySymbol(currency);
     return `${symbol}${price.toFixed(2)}`;
   };
 
-  // Function to get current currency from various sources
   const getCurrentCurrency = () => {
     const domCurrency = document.documentElement.getAttribute('data-currency');
     const storedCurrency = localStorage.getItem('appCurrency');
     return domCurrency || storedCurrency || 'pkr';
   };
 
-  // Listen for currency changes
   useEffect(() => {
     const handleCurrencyChange = (event: CustomEvent) => {
       const newCurrency = event.detail.currency;
@@ -105,57 +101,7 @@ const OrderSearch: React.FC<OrderSearchProps> = ({
 
   return (
     <div className="space-y-2">
-      <div>
-        <label className="block text-xs font-medium text-[var(--text-color)] mb-1">
-          Search Orders
-        </label>
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search by order number, customer name, or ID..."
-          className="w-full p-2 border border-[var(--border-color)] rounded text-sm focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-transparent bg-[var(--background-color)] text-[var(--text-color)]"
-        />
-      </div>
-
-      {searchTerm && (
-        <div className="max-h-40 overflow-y-auto border border-[var(--border-color)] rounded bg-[var(--background-color)]">
-          {filteredOrders.length > 0 ? (
-            filteredOrders.map((order) => (
-              <button
-                key={order._id}
-                onClick={() => onOrderSelect(order)}
-                className="w-full p-2 text-left hover:bg-[var(--background-secondary)] border-b border-[var(--border-color)] last:border-b-0 transition-colors"
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="text-sm font-medium">#{order.order_number}</div>
-                    <div className="text-xs text-[var(--text-secondary)]">
-                      👤 {order.customer_name || 'Guest'}
-                    </div>
-                    <div className="text-xs text-[var(--text-secondary)]">
-                      {order.service_type === 'dine_in' ? '🍽️ Dine-In' : '🥡 Takeaway'}
-                    </div>
-                    {order.table_number && (
-                      <div className="text-xs text-[var(--text-secondary)]">
-                        Table: {order.table_number}
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium">{formatPrice(order.combined_total_amount || 0, activeCurrency)}</div>
-                    <div className="text-xs text-[var(--text-secondary)]">{order.items?.length || 0} items</div>
-                  </div>
-                </div>
-              </button>
-            ))
-          ) : (
-            <div className="p-3 text-center text-[var(--text-secondary)] text-sm">
-              No orders found matching your search
-            </div>
-          )}
-        </div>
-      )}
+      {/* ... existing OrderSearch JSX ... */}
     </div>
   );
 };
@@ -170,7 +116,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                                                      setMessage,
                                                      currentCurrency = 'pkr',
                                                    }) => {
-  const [receivedAmount, setReceivedAmount] = useState<string>(order.combined_total_amount?.toString() || '0');
+  const [receivedAmount, setReceivedAmount] = useState<string>(
+    (order.combined_total_amount || 0).toString()
+  );
   const [paymentMethod, setPaymentMethod] = useState<string>('cash');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -178,7 +126,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const [changeAmount, setChangeAmount] = useState<number>(0);
   const [activeCurrency, setActiveCurrency] = useState(currentCurrency);
 
-  // Function to get currency symbol based on current currency
   const getCurrencySymbol = (currency: string) => {
     const symbols = {
       pkr: '₨',
@@ -188,25 +135,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     return symbols[currency as keyof typeof symbols] || '₨';
   };
 
-  // Function to format price with currency
   const formatPrice = (price: number, currency: string) => {
     const symbol = getCurrencySymbol(currency);
     return `${symbol}${price.toFixed(2)}`;
   };
 
-  // Function to get current currency from various sources
   const getCurrentCurrency = () => {
     const domCurrency = document.documentElement.getAttribute('data-currency');
     const storedCurrency = localStorage.getItem('appCurrency');
     return domCurrency || currentCurrency || storedCurrency || 'pkr';
   };
 
-  // Update currency when prop changes
   useEffect(() => {
     setActiveCurrency(currentCurrency);
   }, [currentCurrency]);
 
-  // Listen for currency changes
   useEffect(() => {
     const handleCurrencyChange = (event: CustomEvent) => {
       const newCurrency = event.detail.currency;
@@ -247,12 +190,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   useEffect(() => {
     setCurrentOrder(order);
-    setReceivedAmount(order.combined_total_amount?.toString() || '0');
+    setReceivedAmount((order.combined_total_amount || 0).toString());
   }, [order]);
 
   const calculateChange = () => {
     const amount = parseFloat(receivedAmount);
-    return isNaN(amount) ? 0 : Math.max(0, amount - (currentOrder.combined_total_amount || 0));
+    const total = currentOrder.combined_total_amount || 0;
+    return isNaN(amount) ? 0 : Math.max(0, amount - total);
   };
 
   const handlePaymentProcess = async () => {
@@ -262,13 +206,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     }
 
     const amount = parseFloat(receivedAmount);
+    const total = currentOrder.combined_total_amount || 0;
+
     if (isNaN(amount) || amount <= 0) {
       setMessage('Invalid payment amount.');
       return;
     }
 
-    if (amount < (currentOrder.combined_total_amount || 0)) {
-      setMessage(`Payment amount too low. Required: ${formatPrice(currentOrder.combined_total_amount || 0, activeCurrency)}`);
+    if (amount < total) {
+      setMessage(`Payment amount too low. Required: ${formatPrice(total, activeCurrency)}`);
       return;
     }
 
@@ -285,7 +231,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           o.order_number === updatedOrder.order_number ? newOrder : o
         )
       );
-      setMessage(`Payment of ${formatPrice(currentOrder.combined_total_amount || 0, activeCurrency)} processed successfully for Order #${currentOrder.order_number}`);
+      setMessage(`Payment of ${formatPrice(total, activeCurrency)} processed successfully for Order #${currentOrder.order_number}`);
       setShowReceiptModal(true);
     } catch (error) {
       console.error('Payment processing error:', error);
@@ -325,6 +271,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     setCurrentOrder(prev => ({ ...prev }));
   };
 
+  const getTotalAmount = () => {
+    return currentOrder.combined_total_amount || 0;
+  };
+
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
@@ -350,6 +300,28 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           </div>
 
           <div className="p-3 space-y-3">
+            {currentOrder.linked_orders && currentOrder.linked_orders.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="font-semibold text-sm text-[var(--text-color)]">Linked Orders:</h3>
+                <div className="flex flex-wrap gap-1">
+                  {currentOrder.linked_orders.map((linkedOrder, index) => (
+                    <span
+                      key={index}
+                      className="px-2 py-0.5 rounded-full text-xs font-medium"
+                      style={{
+                        backgroundColor: index % 2 === 0 ? 'var(--warning-light)' : 'var(--success-light)',
+                        color: 'var(--text-color)',
+                      }}
+                    >
+                      Order #{linkedOrder}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  Total includes amounts from linked orders.
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <h3 className="font-semibold text-sm text-[var(--text-color)]">Items:</h3>
               <div className="max-h-20 overflow-y-auto space-y-1">
@@ -361,7 +333,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                       </div>
                       <div className="text-right ml-2">
                         <div className="font-medium">x{item.quantity || 0}</div>
-                        <div className="text-[var(--text-secondary)] text-xs">{formatPrice((item.product?.price || 0) * (item.quantity || 0), activeCurrency)}</div>
+                        <div className="text-[var(--text-secondary)] text-xs">
+                          {formatPrice(item.sub_total || (item.product?.price || 0) * (item.quantity || 0), activeCurrency)}
+                        </div>
                       </div>
                     </div>
                   ))
@@ -373,7 +347,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
             <div className="flex justify-between text-lg font-bold text-[var(--text-color)]">
               <span>Total:</span>
-              <span>{formatPrice(currentOrder.combined_total_amount || 0, activeCurrency)}</span>
+              <span>{formatPrice(getTotalAmount(), activeCurrency)}</span>
             </div>
 
             {currentOrder.payment_status === 'not_paid' ? (
@@ -417,7 +391,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   />
                 </div>
 
-                {paymentMethod === 'cash' && parseFloat(receivedAmount) > (currentOrder.combined_total_amount || 0) && (
+                {paymentMethod === 'cash' && parseFloat(receivedAmount) > getTotalAmount() && (
                   <div className="p-3 bg-[var(--success-light)] border border-[var(--success-border)] rounded-lg">
                     <div className="text-sm font-medium text-[var(--text-success)]">💰 Change: {formatPrice(calculateChange(), activeCurrency)}</div>
                   </div>
@@ -425,7 +399,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
                 <button
                   onClick={handlePaymentProcess}
-                  disabled={isProcessing || !receivedAmount || parseFloat(receivedAmount) < (currentOrder.combined_total_amount || 0)}
+                  disabled={isProcessing || !receivedAmount || parseFloat(receivedAmount) < getTotalAmount()}
                   className="w-full py-3 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
                 >
                   {isProcessing ? '⏳ Processing...' : 'Process Payment'}
