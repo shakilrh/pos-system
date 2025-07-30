@@ -33,10 +33,27 @@ interface OrderListProps {
   onViewDetails: (order: Order) => void;
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   queueData: QueueOrder[] | any;
+  currentCurrency?: string;
 }
 
-const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessage, activeTab }: any) => {
+const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessage, activeTab, currentCurrency = 'pkr' }: any) => {
   const [isLoading, setIsLoading] = useState(false);
+
+  // Function to get currency symbol based on current currency
+  const getCurrencySymbol = (currency: string) => {
+    const symbols = {
+      pkr: '₨',
+      dollar: '$',
+      euro: '€'
+    };
+    return symbols[currency as keyof typeof symbols] || '₨';
+  };
+
+  // Function to format price with currency
+  const formatPrice = (price: number, currency: string) => {
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${price.toFixed(2)}`;
+  };
 
   const handleMarkAsReady = async () => {
     if (!token) {
@@ -105,6 +122,11 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
               <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>x{item.quantity}</span>
             </div>
           )) || <div className="text-sm" style={{ color: 'var(--text-tertiary)' }}>No items</div>}
+          {(activeTab === 'completed' || activeTab === 'cancelled') && (
+            <div className="text-sm font-bold" style={{ color: 'var(--text-color)' }}>
+              Total: {formatPrice(order.total_amount || 0, currentCurrency)}
+            </div>
+          )}
         </div>
         {activeTab === 'to_be_prepared' && (
           <button
@@ -169,6 +191,7 @@ export default function OrderList({
                                     onViewDetails,
                                     setOrders,
                                     queueData,
+                                    currentCurrency = 'pkr',
                                   }: OrderListProps) {
   const { userPermissions } = useAuth();
   const [outerActiveTab, setOuterActiveTab] = useState('physical');
@@ -187,6 +210,74 @@ export default function OrderList({
   const [selectedPaymentOrder, setSelectedPaymentOrder] = useState<Order | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [activeCurrency, setActiveCurrency] = useState(currentCurrency);
+
+  // Function to get currency symbol based on current currency
+  const getCurrencySymbol = (currency: string) => {
+    const symbols = {
+      pkr: '₨',
+      dollar: '$',
+      euro: '€'
+    };
+    return symbols[currency as keyof typeof symbols] || '₨';
+  };
+
+  // Function to format price with currency
+  const formatPrice = (price: number, currency: string) => {
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${price.toFixed(2)}`;
+  };
+
+  // Function to get current currency from various sources
+  const getCurrentCurrency = () => {
+    const domCurrency = document.documentElement.getAttribute('data-currency');
+    const storedCurrency = localStorage.getItem('appCurrency');
+    return domCurrency || currentCurrency || storedCurrency || 'pkr';
+  };
+
+  // Update currency when prop changes
+  useEffect(() => {
+    setActiveCurrency(currentCurrency);
+  }, [currentCurrency]);
+
+  // Listen for currency changes from the app
+  useEffect(() => {
+    const handleCurrencyChange = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency && newCurrency !== activeCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleSettingsLoaded = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleForceRerender = (event: CustomEvent) => {
+      if (event.detail.type === 'currency') {
+        const newCurrency = event.detail.value;
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    window.addEventListener('currencyChange', handleCurrencyChange as EventListener);
+    window.addEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+    window.addEventListener('forceRerender', handleForceRerender as EventListener);
+
+    const initialCurrency = getCurrentCurrency();
+    if (initialCurrency !== activeCurrency) {
+      setActiveCurrency(initialCurrency);
+    }
+
+    return () => {
+      window.removeEventListener('currencyChange', handleCurrencyChange as EventListener);
+      window.removeEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+      window.removeEventListener('forceRerender', handleForceRerender as EventListener);
+    };
+  }, [activeCurrency]);
 
   const physicalTabs = [
     ...(userPermissions.includes('manage_prepared_orders') ? [{
@@ -327,7 +418,7 @@ export default function OrderList({
 
   const filteredOrdersByType = React.useMemo(
     () => orders.filter((order) => {
-      const orderDate = new Date(order.order_date).toISOString().split('T')[0]; // ✅ Fixed line
+      const orderDate = new Date(order.order_date).toISOString().split('T')[0];
       const isToday = orderDate === selectedDate;
       const isCompletedOrCancelled = order.status.toLowerCase() === 'completed' || order.status.toLowerCase() === 'cancelled';
       return (order.order_type === outerActiveTab || !order.order_type) && (!isCompletedOrCancelled || isToday);
@@ -466,12 +557,12 @@ export default function OrderList({
   const getMessageStyles = (message: string) => {
     const [borderColor, bgColor, textColor] =
       message.includes('Failed') || message.includes('Please log in')
-        ? ['#dc2626', 'rgb(255,235,238)', '#d32f2f'] // Darker red for errors
+        ? ['#dc2626', 'rgb(255,235,238)', '#d32f2f']
         : message.includes('Order #') && (message.includes('ready') || message.includes('served') || message.includes('completed'))
-          ? ['#059669', 'rgb(232,245,233)', '#388e3c'] // Darker green for success
+          ? ['#059669', 'rgb(232,245,233)', '#388e3c']
           : message.includes('Overdue') || message.includes('needs to be ready')
-            ? ['#d97706', 'rgba(255,228,120,0.95)', '#ba7625'] // Slightly darker amber for warnings
-            : ['var(--border-color)', 'var(--background-secondary)', 'var(--text-secondary)']; // Default
+            ? ['#d97706', 'rgba(255,228,120,0.95)', '#ba7625']
+            : ['var(--border-color)', 'var(--background-secondary)', 'var(--text-secondary)'];
     return { borderColor, backgroundColor: bgColor, color: textColor };
   };
 
@@ -504,9 +595,9 @@ export default function OrderList({
               color: 'var(--text-color)',
             }}
           >
-  <span className="text-sm mr-2" style={{ color: 'var(--text-secondary)' }}>
-    📅 Select Date:
-  </span>
+            <span className="text-sm mr-2" style={{ color: 'var(--text-secondary)' }}>
+              📅 Select Date:
+            </span>
             <input
               id="order-date-picker"
               type="date"
@@ -523,11 +614,7 @@ export default function OrderList({
                 MozAppearance: 'none',
               }}
             />
-
-
-
           </div>
-
         )}
       </div>
 
@@ -535,20 +622,19 @@ export default function OrderList({
         <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
           <div className="flex flex-wrap gap-2">
             {outerTabs.map((tab, index) => {
-              // FontAwesome colors for outer tabs
               const getOuterTabColors = (tabKey, tabIndex) => {
                 if (tabKey === 'physical' || tabIndex === 0) {
                   return {
-                    active: '#4285f4',      // FontAwesome blue
-                    light: '#f0f7ff',       // Very light blue background
-                    text: '#1a73e8',        // Darker blue text
+                    active: '#4285f4',
+                    light: '#f0f7ff',
+                    text: '#1a73e8',
                     gradient: 'linear-gradient(135deg, #4285f4 0%, #1976d2 100%)'
                   };
                 } else {
                   return {
-                    active: '#ffc107',      // FontAwesome yellow/amber
-                    light: '#fffbf0',       // Very light yellow background
-                    text: '#ff8f00',        // Darker yellow/amber text
+                    active: '#ffc107',
+                    light: '#fffbf0',
+                    text: '#ff8f00',
                     gradient: 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)'
                   };
                 }
@@ -602,61 +688,60 @@ export default function OrderList({
               const tabsArray = outerActiveTab === 'physical' ? physicalTabs : onlineTabs;
               const isSingleTab = tabsArray.length === 1;
 
-              // FontAwesome inspired vibrant colors for different tab states
               const getTabColors = (tabKey) => {
                 const colorMap = {
                   'pending': {
-                    active: '#ff6b35',      // Vibrant orange-red
-                    light: '#fff5f2',       // Very light orange background
-                    text: '#cc4125',        // Darker orange-red text
+                    active: '#ff6b35',
+                    light: '#fff5f2',
+                    text: '#cc4125',
                     gradient: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)'
                   },
                   'confirmed': {
-                    active: '#4285f4',      // Google blue
-                    light: '#f0f7ff',       // Very light blue background
-                    text: '#1a73e8',        // Darker blue text
+                    active: '#4285f4',
+                    light: '#f0f7ff',
+                    text: '#1a73e8',
                     gradient: 'linear-gradient(135deg, #4285f4 0%, #1976d2 100%)'
                   },
                   'preparing': {
-                    active: '#ff9800',      // Material orange
-                    light: '#fff8f0',       // Very light orange background
-                    text: '#e65100',        // Darker orange text
+                    active: '#ff9800',
+                    light: '#fff8f0',
+                    text: '#e65100',
                     gradient: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)'
                   },
                   'ready': {
-                    active: '#9c27b0',      // Material purple
-                    light: '#faf4ff',       // Very light purple background
-                    text: '#7b1fa2',        // Darker purple text
+                    active: '#9c27b0',
+                    light: '#faf4ff',
+                    text: '#7b1fa2',
                     gradient: 'linear-gradient(135deg, #9c27b0 0%, #8e24aa 100%)'
                   },
                   'completed': {
-                    active: '#4caf50',      // Material green
-                    light: '#f1f8e9',       // Very light green background
-                    text: '#388e3c',        // Darker green text
+                    active: '#4caf50',
+                    light: '#f1f8e9',
+                    text: '#388e3c',
                     gradient: 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)'
                   },
                   'cancelled': {
-                    active: '#f44336',      // Material red
-                    light: '#fff3f2',       // Very light red background
-                    text: '#d32f2f',        // Darker red text
+                    active: '#f44336',
+                    light: '#fff3f2',
+                    text: '#d32f2f',
                     gradient: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)'
                   },
                   'shipped': {
-                    active: '#00bcd4',      // Cyan
-                    light: '#f0fdff',       // Very light cyan background
-                    text: '#0097a7',        // Darker cyan text
+                    active: '#00bcd4',
+                    light: '#f0fdff',
+                    text: '#0097a7',
                     gradient: 'linear-gradient(135deg, #00bcd4 0%, #0097a7 100%)'
                   },
                   'delivered': {
-                    active: '#8bc34a',      // Light green
-                    light: '#f7fff0',       // Very light green background
-                    text: '#689f38',        // Darker light green text
+                    active: '#8bc34a',
+                    light: '#f7fff0',
+                    text: '#689f38',
                     gradient: 'linear-gradient(135deg, #8bc34a 0%, #689f38 100%)'
                   },
                   'default': {
-                    active: '#607d8b',      // Blue grey
-                    light: '#f8f9fa',       // Light grey background
-                    text: '#455a64',        // Darker grey text
+                    active: '#607d8b',
+                    light: '#f8f9fa',
+                    text: '#455a64',
                     gradient: 'linear-gradient(135deg, #607d8b 0%, #455a64 100%)'
                   }
                 };
@@ -686,7 +771,7 @@ export default function OrderList({
                     style={{
                       background: activeTab === tab.key ? tabColors.gradient : tabColors.light,
                       color: activeTab === tab.key ? '#ffffff' : tabColors.text,
-                      paddingRight: '3rem', // Make space for notification button
+                      paddingRight: '3rem',
                       border: activeTab === tab.key ? 'none' : `2px solid ${tabColors.active}20`
                     }}
                   >
@@ -706,10 +791,9 @@ export default function OrderList({
                       </div>
                     </div>
 
-                    {/* Notification button inside the tab button */}
                     <button
                       onClick={(e) => {
-                        e.stopPropagation(); // Prevent tab selection when clicking notification
+                        e.stopPropagation();
                         handleNotificationClick(tab.key);
                       }}
                       className="absolute right-2 top-1/2 transform -translate-y-1/2 hover:scale-110 transition-transform z-10"
@@ -722,7 +806,7 @@ export default function OrderList({
                         <span
                           className="absolute -top-1 -right-1 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold animate-pulse"
                           style={{
-                            backgroundColor: '#e74c3c', // FontAwesome red for notifications
+                            backgroundColor: '#e74c3c',
                             color: '#ffffff'
                           }}
                         >
@@ -788,6 +872,7 @@ export default function OrderList({
           orders={orders}
           setMessage={setMessage}
           activeTab={activeTab}
+          currentCurrency={activeCurrency}
         />
       )}
 
@@ -921,7 +1006,9 @@ export default function OrderList({
                     </span>
                     {(activeTab === 'completed' || activeTab === 'cancelled') && (
                       <div className="flex flex-col items-end">
-                        <div className="text-lg font-bold" style={{ color: 'var(--text-color)' }}>${order.total_amount?.toFixed(2) || '0.00'}</div>
+                        <div className="text-lg font-bold" style={{ color: 'var(--text-color)' }} key={`total-${order._id}-${activeCurrency}`}>
+                          {formatPrice(order.total_amount || 0, activeCurrency)}
+                        </div>
                         <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{order.items?.length || 0} items</div>
                       </div>
                     )}
@@ -1067,6 +1154,7 @@ export default function OrderList({
           setOrders={setOrders}
           orders={orders}
           setMessage={setMessage}
+          currentCurrency={activeCurrency}
         />
       )}
 
