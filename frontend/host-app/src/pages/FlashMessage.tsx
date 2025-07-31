@@ -18,9 +18,15 @@ const FlashMessage: React.FC<FlashMessageProps> = ({ message, type, onClose, cla
   const bgColor = type === 'success' ? 'bg-green-50 border-green-500 text-green-700' : 'bg-red-50 border-red-500 text-red-700';
 
   return (
-    <div className={`p-4 mb-6 rounded-xl shadow-sm border-t-4 ${bgColor} ${className}`} role="alert">
-      <p>{message}</p>
-      <button onClick={onClose} className="float-right text-sm">×</button>
+    <div className={`p-4 mb-6 rounded-xl shadow-sm border-t-4 ${bgColor} ${className} relative`} role="alert">
+      <button
+        onClick={onClose}
+        className="absolute top-2 right-2 text-lg hover:opacity-70 transition-opacity"
+        aria-label="Close message"
+      >
+        ×
+      </button>
+      <p className="pr-6">{message}</p>
     </div>
   );
 };
