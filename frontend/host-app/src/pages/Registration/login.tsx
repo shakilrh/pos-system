@@ -5,7 +5,7 @@ import { adminAuthService } from '../../services/adminAuthService';
 import FlashMessage from '../FlashMessage';
 
 export default function Login() {
-  const { login, isAuthenticated, logout } = useAuth();
+  const { login, logout } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,7 +17,6 @@ export default function Login() {
 
   const validateEmail = (email: string): string[] => {
     const errors: string[] = [];
-
     if (!email.trim()) {
       errors.push('Email address is required');
     } else {
@@ -38,7 +37,6 @@ export default function Login() {
         errors.push('Email address cannot contain spaces');
       }
     }
-
     return errors;
   };
 
@@ -77,12 +75,10 @@ export default function Login() {
 
   const handleBlur = (field: string) => {
     if (field === 'email') {
-      const emailErrors = validateEmail(email);
-      setErrors(prev => ({ ...prev, email: emailErrors }));
+      setErrors(prev => ({ ...prev, email: validateEmail(email) }));
     }
     if (field === 'password') {
-      const passwordErrors = validatePassword(password);
-      setErrors(prev => ({ ...prev, password: passwordErrors }));
+      setErrors(prev => ({ ...prev, password: validatePassword(password) }));
     }
   };
 
@@ -106,13 +102,14 @@ export default function Login() {
 
     setLoading(true);
     try {
-      const userData = await adminAuthService.loginAdmin(email, password, logout);
-      await login(email, password);
+      await adminAuthService.loginAdmin(email, password, logout);
+      await login(email, password); // Now includes permission loading
       setFlashMessage({ message: 'Login successful! Redirecting...', type: 'success' });
       setEmail('');
       setPassword('');
       setErrors({});
       setTouched({});
+      router.replace('/Dashboard/dashboard');
     } catch (error: any) {
       console.error('Login error:', error);
       setFlashMessage({

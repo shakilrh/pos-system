@@ -179,9 +179,33 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             const permissions = mainPages.flatMap((page) => page.permissions.map((perm) => perm.key));
             setAllPermissions(permissions);
             console.log('Fetched all permissions:', permissions);
+
+            // Load user permissions from token
+            const decodedToken = decodeToken(storedToken);
+            if (decodedToken) {
+              console.log('Decoded token:', decodedToken);
+              if (decodedToken.user_type === 'isadmin') {
+                console.log('User is admin, granting all permissions:', permissions);
+                setUserPermissions(permissions);
+                setPermissionsLoaded(true);
+              } else {
+                const userPerms = Array.isArray(decodedToken.permissions)
+                  ? decodedToken.permissions.filter((key: string) => typeof key === 'string')
+                  : [];
+                console.log('Mapped permissions for non-admin user:', userPerms);
+                setUserPermissions(userPerms);
+                setPermissionsLoaded(true);
+              }
+            } else {
+              console.error('Failed to decode token');
+              setUserPermissions([]);
+              setPermissionsLoaded(true);
+            }
           } catch (error) {
             console.error('Failed to fetch permissions:', error);
             setAllPermissions([]);
+            setUserPermissions([]);
+            setPermissionsLoaded(true);
           }
         } catch (error) {
           console.error('Error parsing user data:', error);
@@ -193,45 +217,6 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
     initializeAuth();
   }, []);
-
-  useEffect(() => {
-    if (isLoading) {
-      console.log('Still loading auth, skipping permission extraction');
-      return;
-    }
-
-    if (!isAuthenticated || !token) {
-      console.log('No authentication or token, clearing permissions');
-      setUserPermissions([]);
-      setPermissionsLoaded(true);
-      return;
-    }
-
-    const decodedToken = decodeToken(token);
-    if (!decodedToken) {
-      console.error('Failed to decode token');
-      setUserPermissions([]);
-      setPermissionsLoaded(true);
-      return;
-    }
-
-    console.log('Decoded token:', decodedToken);
-
-    if (decodedToken.user_type === 'isadmin') {
-      console.log('User is admin, granting all permissions:', allPermissions);
-      setUserPermissions(allPermissions);
-      setPermissionsLoaded(true);
-      return;
-    }
-
-    const permissions = Array.isArray(decodedToken.permissions)
-      ? decodedToken.permissions.filter((key: string) => typeof key === 'string')
-      : [];
-
-    console.log('Mapped permissions for non-admin user:', permissions);
-    setUserPermissions(permissions);
-    setPermissionsLoaded(true);
-  }, [isAuthenticated, token, isLoading, allPermissions]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -267,22 +252,37 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         store_logo: user.store_logo || '',
       };
 
+      // Fetch all permissions
+      const mainPages = await fetchMainPages(token, logout);
+      const permissions = mainPages.flatMap((page) => page.permissions.map((perm) => perm.key));
+      setAllPermissions(permissions);
+      console.log('Fetched all permissions after login:', permissions);
+
+      // Decode token to set user permissions
+      const decodedToken = decodeToken(token);
+      if (!decodedToken) {
+        throw new Error('Failed to decode token');
+      }
+      console.log('Decoded token:', decodedToken);
+
+      let userPerms: string[] = [];
+      if (decodedToken.user_type === 'isadmin') {
+        console.log('User is admin, granting all permissions:', permissions);
+        userPerms = permissions;
+      } else {
+        userPerms = Array.isArray(decodedToken.permissions)
+          ? decodedToken.permissions.filter((key: string) => typeof key === 'string')
+          : [];
+        console.log('Mapped permissions for non-admin user:', userPerms);
+      }
+      setUserPermissions(userPerms);
+      setPermissionsLoaded(true);
+
       localStorage.setItem('authToken', token);
       localStorage.setItem('authUser', JSON.stringify(normalizedUser));
       setToken(token);
       setUser(normalizedUser);
       setIsAuthenticated(true);
-
-      // Fetch all permissions after login
-      try {
-        const mainPages = await fetchMainPages(token, logout);
-        const permissions = mainPages.flatMap((page) => page.permissions.map((perm) => perm.key));
-        setAllPermissions(permissions);
-        console.log('Fetched all permissions after login:', permissions);
-      } catch (error) {
-        console.error('Failed to fetch permissions after login:', error);
-        setAllPermissions([]);
-      }
 
       console.log('Auth state updated, token stored:', token);
     } catch (error) {

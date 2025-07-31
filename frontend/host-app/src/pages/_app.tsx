@@ -32,8 +32,6 @@ const publicRoutes = ['/Registration/login', '/Registration/forgotPassword', '/R
 function AppContent({ Component, pageProps }: AppProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isPageLoading, setIsPageLoading] = useState(false);
-  const [userPermissions, setUserPermissions] = useState<string[]>([]);
-  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [currentTheme, setCurrentTheme] = useState('default');
   const [currentCurrency, setCurrentCurrency] = useState('pkr');
   const [themeLoaded, setThemeLoaded] = useState(false);
@@ -42,7 +40,7 @@ function AppContent({ Component, pageProps }: AppProps) {
   const lastKnownThemeRef = useRef<string>('default');
   const lastKnownCurrencyRef = useRef<string>('pkr');
 
-  const { isAuthenticated, isLoading, logout, token, user, allPermissions } = useAuth();
+  const { isAuthenticated, isLoading, logout, token, user, allPermissions, userPermissions, permissionsLoaded } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -60,23 +58,6 @@ function AppContent({ Component, pageProps }: AppProps) {
     if (allPermissions.includes('can_view_storesettings')) mapping['/Settings/storeSettings'] = 'can_view_storesettings';
     return mapping;
   }, [allPermissions]);
-
-  const decodeToken = (token: string) => {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      return JSON.parse(jsonPayload);
-    } catch (error) {
-      console.error('Error decoding token:', error);
-      return null;
-    }
-  };
 
   const applyThemeToDOM = (selectedTheme: string) => {
     console.log('Applying theme to DOM:', selectedTheme);
@@ -363,16 +344,10 @@ function AppContent({ Component, pageProps }: AppProps) {
       themeLoaded,
     });
 
-    if (isLoading) {
-      console.log('Still loading auth, skipping settings loading');
-      return;
-    }
-
-    if (!themeLoaded) {
+    if (!themeLoaded && isAuthenticated) {
       loadUserSettings();
     }
 
-    // Listen for settings changes from the Settings component
     window.addEventListener('settingsChanged', handleSettingsChange);
 
     return () => {
@@ -392,108 +367,36 @@ function AppContent({ Component, pageProps }: AppProps) {
   }, []);
 
   useEffect(() => {
-    console.log('Permission extraction useEffect triggered', {
-      isAuthenticated,
-      token: !!token,
-      user_role_id: user?.role_id,
-      isLoading,
-    });
-
-    if (isLoading) {
-      console.log('Still loading auth, skipping permission extraction');
-      return;
-    }
-
-    if (!isAuthenticated || !token) {
-      console.log('No authentication or token, clearing permissions');
-      setUserPermissions([]);
-      setPermissionsLoaded(true);
-      return;
-    }
-
-    const decodedToken = decodeToken(token);
-    if (!decodedToken) {
-      console.error('Failed to decode token');
-      setUserPermissions([]);
-      setPermissionsLoaded(true);
-      return;
-    }
-
-    console.log('Decoded token:', decodedToken);
-
-    if (decodedToken.user_type === 'isadmin') {
-      console.log('User is admin, granting all permissions:', allPermissions);
-      setUserPermissions(allPermissions);
-      setPermissionsLoaded(true);
-
-      console.log('Admin User:', {
-        role_id: decodedToken.role_id,
-        name: user?.name || 'Unknown',
-        user_type: decodedToken.user_type,
-        description: 'Admin with full access',
-      });
-      return;
-    }
-
-    const permissions = Array.isArray(decodedToken.permissions)
-      ? decodedToken.permissions.filter((key: string) => typeof key === 'string')
-      : [];
-
-    console.log('Mapped permissions for non-admin user:', permissions);
-    setUserPermissions(permissions);
-    setPermissionsLoaded(true);
-
-    console.log('Regular User Role:', {
-      role_id: decodedToken.role_id,
-      name: user?.name || 'Unknown',
-      user_type: decodedToken.user_type,
-      description: 'From token',
-    });
-    console.log('Assigned Permissions:', permissions);
-  }, [isAuthenticated, user, token, isLoading, allPermissions]);
-
-  useEffect(() => {
     console.log('Route protection useEffect triggered', {
-      isLoading,
       isAuthenticated,
       pathname,
       permissionsLoaded,
       userPermissions,
     });
 
-    if (isLoading) {
-      console.log('Auth still loading, skipping route protection');
-      return;
-    }
-
     if (!isAuthenticated && !publicRoutes.includes(pathname)) {
       console.log('Redirecting to login: User not authenticated');
-      router.push('/Registration/login');
+      router.replace('/Registration/login');
       return;
     }
 
     if (isAuthenticated && pathname === '/Registration/login') {
       console.log('Redirecting to dashboard: User authenticated on login page');
-      router.push('/Dashboard/dashboard');
+      router.replace('/Dashboard/dashboard');
       return;
     }
 
-    if (isAuthenticated && !publicRoutes.includes(pathname)) {
-      if (!permissionsLoaded) {
-        console.log('Permissions not loaded yet, waiting...');
-        return;
-      }
-
+    if (isAuthenticated && !publicRoutes.includes(pathname) && permissionsLoaded) {
       const requiredPermission = routePermissions[pathname];
       if (requiredPermission && !userPermissions.includes(requiredPermission)) {
         console.log(`Access denied to ${pathname}: Missing permission ${requiredPermission}`);
         console.log('User permissions:', userPermissions);
-        router.push('/NoAccess');
+        router.replace('/NoAccess');
       } else {
         console.log(`Access granted to ${pathname}`);
       }
     }
-  }, [isAuthenticated, isLoading, pathname, router, userPermissions, permissionsLoaded, routePermissions]);
+  }, [isAuthenticated, pathname, router, userPermissions, permissionsLoaded, routePermissions]);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -524,25 +427,16 @@ function AppContent({ Component, pageProps }: AppProps) {
 
       await logout();
       setSidebarOpen(false);
-      setUserPermissions([]);
-      setPermissionsLoaded(false);
       setThemeLoaded(false);
       console.log('User logged out successfully');
-      await router.push('/Registration/login');
+      await router.replace('/Registration/login');
     } catch (error) {
       console.error('Error during logout:', error);
       window.location.href = '/Registration/login';
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
-      </div>
-    );
-  }
-
+  // Render logic: Skip initial loading spinner
   if (!isAuthenticated && publicRoutes.includes(pathname)) {
     return <Component {...pageProps} />;
   }
@@ -551,17 +445,8 @@ function AppContent({ Component, pageProps }: AppProps) {
     return null;
   }
 
-  if (isAuthenticated && (!permissionsLoaded || !themeLoaded)) {
-    return (
-      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
-        <div className="flex flex-col items-center">
-          <div className="w-16 h-16 border-t-4 border-b-4 border-orange-500 rounded-full animate-spin"></div>
-          <p className="mt-4 text-lg font-semibold text-gray-700">
-            {!permissionsLoaded ? 'Loading permissions...' : 'Loading settings...'}
-          </p>
-        </div>
-      </div>
-    );
+  if (isAuthenticated && pathname === '/Registration/login') {
+    return null; // Avoid rendering login page; redirect is handled
   }
 
   if (!Sidebar) {
@@ -616,6 +501,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     </div>
   );
 }
+
 export default function MyApp({ Component, pageProps }: AppProps) {
   return (
     <AuthProvider>
