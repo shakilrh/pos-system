@@ -174,17 +174,17 @@ export default function CategoryList({
                                               <PencilIcon className="w-5 h-5"/>
                                             </button>
                                           )}
-                                          {userPermissions.includes('can_delete_categories') && ( // Wrap Delete button (uncommented)
-                                            <button
-                                              onClick={() => onDelete(category._id)}
-                                              disabled={isProductFormActive}
-                                              className="disabled:opacity-50"
-                                              style={{ color: 'var(--error-color)' }}
-                                              title="Delete"
-                                            >
-                                              <TrashIcon className="w-5 h-5" />
-                                            </button>
-                                          )}
+                                          {/*{userPermissions.includes('can_delete_categories') && ( // Wrap Delete button (uncommented)*/}
+                                          {/*  <button*/}
+                                          {/*    onClick={() => onDelete(category._id)}*/}
+                                          {/*    disabled={isProductFormActive}*/}
+                                          {/*    className="disabled:opacity-50"*/}
+                                          {/*    style={{ color: 'var(--error-color)' }}*/}
+                                          {/*    title="Delete"*/}
+                                          {/*  >*/}
+                                          {/*    <TrashIcon className="w-5 h-5" />*/}
+                                          {/*  </button>*/}
+                                          {/*)}*/}
                                       </td>
                                   </tr>
                               ))}

@@ -333,16 +333,16 @@ export default function ProductList({
                         <PencilIcon className="w-4 h-4" style={{ color: 'var(--primary-color)' }} />
                       </button>
                     )}
-                    {userPermissions.includes('can_delete_products') && (
-                      <button
-                        onClick={() => !isCategoryFormActive && onDelete(product._id)}
-                        className={`p-0.5 rounded-full hover:bg-[var(--background-secondary)] ${isCategoryFormActive ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title="Delete"
-                        disabled={isCategoryFormActive}
-                      >
-                        <TrashIcon className="w-4 h-4" style={{ color: 'var(--error-color)' }} />
-                      </button>
-                    )}
+                    {/*{userPermissions.includes('can_delete_products') && (*/}
+                    {/*  <button*/}
+                    {/*    onClick={() => !isCategoryFormActive && onDelete(product._id)}*/}
+                    {/*    className={`p-0.5 rounded-full hover:bg-[var(--background-secondary)] ${isCategoryFormActive ? 'opacity-50 cursor-not-allowed' : ''}`}*/}
+                    {/*    title="Delete"*/}
+                    {/*    disabled={isCategoryFormActive}*/}
+                    {/*  >*/}
+                    {/*    <TrashIcon className="w-4 h-4" style={{ color: 'var(--error-color)' }} />*/}
+                    {/*  </button>*/}
+                    {/*)}*/}
                   </div>
                 </div>
               </div>

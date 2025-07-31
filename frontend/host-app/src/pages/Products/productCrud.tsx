@@ -453,13 +453,6 @@ export default function ProductCrud({
   if (mode === 'add' || mode === 'edit') {
     return (
       <div className="rounded-lg" style={{ backgroundColor: 'var(--background-secondary)', border: '1px solid var(--border-color)' }}>
-        {flashMessage && (
-          <FlashMessage
-            message={flashMessage.message}
-            type={flashMessage.type}
-            onClose={() => setFlashMessage(null)}
-          />
-        )}
         <div className="p-4 border-b flex justify-between" style={{ borderColor: 'var(--border-color)' }}>
           <div className="flex items-center space-x-2">
             <ShoppingBagIcon className="w-5 h-5" style={{ color: 'var(--accent-color)' }} />
@@ -660,13 +653,6 @@ export default function ProductCrud({
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
         <div className="rounded-lg p-6 w-full max-w-md mx-4 shadow-xl" style={{ backgroundColor: 'var(--surface-color)' }}>
-          {flashMessage && (
-            <FlashMessage
-              message={flashMessage.message}
-              type={flashMessage.type}
-              onClose={() => setFlashMessage(null)}
-            />
-          )}
           <div className="flex items-center space-x-2 mb-4">
             <ExclamationCircleIcon className="w-6 h-6" style={{ color: 'var(--error-color)' }} />
             <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Confirm Delete</h3>
