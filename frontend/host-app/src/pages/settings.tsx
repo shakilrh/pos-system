@@ -1,5 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faCog,
+  faCoins,
+  faMoneyBillWave,
+  faPalette,
+  faPaintBrush,
+  faRupeeSign,
+  faDollarSign,
+  faEuroSign,
+  faSun,
+  faWater,
+  faLeaf,
+  faBriefcase,
+  faFire,
+  faMoon,
+  faSpinner,
+  faCheckCircle,
+  faExclamationTriangle,
+  faCheck,
+  faTimes
+} from '@fortawesome/free-solid-svg-icons';
 
 export default function Settings() {
   const { isAuthenticated, isLoading, token, logout } = useAuth();
@@ -9,6 +31,12 @@ export default function Settings() {
   const [isUpdatingTheme, setIsUpdatingTheme] = useState(false);
   const [isUpdatingCurrency, setIsUpdatingCurrency] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Confirmation states
+  const [showThemeConfirmation, setShowThemeConfirmation] = useState(false);
+  const [showCurrencyConfirmation, setShowCurrencyConfirmation] = useState(false);
+  const [pendingTheme, setPendingTheme] = useState<string | null>(null);
+  const [pendingCurrency, setPendingCurrency] = useState<string | null>(null);
 
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastKnownThemeRef = useRef<string>('default');
@@ -95,7 +123,7 @@ export default function Settings() {
   const showThemeChangeNotification = (themeName: string) => {
     const notification = document.createElement('div');
     notification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300';
-    notification.textContent = `Theme changed to ${themeName}`;
+    notification.innerHTML = `<span class="mr-2">🎨</span>Theme changed to ${themeName}`;
     document.body.appendChild(notification);
 
     setTimeout(() => {
@@ -111,7 +139,7 @@ export default function Settings() {
   const showCurrencyChangeNotification = (currencyName: string) => {
     const notification = document.createElement('div');
     notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300';
-    notification.textContent = `Currency changed to ${currencyName}`;
+    notification.innerHTML = `<span class="mr-2">💰</span>Currency changed to ${currencyName}`;
     document.body.appendChild(notification);
 
     setTimeout(() => {
@@ -288,30 +316,66 @@ export default function Settings() {
     }
   };
 
-  const handleThemeChange = async (selectedTheme: string) => {
-    console.log('Changing theme to:', selectedTheme);
-    setTheme(selectedTheme);
-    applyThemeToDOM(selectedTheme);
-    lastKnownThemeRef.current = selectedTheme;
-    const success = await saveSettingsToAPI({ theme: selectedTheme });
+  // Theme confirmation handlers
+  const requestThemeChange = (selectedTheme: string) => {
+    if (selectedTheme === theme) return;
+    setPendingTheme(selectedTheme);
+    setShowThemeConfirmation(true);
+  };
+
+  const confirmThemeChange = async () => {
+    if (!pendingTheme) return;
+
+    console.log('Changing theme to:', pendingTheme);
+    setTheme(pendingTheme);
+    applyThemeToDOM(pendingTheme);
+    lastKnownThemeRef.current = pendingTheme;
+
+    const success = await saveSettingsToAPI({ theme: pendingTheme });
     if (success) {
       console.log('Theme saved successfully');
     } else {
       console.log('Theme applied locally but API save failed');
     }
+
+    setShowThemeConfirmation(false);
+    setPendingTheme(null);
   };
 
-  const handleCurrencyChange = async (selectedCurrency: string) => {
-    console.log('Changing currency to:', selectedCurrency);
-    setCurrency(selectedCurrency);
-    applyCurrencyToDOM(selectedCurrency);
-    lastKnownCurrencyRef.current = selectedCurrency;
-    const success = await saveSettingsToAPI({ currency: selectedCurrency });
+  const cancelThemeChange = () => {
+    setShowThemeConfirmation(false);
+    setPendingTheme(null);
+  };
+
+  // Currency confirmation handlers
+  const requestCurrencyChange = (selectedCurrency: string) => {
+    if (selectedCurrency === currency) return;
+    setPendingCurrency(selectedCurrency);
+    setShowCurrencyConfirmation(true);
+  };
+
+  const confirmCurrencyChange = async () => {
+    if (!pendingCurrency) return;
+
+    console.log('Changing currency to:', pendingCurrency);
+    setCurrency(pendingCurrency);
+    applyCurrencyToDOM(pendingCurrency);
+    lastKnownCurrencyRef.current = pendingCurrency;
+
+    const success = await saveSettingsToAPI({ currency: pendingCurrency });
     if (success) {
       console.log('Currency saved successfully');
     } else {
       console.log('Currency applied locally but API save failed');
     }
+
+    setShowCurrencyConfirmation(false);
+    setPendingCurrency(null);
+  };
+
+  const cancelCurrencyChange = () => {
+    setShowCurrencyConfirmation(false);
+    setPendingCurrency(null);
   };
 
   const handleDarkModeToggle = () => {
@@ -341,46 +405,64 @@ export default function Settings() {
     <div className="min-h-screen bg-[var(--background-color)] transition-colors duration-300">
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[var(--text-color)] mb-2">Settings</h1>
+          <h1 className="text-3xl font-bold text-[var(--text-color)] mb-2 flex items-center">
+            <FontAwesomeIcon icon={faCog} className="mr-3 text-[var(--primary-color)]" />
+            Settings
+          </h1>
           <p className="text-[var(--text-secondary)]">Customize your experience</p>
           {error && (
             <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <p className="text-red-600 dark:text-red-400 text-sm">
-                <strong>Error:</strong> {error}
+                <strong>
+                  <FontAwesomeIcon icon={faExclamationTriangle} className="mr-1" />
+                  Error:
+                </strong> {error}
               </p>
             </div>
           )}
         </div>
 
         <div className="space-y-6">
+          {/* Currency Section */}
           <div className="bg-[var(--background-secondary)] rounded-xl shadow-sm border border-[var(--border-color)] p-6 transition-all duration-200 hover:shadow-md">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-[var(--text-color)]">Currency</h3>
+                <h3 className="text-lg font-semibold text-[var(--text-color)] flex items-center">
+                  <FontAwesomeIcon icon={faCoins} className="mr-2 text-[var(--primary-color)]" />
+                  Currency
+                </h3>
                 <p className="text-sm text-[var(--text-secondary)]">
                   Select your preferred currency
-                  {isUpdatingCurrency && <span className="ml-2 text-xs text-blue-500">Saving...</span>}
+                  {isUpdatingCurrency && (
+                    <span className="ml-2 text-xs text-blue-500">
+                      <FontAwesomeIcon icon={faSpinner} spin className="mr-1" />
+                      Saving...
+                    </span>
+                  )}
                   {!isUpdatingCurrency && currency && (
                     <span className="ml-2 text-xs text-green-600 dark:text-green-400">
+                      <FontAwesomeIcon icon={faCheckCircle} className="mr-1" />
                       Current: {currency.toUpperCase()} • Auto-sync enabled
                     </span>
                   )}
                 </p>
               </div>
-              <div className="text-2xl">💰</div>
+              <div className="text-2xl">
+                <FontAwesomeIcon icon={faMoneyBillWave} className="text-[var(--primary-color)]" />
+              </div>
             </div>
 
             <div className="space-y-2">
               {[
-                { value: 'pkr', label: 'Pakistani Rupee', symbol: '₨', code: 'PKR' },
-                { value: 'dollar', label: 'US Dollar', symbol: '$', code: 'USD' },
-                { value: 'euro', label: 'Euro', symbol: '€', code: 'EUR' },
+                { value: 'pkr', label: 'Pakistani Rupee', symbol: '₨', code: 'PKR', icon: faRupeeSign },
+                { value: 'dollar', label: 'US Dollar', symbol: '$', code: 'USD', icon: faDollarSign },
+                { value: 'euro', label: 'Euro', symbol: '€', code: 'EUR', icon: faEuroSign },
               ].map((currencyOption) => {
                 const isActive = currency === currencyOption.value;
                 return (
                   <button
                     key={currencyOption.value}
-                    onClick={() => handleCurrencyChange(currencyOption.value)}
+                    onClick={() => requestCurrencyChange(currencyOption.value)}
                     disabled={isUpdatingCurrency}
                     className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all duration-200
                       ${isActive
@@ -392,9 +474,7 @@ export default function Settings() {
                   >
                     <div className="flex items-center space-x-3">
                       <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--surface-color)]">
-                        <span className="text-sm font-bold text-[var(--text-color)]">
-                          {currencyOption.symbol}
-                        </span>
+                        <FontAwesomeIcon icon={currencyOption.icon} className="text-[var(--text-color)]" />
                       </div>
                       <div className="text-left">
                         <h4 className="font-medium text-[var(--text-color)] text-sm">
@@ -408,12 +488,10 @@ export default function Settings() {
 
                     <div className="flex items-center">
                       {isUpdatingCurrency && isActive ? (
-                        <div className="w-4 h-4 border-2 border-[var(--primary-color)] border-t-transparent rounded-full animate-spin"></div>
+                        <FontAwesomeIcon icon={faSpinner} spin className="text-[var(--primary-color)]" />
                       ) : isActive ? (
                         <div className="w-4 h-4 rounded-full bg-[var(--primary-color)] flex items-center justify-center">
-                          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
+                          <FontAwesomeIcon icon={faCheck} className="text-white text-xs" />
                         </div>
                       ) : (
                         <div className="w-4 h-4 rounded-full border-2 border-[var(--border-color)]"></div>
@@ -425,36 +503,48 @@ export default function Settings() {
             </div>
           </div>
 
+          {/* Theme Section */}
           <div className="bg-[var(--background-secondary)] rounded-xl shadow-sm border border-[var(--border-color)] p-6 transition-all duration-200 hover:shadow-md">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-[var(--text-color)]">Theme</h3>
+                <h3 className="text-lg font-semibold text-[var(--text-color)] flex items-center">
+                  <FontAwesomeIcon icon={faPalette} className="mr-2 text-[var(--primary-color)]" />
+                  Theme
+                </h3>
                 <p className="text-sm text-[var(--text-secondary)]">
                   Select your color theme
-                  {isUpdatingTheme && <span className="ml-2 text-xs text-blue-500">Saving...</span>}
+                  {isUpdatingTheme && (
+                    <span className="ml-2 text-xs text-blue-500">
+                      <FontAwesomeIcon icon={faSpinner} spin className="mr-1" />
+                      Saving...
+                    </span>
+                  )}
                   {!isUpdatingTheme && theme && (
                     <span className="ml-2 text-xs text-green-600 dark:text-green-400">
+                      <FontAwesomeIcon icon={faCheckCircle} className="mr-1" />
                       Current: {theme} • Auto-sync enabled
                     </span>
                   )}
                 </p>
               </div>
-              <div className="text-2xl">🎨</div>
+              <div className="text-2xl">
+                <FontAwesomeIcon icon={faPaintBrush} className="text-[var(--primary-color)]" />
+              </div>
             </div>
             <div className="flex flex-wrap gap-3">
               {[
-                { value: 'default', label: 'Default', color: 'bg-orange-500', border: 'border-orange-200' },
-                { value: 'blue', label: 'Blue', color: 'bg-blue-500', border: 'border-blue-200' },
-                { value: 'green', label: 'Green', color: 'bg-emerald-600', border: 'border-emerald-200' },
-                { value: 'professional', label: 'Professional', color: 'bg-gray-900', border: 'border-gray-400' },
-                { value: 'warm-minimal', label: 'Warm Minimal', color: 'bg-orange-900', border: 'border-orange-300' },
-                { value: 'dark-pro', label: 'Dark Pro', color: 'bg-gray-800', border: 'border-gray-500' },
+                { value: 'default', label: 'Default', color: 'bg-orange-500', border: 'border-orange-200', icon: faSun },
+                { value: 'blue', label: 'Blue', color: 'bg-blue-500', border: 'border-blue-200', icon: faWater },
+                { value: 'green', label: 'Green', color: 'bg-emerald-600', border: 'border-emerald-200', icon: faLeaf },
+                { value: 'professional', label: 'Professional', color: 'bg-gray-900', border: 'border-gray-400', icon: faBriefcase },
+                { value: 'warm-minimal', label: 'Warm Minimal', color: 'bg-orange-900', border: 'border-orange-300', icon: faFire },
+                { value: 'dark-pro', label: 'Dark Pro', color: 'bg-gray-800', border: 'border-gray-500', icon: faMoon },
               ].map((themeOption) => {
                 const isActive = theme === themeOption.value;
                 return (
                   <button
                     key={themeOption.value}
-                    onClick={() => handleThemeChange(themeOption.value)}
+                    onClick={() => requestThemeChange(themeOption.value)}
                     disabled={isUpdatingTheme}
                     className={`group relative flex flex-col items-center justify-center w-28 h-20 rounded-xl border bg-[var(--surface-color)] shadow-sm transition-all duration-150
                       ${isActive ? 'border-primary ring-2 ring-primary/40 scale-105' : 'border-[var(--border-color)] hover:border-primary/60 hover:shadow-md'}
@@ -462,12 +552,14 @@ export default function Settings() {
                     style={isActive ? { boxShadow: '0 2px 12px 0 var(--primary-color, #f97316, 0.08)' } : {}}
                     aria-label={`Select ${themeOption.label} theme`}
                   >
-                    <span className={`w-7 h-7 rounded-full mb-2 border-2 ${themeOption.color} ${themeOption.border} shadow-sm`} />
-                    <span className="text-xs font-medium text-[var(--text-color)]">{themeOption.label}</span>
-                    {isActive && <span className="absolute top-2 right-2 text-primary text-base font-bold">✓</span>}
+                    <span className={`w-7 h-7 rounded-full mb-1 border-2 ${themeOption.color} ${themeOption.border} shadow-sm flex items-center justify-center`}>
+                      <FontAwesomeIcon icon={themeOption.icon} className="text-white text-xs" />
+                    </span>
+                    <span className="text-xs font-medium text-[var(--text-color)] text-center leading-tight">{themeOption.label}</span>
+                    {isActive && <FontAwesomeIcon icon={faCheck} className="absolute top-1 right-1 text-primary text-sm" />}
                     {isUpdatingTheme && isActive && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <FontAwesomeIcon icon={faSpinner} spin className="text-primary" />
                       </div>
                     )}
                   </button>
@@ -477,6 +569,68 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      {/* Theme Confirmation Modal */}
+      {showThemeConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[var(--background-secondary)] rounded-xl p-6 max-w-md mx-4 border border-[var(--border-color)] shadow-xl">
+            <div className="flex items-center mb-4">
+              <FontAwesomeIcon icon={faPalette} className="text-[var(--primary-color)] text-xl mr-3" />
+              <h3 className="text-lg font-semibold text-[var(--text-color)]">Confirm Theme Change</h3>
+            </div>
+            <p className="text-[var(--text-secondary)] mb-6">
+              Are you sure you want to change the theme to <strong>{pendingTheme}</strong>?
+            </p>
+            <div className="flex space-x-3 justify-end">
+              <button
+                onClick={cancelThemeChange}
+                className="px-4 py-2 text-[var(--text-secondary)] hover:text-[var(--text-color)] transition-colors duration-200"
+              >
+                <FontAwesomeIcon icon={faTimes} className="mr-1" />
+                Cancel
+              </button>
+              <button
+                onClick={confirmThemeChange}
+                className="px-4 py-2 bg-[var(--primary-color)] text-white rounded-lg hover:bg-[var(--primary-color)]/90 transition-colors duration-200"
+              >
+                <FontAwesomeIcon icon={faCheck} className="mr-1" />
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Currency Confirmation Modal */}
+      {showCurrencyConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[var(--background-secondary)] rounded-xl p-6 max-w-md mx-4 border border-[var(--border-color)] shadow-xl">
+            <div className="flex items-center mb-4">
+              <FontAwesomeIcon icon={faCoins} className="text-[var(--primary-color)] text-xl mr-3" />
+              <h3 className="text-lg font-semibold text-[var(--text-color)]">Confirm Currency Change</h3>
+            </div>
+            <p className="text-[var(--text-secondary)] mb-6">
+              Are you sure you want to change the currency to <strong>{pendingCurrency?.toUpperCase()}</strong>?
+            </p>
+            <div className="flex space-x-3 justify-end">
+              <button
+                onClick={cancelCurrencyChange}
+                className="px-4 py-2 text-[var(--text-secondary)] hover:text-[var(--text-color)] transition-colors duration-200"
+              >
+                <FontAwesomeIcon icon={faTimes} className="mr-1" />
+                Cancel
+              </button>
+              <button
+                onClick={confirmCurrencyChange}
+                className="px-4 py-2 bg-[var(--primary-color)] text-white rounded-lg hover:bg-[var(--primary-color)]/90 transition-colors duration-200"
+              >
+                <FontAwesomeIcon icon={faCheck} className="mr-1" />
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
