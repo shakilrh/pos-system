@@ -32,6 +32,107 @@ interface HeaderProps {
   user: User | null;
 }
 
+// --- Helper Functions for Avatar ---
+const getInitials = (name: string): string => {
+  if (!name) return 'U';
+  return name
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase())
+    .join('')
+    .substring(0, 2);
+};
+
+const getAvatarColor = (name: string): string => {
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+    '#DDA0DD', '#98D8C8', '#F06292', '#AED581', '#FFB74D',
+    '#81C784', '#64B5F6', '#A1887F', '#90A4AE', '#E57373'
+  ];
+
+  if (!name) return colors[0];
+
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  return colors[Math.abs(hash) % colors.length];
+};
+
+// Avatar Component with fallback to initials
+const Avatar = ({
+                  src,
+                  name,
+                  size = 'md',
+                  className = ''
+                }: {
+  src?: string;
+  name: string;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}) => {
+  const [imgError, setImgError] = useState(false);
+  const [imgLoading, setImgLoading] = useState(true);
+
+  const sizeClasses = {
+    sm: 'w-8 h-8 text-xs',
+    md: 'w-10 h-10 text-sm',
+    lg: 'w-12 h-12 text-base'
+  };
+
+  const shouldShowFallback = !src || imgError || src === '/file.svg';
+
+  useEffect(() => {
+    if (src && src !== '/file.svg') {
+      setImgError(false);
+      setImgLoading(true);
+    } else {
+      setImgLoading(false);
+    }
+  }, [src]);
+
+  if (shouldShowFallback) {
+    return (
+      <div
+        className={`${sizeClasses[size]} rounded-full flex items-center justify-center font-semibold text-white border-2 ${className}`}
+        style={{
+          backgroundColor: getAvatarColor(name),
+          borderColor: 'var(--primary-color)'
+        }}
+      >
+        {getInitials(name)}
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {imgLoading && (
+        <div
+          className={`${sizeClasses[size]} rounded-full flex items-center justify-center font-semibold text-white border-2 ${className}`}
+          style={{
+            backgroundColor: getAvatarColor(name),
+            borderColor: 'var(--primary-color)'
+          }}
+        >
+          {getInitials(name)}
+        </div>
+      )}
+      <img
+        src={src}
+        alt={`${name}'s avatar`}
+        className={`${sizeClasses[size]} rounded-full object-cover border-2 ${className} ${imgLoading ? 'absolute top-0 left-0' : ''}`}
+        style={{ borderColor: 'var(--primary-color)' }}
+        onLoad={() => setImgLoading(false)}
+        onError={() => {
+          setImgError(true);
+          setImgLoading(false);
+        }}
+      />
+    </div>
+  );
+};
+
 export default function Header({
                                  onSidebarToggle,
                                  onNavigate,
@@ -160,9 +261,11 @@ export default function Header({
     return userDetails?.email || user?.email || 'user@example.com';
   };
 
-  // Get user avatar with proper fallbacks
+  // Get user avatar URL with proper fallbacks - only return actual user photos, not store logos
   const getUserAvatar = () => {
-    return userDetails?.logoUrl || user?.logoUrl || userDetails?.store_logo || user?.store_logo || '/file.svg';
+    const avatar = userDetails?.logoUrl || user?.logoUrl;
+    // Only return if it's a valid user avatar, not default file.svg or store logo
+    return (avatar && avatar !== '/file.svg') ? avatar : undefined;
   };
 
   console.log('Header render - Current user data:', {
@@ -236,13 +339,10 @@ export default function Header({
               }}
             >
               <div className="flex items-center gap-2">
-                <img
+                <Avatar
                   src={getUserAvatar()}
-                  alt="User Avatar"
-                  className="w-6 h-6 rounded-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = '/file.svg';
-                  }}
+                  name={getUserDisplayName()}
+                  size="sm"
                 />
                 <span
                   className="hidden md:block text-sm font-medium"
@@ -269,13 +369,10 @@ export default function Header({
                   style={{ borderColor: 'var(--border-color)' }}
                 >
                   <div className="flex items-center gap-3">
-                    <img
+                    <Avatar
                       src={getUserAvatar()}
-                      alt="User Avatar"
-                      className="w-10 h-10 rounded-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = '/file.svg';
-                      }}
+                      name={getUserDisplayName()}
+                      size="md"
                     />
                     <div>
                       <p
