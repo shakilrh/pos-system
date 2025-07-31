@@ -10,6 +10,20 @@ import {
   QueueOrder,
 } from '../../services/orderService';
 import { useAuth } from '../../context/AuthContext';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faChartLine,
+  faClipboardList,
+  faUtensils,
+  faShoppingBag,
+  faSearch,
+  faClipboardCheck,
+  faHashtag,
+  faUser,
+  faClipboard,
+  faUserTie,
+  faCalendarAlt,
+} from '@fortawesome/free-solid-svg-icons';
 
 interface OrderListProps {
   orders: Order[];
@@ -537,7 +551,10 @@ export default function OrderList({
     item.product?.pictureUrl ? (
       <img src={item.product.pictureUrl} alt={item.product.name} className="w-8 h-8 object-cover rounded-md" />
     ) : (
-      <div className="w-8 h-8 rounded-md flex items-center justify-center text-sm" style={{ backgroundColor: 'var(--background-secondary)', color: 'var(--text-tertiary)' }}>📦</div>
+      <div className="w-8 h-8 rounded-md flex items-center justify-center" style={{ backgroundColor: 'var(--background-secondary)', color: 'var(--text-tertiary)' }}>
+        <FontAwesomeIcon icon={faShoppingBag} className="text-base" />
+      </div>
+
     );
 
   const getStatusBadge = (status: string) => {
@@ -574,7 +591,10 @@ export default function OrderList({
   if (!userPermissions.some(perm => ['manage_prepared_orders', 'manage_ready_orders', 'manage_served_orders', 'manage_completed_orders', 'accept_onlineorders', 'manage_cancelled_orders'].includes(perm))) {
     return (
       <div className="text-center py-12 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-        <div className="text-5xl mb-3" style={{ color: 'var(--text-tertiary)' }}>📋</div>
+        <div className="text-5xl mb-3" style={{ color: 'var(--text-tertiary)' }}>
+          <FontAwesomeIcon icon={faClipboardList} />
+        </div>
+
         <h3 className="text-lg font-medium" style={{ color: 'var(--text-secondary)' }}>No Access</h3>
         <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>You do not have permission to view any orders.</p>
       </div>
@@ -596,8 +616,10 @@ export default function OrderList({
             }}
           >
             <span className="text-sm mr-2" style={{ color: 'var(--text-secondary)' }}>
-              📅 Select Date:
-            </span>
+  <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
+  Select Date:
+</span>
+
             <input
               id="order-date-picker"
               type="date"
@@ -822,19 +844,6 @@ export default function OrderList({
         </div>
       )}
 
-      {activeTab === 'to_be_prepared' && (
-        <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-          <OrderSearch
-            orders={orders}
-            onOrderSelect={handlePreparationOrderSelect}
-            searchTerm={preparationSearchTerm}
-            setSearchTerm={setPreparationSearchTerm}
-            statusFilter="processing"
-            style={{ backgroundColor: 'var(--background-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-color)', borderRadius: '0.375rem', padding: '0.5rem' }}
-          />
-        </div>
-      )}
-
       {(activeTab === 'pending' && outerActiveTab === 'online') && (
         <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
           <OrderSearch
@@ -850,15 +859,41 @@ export default function OrderList({
 
       {(activeTab === 'ready' || activeTab === 'served') && (
         <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-          <div className="text-lg font-semibold mb-2" style={{ color: 'var(--text-color)' }}>{activeTab === 'ready' ? '📦 Ready for Pickup' : '💳 Process Payment'}</div>
-          <OrderSearch
-            orders={orders}
-            onOrderSelect={handlePaymentOrderSelect}
-            searchTerm={paymentSearchTerm}
-            setSearchTerm={setPaymentSearchTerm}
-            statusFilter={activeTab === 'ready' ? 'ready' : 'served'}
-            style={{ backgroundColor: 'var(--background-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-color)', borderRadius: '0.375rem', padding: '0.5rem' }}
-          />
+          <div className="text-lg font-semibold mb-2" style={{ color: 'var(--text-color)' }}>
+            {activeTab === 'ready' ? (
+              <>
+                <FontAwesomeIcon icon={faShoppingBag} className="mr-2" />
+                Ready for Pickup
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faClipboardCheck} className="mr-2" />
+                Process Payment
+              </>
+            )}
+          </div>
+          <div className="relative mb-2">
+            <input
+              type="text"
+              value={paymentSearchTerm}
+              onChange={(e) => setPaymentSearchTerm(e.target.value)}
+              placeholder="Search by customer name, order number, or ID..."
+              className="w-full p-2.5 border border-[var(--border-color)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-transparent bg-[var(--background-color)] text-[var(--text-color)]"
+            />
+            <svg
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1116.65 16.65z"
+              />
+            </svg>
+          </div>
         </div>
       )}
 
@@ -917,11 +952,17 @@ export default function OrderList({
                         )}
                       </div>
                       <div className="flex items-center space-x-2 mt-1 flex-wrap">
-                        <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>👤 {order.customer_name || 'Guest'}</span>
+                        <span className="text-sm font-medium">
+  <FontAwesomeIcon icon={faUser} className="mr-1" />
+                          {order.customer_name || 'Guest'}
+</span>
+
                         {order.service_type && (
-                          <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--text-color)' }}>
-                            {order.service_type === 'dine_in' ? '🍽️ Dine-In' : '🥡 Takeaway'}
-                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-xs flex items-center gap-1" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--text-color)' }}>
+  <FontAwesomeIcon icon={order.service_type === 'dine_in' ? faUtensils : faShoppingBag} />
+                            {order.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}
+</span>
+
                         )}
                         {order.table_number && (
                           <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--info-light)', color: 'var(--text-color)' }}>
@@ -949,7 +990,7 @@ export default function OrderList({
                                           index % 4 === 2 ? 'var(--warning-color)' : 'var(--info-color)'
                                     }}
                                   >
-                                    🔗
+                                    <FontAwesomeIcon icon={faHashtag} className="text-xs" />
                                   </div>
                                   <span
                                     className="px-1 py-0.5 rounded text-xs font-medium"
@@ -1132,7 +1173,10 @@ export default function OrderList({
             ))
           ) : (
             <div className="text-center py-12 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-              <div className="text-5xl mb-3" style={{ color: 'var(--text-tertiary)' }}>📋</div>
+              <div className="text-5xl mb-3" style={{ color: 'var(--text-tertiary)' }}>
+                <FontAwesomeIcon icon={faClipboardList} />
+              </div>
+
               <h3 className="text-lg font-medium" style={{ color: 'var(--text-secondary)' }}>No orders found</h3>
               <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
                 {preparationSearchTerm || paymentSearchTerm ? 'Try adjusting your search criteria.' : 'Orders will appear here when available.'}
