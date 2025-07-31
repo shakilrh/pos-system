@@ -8,6 +8,19 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 16px;
   line-height: 1.5;
+  /* Universal semantic colors - never change across themes */
+  --success-color: #10b981; /* Emerald-500 from tailwind.config.js */
+  --warning-color: #f59e0b; /* Amber-500 from tailwind.config.js */
+  --error-color: #ef4444; /* Red-500 from tailwind.config.js */
+  --info-color: #3b82f6; /* Blue-500 from tailwind.config.js */
+  --text-on-primary: #ffffff; /* White text/icon for buttons/icons */
+  /* Interactive state indicators */
+  --focus-ring: #3b82f6; /* Blue-500 for focus rings */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  /* Hover state enhancement */
+  --hover-opacity: 0.8;
+  --active-opacity: 0.9;
 }
 
 /* Ensure smooth font rendering */
@@ -16,174 +29,143 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ===== WCAG-COMPLIANT COLOR THEMES ===== */
-
-/* Consistent semantic colors across all themes */
-:root {
-  /* Universal semantic colors - never change across themes */
-  --success-color: #047857; /* Emerald-700 - 4.52:1 on white */
-  --warning-color: #b45309; /* Amber-700 - 4.51:1 on white */
-  --error-color: #b91c1c; /* Red-700 - 4.51:1 on white */
-  --info-color: #1e40af; /* Blue-700 - 4.51:1 on white */
-
-  /* Interactive state indicators */
-  --focus-ring: #3b82f6; /* Blue-500 for focus rings */
-  --focus-ring-width: 2px;
-  --focus-ring-offset: 2px;
-
-  /* Hover state enhancement */
-  --hover-opacity: 0.8;
-  --active-opacity: 0.9;
-}
-
 /* DEFAULT THEME - Orange Primary */
 [data-theme="default"] {
-  --primary-color: #ea580c; /* Orange-700 - 4.51:1 on white */
-  --primary-600: #ea580c; /* Orange-600 - 3.55:1 - for backgrounds only */
-  --primary-700: #9a3412; /* Orange-800 - 6.71:1 - for high contrast */
-  --secondary-color: #475569; /* Slate-600 - 4.51:1 on white */
-  --background-color: #ffffff; /* Pure white */
-  --background-secondary: #f8fafc; /* Slate-50 */
-  --text-color: #0f172a; /* Slate-900 - 16.83:1 on white */
-  --text-color-button: #fff ; /*Button colors*/
-  --text-color-gray: #6B7280; /*text-gray-500*/
-  --bg-gray: #D1D5DB;/*bg-gray-300*/
-  --text-secondary: #475569; /* Slate-600 - 4.51:1 on white */
-  --sidebar-bg: #1e293b; /* Slate-800 */
-  --sidebar-bg-hover: #334155; /* Slate-700 - Clear hover difference */
-  --sidebar-text: #f8fafc; /* Slate-50 - 15.68:1 on slate-800 */
+  --primary-color: #f97316; /* theme-default.primary (Orange-500) */
+  --primary-hover: #c2410c; /* theme-default.700 (Orange-700) */
+  --text-on-primary: #ffffff; /* White text/icon for buttons/icons */
+  --secondary-color: #64748b; /* secondary.DEFAULT (Slate-500) */
+  --background-color: #ffffff; /* background.secondary (White) */
+  --background-secondary: #f8fafc; /* background.DEFAULT (Slate-50) */
+  --text-color: #0f172a; /* text.DEFAULT (Slate-900) */
+  --text-color-button: #ffffff; /* Button colors */
+  --text-color-gray: #6B7280; /* text-gray-500 */
+  --bg-gray: #D1D5DB; /* bg-gray-300 */
+  --text-secondary: #64748b; /* text.secondary (Slate-500) */
+  --sidebar-bg: #1e293b; /* sidebar.bg (Slate-800) */
+  --sidebar-bg-hover: #334155; /* sidebar.hover (Slate-700) */
+  --sidebar-text: #f8fafc; /* Slate-50 */
   --border-color: #cbd5e1; /* Slate-300 */
   --border-hover: #94a3b8; /* Slate-400 */
-  --accent-color: #1e40af; /* Blue-700 - consistent across themes */
-  --surface-color: #ffffff;
-  --surface-secondary: #f1f5f9; /* Slate-100 */
-
-  /* Error state hover */
-  --error-color-hover: #991b1b; /* Red-800 */
+  --accent-color: #3b82f6; /* Blue-500 */
+  --surface-color: #ffffff; /* background.secondary */
+  --surface-secondary: #f1f5f9; /* background.surface (Slate-100) */
+  --error-color-hover: #dc2626; /* Red-600 */
 }
 
 /* BLUE THEME */
 [data-theme="blue"] {
-  --primary-color: #1e40af; /* Blue-700 - 4.51:1 on white */
-  --primary-600: #2563eb; /* Blue-600 - 3.55:1 - for backgrounds only */
-  --primary-700: #1e3a8a; /* Blue-800 - 6.71:1 - for high contrast */
-  --secondary-color: #475569; /* Slate-600 - 4.51:1 on white */
-  --background-color: #ffffff; /* Pure white */
-  --background-secondary: #f8fafc; /* Slate-50 */
-  --text-color: #0f172a; /* Slate-900 - 16.83:1 on white */
-  --text-color-button: #fff ; /*Button colors*/
-  --text-color-gray: #6B7280; /*text-gray-500*/
-  --bg-gray: #D1D5DB;/*bg-gray-300*/
-  --text-secondary: #475569; /* Slate-600 - 4.51:1 on white */
-  --sidebar-bg: #1e3a8a; /* Blue-800 */
-  --sidebar-bg-hover: #1e40af; /* Blue-700 - Clear hover difference */
-  --sidebar-text: #f8fafc; /* Slate-50 - 15.68:1 on blue-800 */
+  --primary-color: #3b82f6; /* theme-blue.primary (Blue-500) */
+  --primary-hover: #1d4ed8; /* theme-blue.700 (Blue-700) */
+  --text-on-primary: #ffffff; /* White text/icon for buttons/icons */
+  --secondary-color: #64748b; /* secondary.DEFAULT (Slate-500) */
+  --background-color: #ffffff; /* background.secondary (White) */
+  --background-secondary: #f8fafc; /* background.DEFAULT (Slate-50) */
+  --text-color: #0f172a; /* text.DEFAULT (Slate-900) */
+  --text-color-button: #ffffff; /* Button colors */
+  --text-color-gray: #6B7280; /* text-gray-500 */
+  --bg-gray: #D1D5DB; /* bg-gray-300 */
+  --text-secondary: #64748b; /* text.secondary (Slate-500) */
+  --sidebar-bg: #1e293b; /* sidebar.bg (Slate-800) */
+  --sidebar-bg-hover: #334155; /* sidebar.hover (Slate-700) */
+  --sidebar-text: #f8fafc; /* Slate-50 */
   --border-color: #cbd5e1; /* Slate-300 */
   --border-hover: #94a3b8; /* Slate-400 */
-  --accent-color: #1e40af; /* Blue-700 - consistent across themes */
-  --surface-color: #ffffff;
-  --surface-secondary: #f1f5f9; /* Slate-100 */
-
-  /* Error state hover */
-  --error-color-hover: #991b1b; /* Red-800 */
+  --accent-color: #3b82f6; /* Blue-500 */
+  --surface-color: #ffffff; /* background.secondary */
+  --surface-secondary: #f1f5f9; /* background.surface (Slate-100) */
+  --error-color-hover: #dc2626; /* Red-600 */
 }
 
 /* GREEN THEME */
 [data-theme="green"] {
-  --primary-color: #047857; /* Emerald-700 - 4.52:1 on white */
-  --primary-600: #059669; /* Emerald-600 - 3.55:1 - for backgrounds only */
-  --primary-700: #065f46; /* Emerald-800 - 6.71:1 - for high contrast */
-  --secondary-color: #475569; /* Slate-600 - 4.51:1 on white */
-  --background-color: #ffffff; /* Pure white */
-  --background-secondary: #f8fafc; /* Slate-50 */
-  --text-color: #0f172a; /* Slate-900 - 16.83:1 on white */
-  --text-color-button: #fff ; /*Button colors*/
-  --text-color-gray: #6B7280; /*text-gray-500*/
-  --bg-gray: #D1D5DB;/*bg-gray-300*/
-  --text-secondary: #475569; /* Slate-600 - 4.51:1 on white */
-  --sidebar-bg: #064e3b; /* Emerald-900 */
-  --sidebar-bg-hover: #047857; /* Emerald-700 - Clear hover difference */
-  --sidebar-text: #f0fdf4; /* Green-50 - 15.68:1 on emerald-900 */
+  --primary-color: #059669; /* theme-green.primary (Emerald-600) */
+  --primary-hover: #065f46; /* theme-green.700 (Emerald-800) */
+  --text-on-primary: #ffffff; /* White text/icon for buttons/icons */
+  --secondary-color: #64748b; /* secondary.DEFAULT (Slate-500) */
+  --background-color: #ffffff; /* background.secondary (White) */
+  --background-secondary: #f8fafc; /* background.DEFAULT (Slate-50) */
+  --text-color: #0f172a; /* text.DEFAULT (Slate-900) */
+  --text-color-button: #ffffff; /* Button colors */
+  --text-color-gray: #6B7280; /* text-gray-500 */
+  --bg-gray: #D1D5DB; /* bg-gray-300 */
+  --text-secondary: #64748b; /* text.secondary (Slate-500) */
+  --sidebar-bg: #1e293b; /* sidebar.bg (Slate-800) */
+  --sidebar-bg-hover: #334155; /* sidebar.hover (Slate-700) */
+  --sidebar-text: #f0fdf4; /* Green-50 */
   --border-color: #cbd5e1; /* Slate-300 */
   --border-hover: #94a3b8; /* Slate-400 */
-  --accent-color: #1e40af; /* Blue-700 - consistent across themes */
-  --surface-color: #ffffff;
-  --surface-secondary: #f1f5f9; /* Slate-100 */
-
-  /* Error state hover */
-  --error-color-hover: #991b1b; /* Red-800 */
+  --accent-color: #3b82f6; /* Blue-500 */
+  --surface-color: #ffffff; /* background.secondary */
+  --surface-secondary: #f1f5f9; /* background.surface (Slate-100) */
+  --error-color-hover: #dc2626; /* Red-600 */
 }
 
 /* PROFESSIONAL THEME - High contrast for accessibility */
 [data-theme="professional"] {
-  --primary-color: #1f2937; /* Gray-800 - 8.59:1 on white */
-  --primary-600: #374151; /* Gray-700 - 5.62:1 on white */
-  --primary-700: #111827; /* Gray-900 - 16.83:1 on white */
-  --secondary-color: #475569; /* Slate-600 - 4.51:1 on white */
-  --background-color: #ffffff; /* Pure white */
+  --primary-color: #1f2937; /* Gray-800 */
+  --primary-hover: #111827; /* Gray-900 */
+  --text-on-primary: #ffffff; /* White text/icon for buttons/icons */
+  --secondary-color: #64748b; /* secondary.DEFAULT (Slate-500) */
+  --background-color: #ffffff; /* background.secondary (White) */
   --background-secondary: #f9fafb; /* Gray-50 */
-  --text-color: #111827; /* Gray-900 - 16.83:1 on white */
-  --text-secondary: #475569; /* Slate-600 - 4.51:1 on white */
+  --text-color: #111827; /* Gray-900 */
+  --text-secondary: #64748b; /* text.secondary (Slate-500) */
   --sidebar-bg: #111827; /* Gray-900 */
-  --sidebar-bg-hover: #1f2937; /* Gray-800 - Clear hover difference */
-  --sidebar-text: #f9fafb; /* Gray-50 - 15.68:1 on gray-900 */
+  --sidebar-bg-hover: #1f2937; /* Gray-800 */
+  --sidebar-text: #f9fafb; /* Gray-50 */
   --border-color: #d1d5db; /* Gray-300 */
   --border-hover: #9ca3af; /* Gray-400 */
-  --accent-color: #1e40af; /* Blue-700 - consistent across themes */
-  --surface-color: #ffffff;
+  --accent-color: #3b82f6; /* Blue-500 */
+  --surface-color: #ffffff; /* background.secondary */
   --surface-secondary: #f3f4f6; /* Gray-100 */
-
-  /* Error state hover */
-  --error-color-hover: #991b1b; /* Red-800 */
+  --error-color-hover: #dc2626; /* Red-600 */
 }
 
 /* WARM MINIMAL THEME */
 [data-theme="warm-minimal"] {
-  --primary-color: #92400e; /* Amber-800 - 4.51:1 on white */
-  --primary-600: #d97706; /* Amber-600 - 3.55:1 - for backgrounds only */
-  --primary-700: #78350f; /* Amber-900 - 6.71:1 - for high contrast */
-  --secondary-color: #57534e; /* Stone-600 - 4.51:1 on white */
+  --primary-color: #92400e; /* Amber-800 */
+  --primary-hover: #78350f; /* Amber-900 */
+  --text-on-primary: #ffffff; /* White text/icon for buttons/icons */
+  --secondary-color: #57534e; /* Stone-600 */
   --background-color: #fffbeb; /* Amber-50 */
   --background-secondary: #fef3c7; /* Amber-100 */
-  --text-color: #1c1917; /* Stone-900 - 16.83:1 on amber-50 */
-  --text-secondary: #57534e; /* Stone-600 - 4.51:1 on amber-50 */
+  --text-color: #1c1917; /* Stone-900 */
+  --text-secondary: #57534e; /* Stone-600 */
   --sidebar-bg: #78350f; /* Amber-900 */
-  --sidebar-bg-hover: #92400e; /* Amber-800 - Clear hover difference */
-  --sidebar-text: #fffbeb; /* Amber-50 - 15.68:1 on amber-900 */
+  --sidebar-bg-hover: #92400e; /* Amber-800 */
+  --sidebar-text: #fffbeb; /* Amber-50 */
   --border-color: #d6d3d1; /* Stone-300 */
   --border-hover: #a8a29e; /* Stone-400 */
-  --accent-color: #1e40af; /* Blue-700 - consistent across themes */
+  --accent-color: #3b82f6; /* Blue-500 */
   --surface-color: #fefce8; /* Yellow-50 */
   --surface-secondary: #fef3c7; /* Amber-100 */
-
-  /* Error state hover */
-  --error-color-hover: #991b1b; /* Red-800 */
+  --error-color-hover: #dc2626; /* Red-600 */
 }
 
+/* DARK PRO THEME */
 [data-theme="dark-pro"] {
-  --primary-color: #5497ff; /* Adjusted Blue-500: slightly brighter for better contrast and vibrancy on dark. WCAG AA contrast 4.7:1 on #111827 */
-  --primary-600: #3b74e6; /* Adjusted Blue-600 */
-  --primary-700: #2a56c4; /* Adjusted Blue-700 */
-  --secondary-color: #b0b8c6; /* Adjusted Gray-400: Lighter for better readability as secondary text. WCAG AA contrast 6.2:1 on #111827 */
-  --background-color: #111827; /* Gray-900 - Keep as is, good base */
-  --background-secondary: #212c3b; /* Adjusted Gray-800: Slightly deeper for differentiation from main background */
-  --text-color: #e0e0e0; /* Adjusted: Much lighter for primary text, ensures WCAG AA contrast (9.5:1 on #111827) */
-  --text-secondary: #8c9fae; /* Adjusted: Significantly lighter than original, now clearly readable as secondary text (4.5:1 on #111827) */
-  --sidebar-bg: #0d121f; /* Adjusted Slate-900: Slightly darker for more contrast with content */
-  --sidebar-bg-hover: #1b263b; /* Adjusted Slate-800: Clearer hover state */
-  --sidebar-text: #f1f5f9; /* Slate-100 - Keep as is, good contrast */
-  --border-color: #3b4959; /* Adjusted Gray-700: Slightly more prominent for subtle borders */
-  --border-hover: #506173; /* Adjusted Gray-600: Clearer hover state */
-  --accent-color: #60a5fa; /* Blue-400 - Keep as is, good contrast for an accent */
-  --surface-color: #2b394d; /* Adjusted Gray-800: Distinct from main background, yet cohesive */
-  --surface-secondary: #3d4c62; /* Adjusted Gray-700: Lighter than surface-color for hierarchy */
-
-  /* Dark theme semantic colors - adjusted to ensure 4.5:1 contrast on background */
-  --success-color: #34d399; /* Emerald-400: Slightly lighter for better contrast on dark bg */
-  --warning-color: #fbbf24; /* Amber-400: Slightly lighter for better contrast on dark bg */
-  --error-color: #f87171; /* Red-400: Keep as is, good contrast */
-  --info-color: #60a5fa; /* Blue-400: Keep as is, good contrast */
-  --error-color-hover: #fca5a5; /* Red-300: Keep as is */
+  --primary-color: #5497ff; /* Blue-500 adjusted */
+  --primary-hover: #3b74e6; /* Blue-600 adjusted */
+  --text-on-primary: #ffffff; /* White text/icon for buttons/icons */
+  --secondary-color: #b0b8c6; /* Gray-400 */
+  --background-color: #111827; /* Gray-900 */
+  --background-secondary: #212c3b; /* Gray-800 */
+  --text-color: #e0e0e0; /* Lighter for primary text */
+  --text-secondary: #8c9fae; /* Lighter for secondary text */
+  --sidebar-bg: #0d121f; /* Slate-900 */
+  --sidebar-bg-hover: #1b263b; /* Slate-800 */
+  --sidebar-text: #f1f5f9; /* Slate-100 */
+  --border-color: #3b4959; /* Gray-700 */
+  --border-hover: #506173; /* Gray-600 */
+  --accent-color: #60a5fa; /* Blue-400 */
+  --surface-color: #2b394d; /* Gray-800 */
+  --surface-secondary: #3d4c62; /* Gray-700 */
+  --success-color: #34d399; /* Emerald-400 */
+  --warning-color: #fbbf24; /* Amber-400 */
+  --error-color: #f87171; /* Red-400 */
+  --info-color: #60a5fa; /* Blue-400 */
+  --error-color-hover: #fca5a5; /* Red-300 */
 }
 
 /* FOCUS STATES - Universal across all themes */
@@ -220,6 +202,7 @@ a:active,
     --border-color: #ffffff;
   }
 }
+
 input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 0;
   display: none;

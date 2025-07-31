@@ -138,8 +138,11 @@ const UserList: React.FC<UserListProps> = ({
             {userPermissions.includes('can_add_users') && (
             <button
               onClick={() => setShowCreateForm(true)}
-              className="flex items-center space-x-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 bg-[var(--primary-color)] text-[var(--surface-color)] hover:bg-opacity-90 hover:text-white"
-              style={{ '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
+              className="flex items-center space-x-1 text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 self-end"
+              style={{
+                backgroundColor: 'var(--primary-color)',
+                '--tw-ring-color': 'var(--focus-ring)'
+              } as React.CSSProperties}
             >
               <PlusIcon className="w-5 h-5" />
               <span>Add User</span>
