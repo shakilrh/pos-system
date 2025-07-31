@@ -40,8 +40,120 @@ interface User {
   store_logo?: string;
 }
 
-// --- Navigation Structure ---Tables/TableManagement
-// Navigation Structure
+// --- Helper Functions ---
+const getInitials = (name: string): string => {
+  if (!name) return 'U';
+  return name
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase())
+    .join('')
+    .substring(0, 2);
+};
+
+const getAvatarColor = (name: string): string => {
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+    '#DDA0DD', '#98D8C8', '#F06292', '#AED581', '#FFB74D',
+    '#81C784', '#64B5F6', '#A1887F', '#90A4AE', '#E57373'
+  ];
+
+  if (!name) return colors[0];
+
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  return colors[Math.abs(hash) % colors.length];
+};
+
+// Get display name - show initials if name is too long
+const getDisplayName = (fullName: string, maxLength: number = 15): string => {
+  if (!fullName || fullName === 'Loading...') return fullName;
+
+  if (fullName.length <= maxLength) {
+    return fullName;
+  }
+
+  // Return initials if name is too long
+  return getInitials(fullName);
+};
+
+// Avatar Component with fallback to initials
+const Avatar = ({
+                  src,
+                  name,
+                  size = 'md',
+                  className = ''
+                }: {
+  src?: string;
+  name: string;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}) => {
+  const [imgError, setImgError] = useState(false);
+  const [imgLoading, setImgLoading] = useState(true);
+
+  const sizeClasses = {
+    sm: 'w-8 h-8 text-xs',
+    md: 'w-10 h-10 text-sm',
+    lg: 'w-12 h-12 text-base'
+  };
+
+  const shouldShowFallback = !src || imgError || src === '/file.svg';
+
+  useEffect(() => {
+    if (src && src !== '/file.svg') {
+      setImgError(false);
+      setImgLoading(true);
+    } else {
+      setImgLoading(false);
+    }
+  }, [src]);
+
+  if (shouldShowFallback) {
+    return (
+      <div
+        className={`${sizeClasses[size]} rounded-full flex items-center justify-center font-semibold text-white border-2 ${className}`}
+        style={{
+          backgroundColor: getAvatarColor(name),
+          borderColor: 'var(--primary-color)'
+        }}
+      >
+        {getInitials(name)}
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {imgLoading && (
+        <div
+          className={`${sizeClasses[size]} rounded-full flex items-center justify-center font-semibold text-white border-2 ${className}`}
+          style={{
+            backgroundColor: getAvatarColor(name),
+            borderColor: 'var(--primary-color)'
+          }}
+        >
+          {getInitials(name)}
+        </div>
+      )}
+      <img
+        src={src}
+        alt={`${name}'s avatar`}
+        className={`${sizeClasses[size]} rounded-full object-cover border-2 ${className} ${imgLoading ? 'absolute top-0 left-0' : ''}`}
+        style={{ borderColor: 'var(--primary-color)' }}
+        onLoad={() => setImgLoading(false)}
+        onError={() => {
+          setImgError(true);
+          setImgLoading(false);
+        }}
+      />
+    </div>
+  );
+};
+
+// --- Navigation Structure ---
 const navItems = [
   { name: 'Dashboard', icon: HomeIcon || FallbackIcon, href: '/Dashboard/dashboard', description: 'Overview of your account', permission: 'can_view_dashboard' },
   { name: 'Menu Management', icon: ShoppingBagIcon || FallbackIcon, href: '/MenuManagement', description: 'Manage your menu items', permission: 'can_view_menu' },
@@ -122,9 +234,11 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen, userPe
     return userDetails?.email || user?.email || 'user@example.com';
   };
 
-  // Get user avatar URL with proper fallbacks
+  // Get user avatar URL with proper fallbacks - only return actual user photos, not store logos
   const getUserAvatar = () => {
-    return userDetails?.logoUrl || user?.logoUrl || userDetails?.store_logo || user?.store_logo || '/file.svg';
+    const avatar = userDetails?.logoUrl || user?.logoUrl;
+    // Only return if it's a valid user avatar, not default file.svg or store logo
+    return (avatar && avatar !== '/file.svg') ? avatar : undefined;
   };
 
   // Get user role display
@@ -136,38 +250,39 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen, userPe
   };
 
   const ProfileSection = () => (
-    <div className="flex items-center">
+    <div className="flex items-center min-w-0 flex-1">
       {(isLoadingUserDetails || profileLoading) ? (
         <div className="w-10 h-10 mr-3 rounded-full animate-pulse" style={{ backgroundColor: 'var(--sidebar-bg-hover)' }} />
       ) : (
-        <img
-          src={getUserAvatar()}
-          alt="User avatar"
-          className="w-10 h-10 mr-3 rounded-full object-cover border-2"
-          style={{ borderColor: 'var(--primary-color)' }}
-          onError={(e) => {
-            e.currentTarget.src = '/file.svg';
-          }}
-        />
+        <div className="mr-3 flex-shrink-0">
+          <Avatar
+            src={getUserAvatar()}
+            name={getUserDisplayName()}
+            size="md"
+          />
+        </div>
       )}
-      <div className="overflow-hidden">
-        <div className="text-lg font-bold truncate flex items-center text-white">
+      <div className="overflow-hidden min-w-0 flex-1">
+        <div className="text-lg font-bold flex items-center text-white">
           {(isLoadingUserDetails || profileLoading) ? (
             <div className="w-24 h-5 animate-pulse rounded" style={{ backgroundColor: 'var(--sidebar-bg-hover)' }} />
           ) : (
             <>
-              {getUserDisplayName()} <ActiveUserIcon />
+              <span className="truncate" title={getUserDisplayName()}>
+                {getDisplayName(getUserDisplayName())}
+              </span>
+              <ActiveUserIcon />
             </>
           )}
         </div>
-        <p className="text-xs truncate" style={{ color: 'var(--sidebar-text)' }}>
+        <p className="text-xs truncate" style={{ color: 'var(--sidebar-text)' }} title={getUserEmail()}>
           {(isLoadingUserDetails || profileLoading) ? (
             <div className="w-20 h-3 animate-pulse rounded" style={{ backgroundColor: 'var(--sidebar-bg-hover)' }} />
           ) : (
             getUserEmail()
           )}
         </p>
-        <p className="text-xs truncate" style={{ color: 'var(--sidebar-text)', opacity: 0.8 }}>
+        <p className="text-xs truncate" style={{ color: 'var(--sidebar-text)', opacity: 0.8 }} title={getUserRole()}>
           {(isLoadingUserDetails || profileLoading) ? (
             <div className="w-16 h-3 animate-pulse rounded" style={{ backgroundColor: 'var(--sidebar-bg-hover)' }} />
           ) : (
@@ -202,7 +317,7 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen, userPe
     >
       {/* --- Header / Profile Section --- */}
       <div
-        className={`flex items-center p-4 border-b ${sidebarOpen ? 'justify-between' : 'justify-center'}`}
+        className={`flex items-center p-4 border-b min-w-0 ${sidebarOpen ? 'justify-between' : 'justify-center'}`}
         style={{ borderColor: 'var(--sidebar-bg-hover)' }}
       >
         {sidebarOpen && <ProfileSection />}
@@ -210,7 +325,7 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen, userPe
           onClick={() => setSidebarOpen(!sidebarOpen)}
           aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
           aria-expanded={sidebarOpen}
-          className="p-3 rounded-lg text-white hover:bg-[var(--sidebar-bg-hover)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+          className={`p-3 rounded-lg text-white hover:bg-[var(--sidebar-bg-hover)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white flex-shrink-0 ${sidebarOpen ? 'ml-2' : ''}`}
         >
           {sidebarOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
         </button>
@@ -237,11 +352,11 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen, userPe
                     : 'text-[var(--sidebar-text)] hover:bg-[var(--sidebar-bg-hover)] hover:text-white'
                 } ${!sidebarOpen ? 'w-12 h-12 justify-center p-3' : 'p-3'}`}
               >
-                <Icon className="w-6 h-6" />
+                <Icon className="w-6 h-6 flex-shrink-0" />
                 {sidebarOpen ? (
-                  <div className="ml-3">
-                    <span className="text-sm font-medium">{name}</span>
-                    <p className="text-xs opacity-80">{description}</p>
+                  <div className="ml-3 min-w-0 flex-1">
+                    <span className="text-sm font-medium block truncate">{name}</span>
+                    <p className="text-xs opacity-80 truncate">{description}</p>
                   </div>
                 ) : (
                   <span className="absolute left-full ml-4 px-2 py-1 text-sm font-medium text-white bg-gray-900 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap">
@@ -259,16 +374,12 @@ export default function Sidebar({ className, sidebarOpen, setSidebarOpen, userPe
         <div className="p-4 border-t border-[var(--sidebar-bg-hover)]">
           <div className="flex justify-center">
             <div className="relative group">
-              <img
+              <Avatar
                 src={getUserAvatar()}
-                alt="User avatar"
-                className="w-10 h-10 rounded-full object-cover border-2"
-                style={{ borderColor: 'var(--primary-color)' }}
-                onError={(e) => {
-                  e.currentTarget.src = '/file.svg';
-                }}
+                name={getUserDisplayName()}
+                size="md"
               />
-              <div className="absolute left-full ml-4 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap">
+              <div className="absolute left-full ml-4 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-50">
                 <div className="font-semibold">{getUserDisplayName()}</div>
                 <div className="text-xs opacity-80">{getUserEmail()}</div>
                 <div className="text-xs opacity-60">{getUserRole()}</div>

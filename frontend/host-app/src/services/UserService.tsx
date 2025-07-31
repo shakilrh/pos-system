@@ -70,7 +70,6 @@ export interface User {
   store_logo: string;
 }
 
-
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000';
 const TIMEOUT = 10000; // 10 seconds
 
@@ -119,7 +118,7 @@ const handleApiError = (response: ApiResponse, logout?: () => void): string => {
   return '';
 };
 
-// New method matching UserService.ts functionality
+// Fixed getUserDetails method with proper logoUrl handling
 export const getUserDetails = async (token: string, logout?: () => void): Promise<UserDetails> => {
   if (!token) {
     throw new Error('No authentication token provided');
@@ -171,17 +170,17 @@ export const getUserDetails = async (token: string, logout?: () => void): Promis
 
     const user = data.data.data.user;
 
-    // Normalize user data
+    // Normalize user data - FIXED: Only use logoUrl for user avatar, never store_logo
     const normalizedUser: UserDetails = {
-      _id: user._id || '',
+      _id: user._id || user.id || '',
       name: user.name || 'Unknown User',
       email: user.email || '',
       user_type: user.user_type || 'worker',
       role_id: user.role_id || null,
       profile: user.profile || null,
-      logoUrl: user.logoUrl || user.store_logo || '',
+      logoUrl: user.logoUrl || null, // ONLY use logoUrl for user avatar
       store_name: user.store_name || '',
-      store_logo: user.store_logo || user.logoUrl || '',
+      store_logo: user.store_logo || null, // Keep store_logo separate for business use
     };
 
     console.log('UserService: Normalized user data:', normalizedUser);
@@ -259,8 +258,8 @@ export const fetchUsers = async (token: string, logout: () => void): Promise<Use
         salary: user.profile?.salary || user.salary || 0,
         address: user.profile?.address || user.address || '',
         store_name: user.store_name || null,
-        logoUrl: user.logoUrl || null,
-        store_logo: user.store_logo || null,
+        logoUrl: user.logoUrl || null, // FIXED: Only use logoUrl
+        store_logo: user.store_logo || null, // Keep separate
       }));
     }
     throw new Error('Invalid response format: users data missing');
@@ -302,13 +301,14 @@ export const fetchUserProfile = async (token: string, logout: () => void): Promi
       phone_number: data.data.data.user.phone_number,
       store_name: data.data.data.user.store_name,
       address: data.data.data.user.address,
-      logoUrl: data.data.data.user.logoUrl,
-      store_logo: data.data.data.user.store_logo,
+      logoUrl: data.data.data.user.logoUrl, // FIXED: Only use logoUrl
+      store_logo: data.data.data.user.store_logo, // Keep separate
     };
   } catch (err) {
     throw new Error(err.message || 'Failed to fetch user profile');
   }
 };
+
 // Keep the original fetchUserProfile function but update it to return UserDetails
 export const fetchUserProfileOriginal = async (token: string, logout: () => void): Promise<User> => {
   try {
@@ -374,8 +374,8 @@ export const fetchUserProfileOriginal = async (token: string, logout: () => void
         store_name: user.store_name || null,
         phone_number: user.phone_number || null,
         address: user.address || null,
-        logoUrl: user.logoUrl || null,
-        store_logo: user.store_logo || null,
+        logoUrl: user.logoUrl || null, // FIXED: Only use logoUrl
+        store_logo: user.store_logo || null, // Keep separate
       };
     }
     throw new Error('Invalid response format: user data missing');
@@ -458,8 +458,8 @@ export const createUser = async (
         salary: newUser.profile?.salary || newUser.salary || 0,
         address: newUser.profile?.address || newUser.address || '',
         store_name: newUser.store_name || null,
-        logoUrl: newUser.logoUrl || null,
-        store_logo: newUser.store_logo || null,
+        logoUrl: newUser.logoUrl || null, // FIXED: Only use logoUrl
+        store_logo: newUser.store_logo || null, // Keep separate
       };
     }
     throw new Error('Invalid response format: user data missing');
@@ -542,8 +542,8 @@ export const updateUser = async (
         salary: updatedUser.profile?.salary || updatedUser.salary || 0,
         address: updatedUser.profile?.address || updatedUser.address || '',
         store_name: updatedUser.store_name || null,
-        logoUrl: updatedUser.logoUrl || null,
-        store_logo: updatedUser.store_logo || null,
+        logoUrl: updatedUser.logoUrl || null, // FIXED: Only use logoUrl
+        store_logo: updatedUser.store_logo || null, // Keep separate
       };
     }
     throw new Error('Invalid response format: user data missing');
@@ -683,8 +683,8 @@ export const assignRole = async (
         salary: updatedUser.profile?.salary || updatedUser.salary || 0,
         address: updatedUser.profile?.address || updatedUser.address || '',
         store_name: updatedUser.store_name || null,
-        logoUrl: updatedUser.logoUrl || null,
-        store_logo: updatedUser.store_logo || null,
+        logoUrl: updatedUser.logoUrl || null, // FIXED: Only use logoUrl
+        store_logo: updatedUser.store_logo || null, // Keep separate
       };
     }
     throw new Error('Invalid response format: user data missing');
