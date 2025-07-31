@@ -386,6 +386,10 @@ function AppContent({ Component, pageProps }: AppProps) {
       return;
     }
 
+    if (isAuthenticated && pathname === '/Registration/registerAdmin') {
+      return; // Skip header/sidebar/footer for registerAdmin when logged in
+    }
+
     if (isAuthenticated && !publicRoutes.includes(pathname) && permissionsLoaded) {
       const requiredPermission = routePermissions[pathname];
       if (requiredPermission && !userPermissions.includes(requiredPermission)) {
@@ -436,7 +440,6 @@ function AppContent({ Component, pageProps }: AppProps) {
     }
   };
 
-  // Render logic: Skip initial loading spinner
   if (!isAuthenticated && publicRoutes.includes(pathname)) {
     return <Component {...pageProps} />;
   }
@@ -447,6 +450,10 @@ function AppContent({ Component, pageProps }: AppProps) {
 
   if (isAuthenticated && pathname === '/Registration/login') {
     return null; // Avoid rendering login page; redirect is handled
+  }
+
+  if (isAuthenticated && pathname === '/Registration/registerAdmin') {
+    return <Component {...pageProps} key={pathname} currentCurrency={currentCurrency} />;
   }
 
   if (!Sidebar) {
