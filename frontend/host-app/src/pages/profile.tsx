@@ -495,6 +495,34 @@ export default function Profile() {
       setLoading(false);
     }
   };
+  const handleAddressSave = async () => {
+    if (!token) return;
+    const addressErrors = validateAddress(address);
+    setErrors(prev => ({ ...prev, address: addressErrors }));
+    if (addressErrors.length > 0) return;
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('address', address.trim() || '');
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update address');
+      const updatedUser = { ...user, address: address.trim() || '' };
+      setUser(updatedUser);
+      setEditingField(null);
+      setErrors(prev => ({ ...prev, address: [] }));
+      showSuccess('Address updated successfully');
+    } catch (err) {
+      console.error('Update address error:', err);
+      setErrors(prev => ({ ...prev, address: [(err as Error).message || 'Failed to update address'] }));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handlePhoneNumberSave = async () => {
     if (!token) return;
