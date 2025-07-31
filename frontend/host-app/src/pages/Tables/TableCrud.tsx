@@ -17,6 +17,7 @@ interface TableCrudProps {
   isProductFormActive: boolean;
   mode: 'add' | 'edit' | 'delete';
   setFlashMessageInParent: (message: { message: string; type: 'success' | 'error' }) => void;
+  loadTables: () => Promise<void>; // Add loadTables prop
 }
 
 export default function TableCrud({
@@ -32,6 +33,7 @@ export default function TableCrud({
                                     isProductFormActive,
                                     mode,
                                     setFlashMessageInParent,
+                                    loadTables, // Destructure loadTables
                                   }: TableCrudProps) {
   const [newTableNumber, setNewTableNumber] = useState(table?.number?.toString() || '');
   const [newTableFloorId, setNewTableFloorId] = useState(table?.floor_id?._id || '');
@@ -160,8 +162,9 @@ export default function TableCrud({
           number: parseInt(newTableNumber),
           floor_id: newTableFloorId,
         });
-        setTables([...tables, updatedTable]);
+        // setTables([...tables, updatedTable]); // Remove local state update
         setFlashMessageInParent({ message: `Table ${newTableNumber} added successfully!`, type: 'success' });
+        await loadTables(); // Refresh table list
       } else if (mode === 'edit' && editingTableId) {
         console.log('Updating table:', { table_id: editingTableId, number: parseInt(newTableNumber), floor_id: newTableFloorId });
         updatedTable = await updateTable(token, logout, {
@@ -169,13 +172,15 @@ export default function TableCrud({
           number: parseInt(newTableNumber),
           floor_id: newTableFloorId,
         });
-        setTables(tables.map((t) => (t._id === editingTableId ? updatedTable : t)));
+        // setTables(tables.map((t) => (t._id === editingTableId ? updatedTable : t))); // Remove local state update
         setFlashMessageInParent({ message: `Table ${newTableNumber} updated successfully!`, type: 'success' });
+        await loadTables(); // Refresh table list
       } else if (mode === 'delete' && deleteTableId) {
         console.log('Deleting table:', deleteTableId);
         await deleteTable(token, logout, deleteTableId);
-        setTables(tables.filter((t) => t._id !== deleteTableId));
+        // setTables(tables.filter((t) => t._id !== deleteTableId)); // Remove local state update
         setFlashMessageInParent({ message: `Table ${table?.number} deleted successfully!`, type: 'success' });
+        await loadTables(); // Refresh table list
       }
       onCancel();
     } catch (err) {

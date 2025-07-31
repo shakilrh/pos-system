@@ -26,6 +26,7 @@ interface TableListProps {
   flashMessage?: { message: string; type: 'success' | 'error' } | null;
   setFlashMessage?: (message: { message: string; type: 'success' | 'error' } | null) => void;
   isProductFormActive: boolean;
+  loadTables: () => Promise<void>; // Add loadTables prop
 }
 
 export default function TableList({
@@ -45,6 +46,7 @@ export default function TableList({
                                     flashMessage,
                                     setFlashMessage,
                                     isProductFormActive,
+                                    loadTables, // Destructure loadTables
                                   }: TableListProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);

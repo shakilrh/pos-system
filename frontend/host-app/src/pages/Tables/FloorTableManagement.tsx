@@ -43,6 +43,22 @@ export default function FloorTableManagement({
   const [currentTheme, setCurrentTheme] = useState<string>('default');
   const [clientLoaded, setClientLoaded] = useState(false);
 
+  const loadTables = async () => {
+    try {
+      const [tableList, freeTableList] = await Promise.all([
+        fetchTables(token!, logout),
+        fetchFreeTables(token!, logout),
+      ]);
+      setTables(tableList);
+      setFreeTables(freeTableList);
+    } catch (err) {
+      setFlashMessage({
+        message: err instanceof Error ? err.message : 'Failed to fetch tables',
+        type: 'error',
+      });
+    }
+  };
+
   useEffect(() => {
     setIsClient(true);
     setClientLoaded(true);
@@ -79,7 +95,6 @@ export default function FloorTableManagement({
     }
 
     const fetchData = async () => {
-      setFlashMessage(null);
       try {
         const [floorList, tableList, freeTableList] = await Promise.all([
           fetchFloors(token, logout),
@@ -166,7 +181,7 @@ export default function FloorTableManagement({
           }}
         >
           <div className="text-2xl mb-4" style={{ color: themeColors.headingText }}>
-            Loading...
+            Initializing...
           </div>
         </div>
       </div>
@@ -262,11 +277,11 @@ export default function FloorTableManagement({
     setItemBeingDeleted(tableId);
     try {
       await deleteTable(token!, logout, tableId);
-      setTables(tables.filter((t) => t._id !== tableId));
       setFlashMessage({
         message: `Table "${selectedTable?.number}" deleted successfully!`,
         type: 'success',
       });
+      await loadTables();
     } catch (err) {
       setFlashMessage({
         message: err instanceof Error ? err.message : 'Failed to delete table',
@@ -305,7 +320,7 @@ export default function FloorTableManagement({
           }}
         >
           <div className="text-2xl mb-4" style={{ color: themeColors.headingText }}>
-            Loading...
+            Initializing Data...
           </div>
         </div>
       </div>
@@ -314,7 +329,6 @@ export default function FloorTableManagement({
 
   return (
     <div className="w-full min-h-screen py-4 bg-[var(--background-color)]">
-      {/* Heading Card */}
       <div
         className="rounded-lg shadow-md border w-full p-4 mb-6"
         style={{
@@ -332,7 +346,6 @@ export default function FloorTableManagement({
         </div>
       </div>
 
-      {/* Main Content Card */}
       <div
         className="rounded-lg shadow-md border w-full p-4"
         style={{
@@ -383,7 +396,6 @@ export default function FloorTableManagement({
           />
         )}
 
-        {/* Tables Tab */}
         {activeTab === 'tables' && (
           editingTableId ? (
             <TableCrud
@@ -398,6 +410,7 @@ export default function FloorTableManagement({
               isProductFormActive={isProductFormActive}
               mode={editingTableId === 'add' ? 'add' : 'edit'}
               setFlashMessageInParent={setFlashMessage}
+              loadTables={loadTables}
             />
           ) : (
             <TableList
@@ -412,16 +425,16 @@ export default function FloorTableManagement({
               onAdd={handleAddTable}
               onEdit={handleEditTable}
               onDelete={handleDeleteTable}
-              isLoading={{ fetch: loading, delete: !!itemBeingDeleted }}
+              isLoading={{ fetch: false, delete: !!itemBeingDeleted }}
               itemBeingDeleted={itemBeingDeleted}
               flashMessage={flashMessage}
               setFlashMessage={setFlashMessage}
               isProductFormActive={isProductFormActive}
+              loadTables={loadTables}
             />
           )
         )}
 
-        {/* Floors Tab */}
         {activeTab === 'floors' && (
           editingFloorId ? (
             <FloorCrud
@@ -455,7 +468,6 @@ export default function FloorTableManagement({
           )
         )}
 
-        {/* Assign Table Tab */}
         {activeTab === 'assignTable' && (
           <AssignTable
             token={token}
@@ -470,7 +482,6 @@ export default function FloorTableManagement({
         )}
       </div>
 
-      {/* Delete Confirmation Modals */}
       {deleteTableConfirm && selectedTable && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div
