@@ -10,21 +10,21 @@ const FallbackHeader = () => <div>Header failed to load</div>;
 const FallbackFooter = () => <div>Footer failed to load</div>;
 
 const Header = dynamic(
-  () => import('remoteApp/Header').catch((err) => {
-    console.error('Header load error:', err);
-    return () => FallbackHeader;
-  }),
-  { ssr: false }
+    () => import('remoteApp/Header').catch((err) => {
+      console.error('Header load error:', err);
+      return () => FallbackHeader;
+    }),
+    { ssr: false }
 );
 
 import Sidebar from '../components/Sidebar';
 
 const Footer = dynamic(
-  () => import('remoteApp/Footer').catch((err) => {
-    console.error('Footer load error:', err);
-    return () => FallbackFooter;
-  }),
-  { ssr: false }
+    () => import('remoteApp/Footer').catch((err) => {
+      console.error('Footer load error:', err);
+      return () => FallbackFooter;
+    }),
+    { ssr: false }
 );
 
 const publicRoutes = ['/Registration/login', '/Registration/forgotPassword', '/Registration/registerAdmin', '/NoAccess'];
@@ -35,6 +35,7 @@ function AppContent({ Component, pageProps }: AppProps) {
   const [currentTheme, setCurrentTheme] = useState('default');
   const [currentCurrency, setCurrentCurrency] = useState('pkr');
   const [themeLoaded, setThemeLoaded] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true); // Add this state to track initial load
 
   const themePollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastKnownThemeRef = useRef<string>('default');
@@ -62,8 +63,8 @@ function AppContent({ Component, pageProps }: AppProps) {
   const applyThemeToDOM = (selectedTheme: string) => {
     console.log('Applying theme to DOM:', selectedTheme);
     document.documentElement.classList.remove(
-      'theme-default', 'theme-blue', 'theme-green',
-      'theme-professional', 'theme-warm-minimal', 'theme-dark-pro'
+        'theme-default', 'theme-blue', 'theme-green',
+        'theme-professional', 'theme-warm-minimal', 'theme-dark-pro'
     );
     document.documentElement.classList.add(`theme-${selectedTheme}`);
     document.documentElement.setAttribute('data-theme', selectedTheme);
@@ -366,30 +367,49 @@ function AppContent({ Component, pageProps }: AppProps) {
     };
   }, []);
 
+  // Set initial load to false after first render
+  useEffect(() => {
+    if (initialLoad) {
+      setInitialLoad(false);
+    }
+  }, [initialLoad]);
+
   useEffect(() => {
     console.log('Route protection useEffect triggered', {
       isAuthenticated,
       pathname,
       permissionsLoaded,
       userPermissions,
+      isLoading,
+      initialLoad,
     });
 
+    // Don't do any redirects while still loading or during initial load
+    if (isLoading || initialLoad) {
+      console.log('Still loading, skipping route protection');
+      return;
+    }
+
+    // Handle unauthenticated users
     if (!isAuthenticated && !publicRoutes.includes(pathname)) {
       console.log('Redirecting to login: User not authenticated');
       router.replace('/Registration/login');
       return;
     }
 
-    if (isAuthenticated && pathname === '/Registration/login') {
+    // Only redirect from login page if user is authenticated AND not during initial load
+    if (isAuthenticated && pathname === '/Registration/login' && !initialLoad) {
       console.log('Redirecting to dashboard: User authenticated on login page');
       router.replace('/Dashboard/dashboard');
       return;
     }
 
+    // Skip further checks for registerAdmin route when authenticated
     if (isAuthenticated && pathname === '/Registration/registerAdmin') {
-      return; // Skip header/sidebar/footer for registerAdmin when logged in
+      return;
     }
 
+    // Handle permission-based access control
     if (isAuthenticated && !publicRoutes.includes(pathname) && permissionsLoaded) {
       const requiredPermission = routePermissions[pathname];
       if (requiredPermission && !userPermissions.includes(requiredPermission)) {
@@ -400,7 +420,7 @@ function AppContent({ Component, pageProps }: AppProps) {
         console.log(`Access granted to ${pathname}`);
       }
     }
-  }, [isAuthenticated, pathname, router, userPermissions, permissionsLoaded, routePermissions]);
+  }, [isAuthenticated, pathname, router, userPermissions, permissionsLoaded, routePermissions, isLoading, initialLoad]);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -432,6 +452,7 @@ function AppContent({ Component, pageProps }: AppProps) {
       await logout();
       setSidebarOpen(false);
       setThemeLoaded(false);
+      setInitialLoad(true); // Reset initial load state on logout
       console.log('User logged out successfully');
       await router.replace('/Registration/login');
     } catch (error) {
@@ -439,6 +460,18 @@ function AppContent({ Component, pageProps }: AppProps) {
       window.location.href = '/Registration/login';
     }
   };
+
+  // Show loading state while authentication is being determined
+  if (isLoading || initialLoad) {
+    return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="flex flex-col items-center">
+            <div className="w-16 h-16 border-t-4 border-b-4 border-orange-500 rounded-full animate-spin"></div>
+            <p className="mt-4 text-lg font-semibold text-gray-700">Loading...</p>
+          </div>
+        </div>
+    );
+  }
 
   if (!isAuthenticated && publicRoutes.includes(pathname)) {
     return <Component {...pageProps} />;
@@ -466,53 +499,53 @@ function AppContent({ Component, pageProps }: AppProps) {
   const headerHeight = 'h-16';
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
-      <Header
-        onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
-        onLogout={handleLogout}
-        onNavigate={(path: string) => router.push(path)}
-        token={token}
-        user={user}
-        className={headerHeight}
-      />
-      <div className="flex flex-1 overflow-hidden mt-10" style={{ backgroundColor: 'var(--background-color)' }}>
-        <Sidebar
-          className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 ${sidebarWidth} bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-2xl transition-all duration-300 ease-in-out`}
-          setSidebarOpen={setSidebarOpen}
-          sidebarOpen={sidebarOpen}
-          userPermissions={userPermissions}
+      <div className="flex flex-col min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
+        <Header
+            onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+            onLogout={handleLogout}
+            onNavigate={(path: string) => router.push(path)}
+            token={token}
+            user={user}
+            className={headerHeight}
         />
-        <main
-          className={`flex-1 ${contentMargin} overflow-auto p-4 transition-all duration-300 ease-in-out main-content-container`}
-          style={{
-            backgroundColor: 'var(--background-color)',
-            zoom: '0.8',
-          }}
-        >
-          {isPageLoading ? (
-            <div className="flex items-center justify-center min-h-screen">
-              <div className="flex flex-col items-center">
-                <div className="w-16 h-16 border-t-4 border-b-4 border-orange-500 rounded-full animate-spin"></div>
-                <p className="mt-4 text-lg font-semibold text-gray-700">Loading...</p>
-              </div>
-            </div>
-          ) : (
-            <Component {...pageProps} key={pathname} currentCurrency={currentCurrency} />
-          )}
-        </main>
+        <div className="flex flex-1 overflow-hidden mt-10" style={{ backgroundColor: 'var(--background-color)' }}>
+          <Sidebar
+              className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 ${sidebarWidth} bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-2xl transition-all duration-300 ease-in-out`}
+              setSidebarOpen={setSidebarOpen}
+              sidebarOpen={sidebarOpen}
+              userPermissions={userPermissions}
+          />
+          <main
+              className={`flex-1 ${contentMargin} overflow-auto p-4 transition-all duration-300 ease-in-out main-content-container`}
+              style={{
+                backgroundColor: 'var(--background-color)',
+                zoom: '0.8',
+              }}
+          >
+            {isPageLoading ? (
+                <div className="flex items-center justify-center min-h-screen">
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 border-t-4 border-b-4 border-orange-500 rounded-full animate-spin"></div>
+                    <p className="mt-4 text-lg font-semibold text-gray-700">Loading...</p>
+                  </div>
+                </div>
+            ) : (
+                <Component {...pageProps} key={pathname} currentCurrency={currentCurrency} />
+            )}
+          </main>
+        </div>
+        <Footer
+            className={`p-4 shadow-inner ${contentMargin} transition-all duration-300 ease-in-out`}
+            sidebarOpen={sidebarOpen}
+        />
       </div>
-      <Footer
-        className={`p-4 shadow-inner ${contentMargin} transition-all duration-300 ease-in-out`}
-        sidebarOpen={sidebarOpen}
-      />
-    </div>
   );
 }
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <AuthProvider>
-      <AppContent Component={Component} pageProps={pageProps} />
-    </AuthProvider>
+      <AuthProvider>
+        <AppContent Component={Component} pageProps={pageProps} />
+      </AuthProvider>
   );
 }
