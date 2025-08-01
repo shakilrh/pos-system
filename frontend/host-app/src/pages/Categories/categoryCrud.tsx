@@ -264,15 +264,9 @@ export default function CategoryCrud({
                 </button>
                 <button
                     type="submit"
-                    //className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isProductFormActive || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--background-color)]'}`}
-                    //style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+                    className={`flex-1 items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isCategoryFormActive || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-color)]'}`}
+                    style={{ '--tw-ring-color': 'var(--focus-ring)' }}
                     disabled={isProductFormActive || !isFormValid()}
-                    className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isProductFormActive || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-color-button)] hover:bg-[var(--primary-color)]'}`}
-                    /*style={{
-                      backgroundColor: isProductFormActive ? undefined : 'var(--primary-color)',
-                      color: 'var(--text-color-button)',
-
-                    }}*/
                 >
                   {mode === 'edit' ? 'Update Category' : 'Create Category'}
                 </button>

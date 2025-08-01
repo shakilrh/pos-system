@@ -605,9 +605,9 @@ export default function ProductCrud({
                   disabled={isCategoryFormActive}
                 />
                 <label
-                  htmlFor="imageUpload"
-                  className={`cursor-pointer flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isCategoryFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-color-button)] hover:bg-[var(--primary-color)]'}`}
-                  style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+                    htmlFor="imageUpload"
+                    className={`cursor-pointer flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isCategoryFormActive ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-hover)]'}`}
+                    style={{ '--tw-ring-color': 'var(--focus-ring)' }}
                 >
                   <PlusCircleIcon className="w-4 h-4 mr-1" />
                   <span>Upload</span>
@@ -627,19 +627,19 @@ export default function ProductCrud({
           </div>
           <div className="flex space-x-2 pt-2">
             <button
-              type="button"
-              onClick={onCancel}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isCategoryFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}`}
-              style={{ backgroundColor: 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' }}
-              disabled={isCategoryFormActive}
+                type="button"
+                onClick={onCancel}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isCategoryFormActive ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : 'text-[var(--button-inactive-text, var(--text-secondary))] border border-[var(--border-color)] hover:bg-[var(--surface-secondary)]'}`}
+                style={{ backgroundColor: 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' }}
+                disabled={isCategoryFormActive}
             >
               Cancel
             </button>
             <button
-              type="submit"
-              className={`flex-1 items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isCategoryFormActive || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-color-button)] hover:bg-[var(--primary-color)]'}`}
-              style={{ '--tw-ring-color': 'var(--focus-ring)' }}
-              disabled={isCategoryFormActive || !isFormValid()}
+                type="submit"
+                className={`flex-1 items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isCategoryFormActive || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-color)]'}`}
+                style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+                disabled={isCategoryFormActive || !isFormValid()}
             >
               {mode === 'edit' ? 'Update Product' : 'Create Product'}
             </button>

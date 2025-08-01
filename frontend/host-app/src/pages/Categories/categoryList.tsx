@@ -112,18 +112,15 @@ export default function CategoryList({
               </div>
 
             {userPermissions.includes('can_add_categories') && ( // Wrap Add button
-              <button
-                onClick={onAdd}
-                className={`flex items-center px-2.5 py-1.5 mt-9 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isProductFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''}`}
-                style={{
-                  backgroundColor: isProductFormActive ? undefined : 'var(--primary-color)',
-                  color: 'var(--text-color-button)',
-                }}
-                disabled={isProductFormActive}
-              >
-                <PlusCircleIcon className="w-4 h-4 mr-1"/>
-                <span>Add</span>
-              </button>
+                <button
+                    onClick={onAdd}
+                    className={`flex items-center px-2.5 py-1.5 mt-9 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isProductFormActive ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-hover)]'}`}
+                    style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+                    disabled={isProductFormActive}
+                >
+                    <PlusCircleIcon className="w-4 h-4 mr-1" />
+                    <span>Add</span>
+                </button>
             )}
           </div>
 
@@ -198,18 +195,8 @@ export default function CategoryList({
                           <button
                               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                               disabled={currentPage === 1 || isProductFormActive}
-                              className="flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none"
-                              style={{
-                                  backgroundColor: currentPage === 1 ? 'var(--bg-gray)' : 'var(--primary-color)',
-                                  color: currentPage === 1 ? 'var(--text-color-gray)' : 'var(--text-color-button)',
-                                  borderColor: 'var(--border-color)',
-                              }}
-
-                              /*style={{//bg-gray-300 text-gray-500
-                              backgroundColor: 'var(--background-secondary)',
-                              color: 'var(--text-secondary)',
-                              borderColor: 'var(--border-color)',
-                            }}*/
+                              className={`flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${currentPage === 1 || isProductFormActive ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-hover)]'}`}
+                              style={{ '--tw-ring-color': 'var(--focus-ring)', borderColor: 'var(--border-color)' }}
                           >
                               Previous
                           </button>
@@ -217,12 +204,8 @@ export default function CategoryList({
                               <button
                                   key={page}
                                   onClick={() => setCurrentPage(page)}
-                                  className={`px-4 py-2 text-sm rounded-lg transition-colors duration-200 ${currentPage === page ? 'text-white' : ''}`}
-                                  style={{
-                                      backgroundColor: currentPage === page ? 'var(--primary-color)' : 'var(--background-secondary)',
-                                      color: currentPage === page ? 'var(--text-color-button)' : 'var(--text-secondary)',
-                                      borderColor: 'var(--border-color)',
-                                  }}
+                                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${currentPage === page ? 'bg-[var(--primary-color)] text-[var(--text-on-primary)]' : 'bg-[var(--background-secondary)] text-[var(--button-inactive-text, var(--text-secondary))] hover:bg-[var(--surface-secondary)]'}`}
+                                  style={{ '--tw-ring-color': 'var(--focus-ring)', borderColor: 'var(--border-color)' }}
                               >
                                   {page}
                               </button>
@@ -230,12 +213,8 @@ export default function CategoryList({
                           <button
                               onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                               disabled={currentPage === totalPages || isProductFormActive}
-                              className="px-4 py-2 text-sm rounded-lg disabled:opacity-50 transition-colors duration-200"
-                              style={{
-                                  backgroundColor: currentPage === totalPages ? 'var(--bg-gray)' : 'var(--primary-color)',
-                                  color: currentPage === totalPages ? 'var(--text-color-gray)' : 'var(--text-color-button)',
-                                  borderColor: 'var(--border-color)',
-                              }}
+                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${currentPage === totalPages || isProductFormActive ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-hover)]'}`}
+                              style={{ '--tw-ring-color': 'var(--focus-ring)', borderColor: 'var(--border-color)' }}
                           >
                               Next
                           </button>

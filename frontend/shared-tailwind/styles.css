@@ -21,6 +21,8 @@
   /* Hover state enhancement */
   --hover-opacity: 0.8;
   --active-opacity: 0.9;
+  --disabled-bg: #9ca3af; /* Gray-400 */
+  --disabled-text: #d1d5db; /* Gray-300 */
 }
 
 /* Ensure smooth font rendering */
@@ -101,7 +103,7 @@
   --error-color-hover: #dc2626; /* Red-600 */
 }
 
-/* PROFESSIONAL THEME - High contrast for accessibility */
+/* Update [data-theme="professional"] section */
 [data-theme="professional"] {
   --primary-color: #1f2937; /* Gray-800 */
   --primary-hover: #111827; /* Gray-900 */
@@ -120,6 +122,24 @@
   --surface-color: #ffffff; /* background.secondary */
   --surface-secondary: #f3f4f6; /* Gray-100 */
   --error-color-hover: #dc2626; /* Red-600 */
+  /* Ensure inactive buttons have white text */
+  --button-inactive-text: #ffffff; /* Override for inactive buttons */
+}
+button:disabled {
+  background-color: var(--disabled-bg);
+  color: var(--disabled-text);
+  cursor: not-allowed;
+}
+/* Add universal button inactive text override */
+button:not(.bg-[var(--primary-color)]), button.bg-[var(--background-secondary)] {
+  color: var(--button-inactive-text, var(--text-secondary));
+}
+
+/* Disabled button styles */
+button:disabled {
+  background-color: var(--disabled-bg);
+  color: var(--disabled-text);
+  cursor: not-allowed;
 }
 
 /* WARM MINIMAL THEME */

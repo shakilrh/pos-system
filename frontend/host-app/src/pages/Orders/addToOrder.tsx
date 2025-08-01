@@ -633,15 +633,15 @@ const AddToOrderForm = ({
 
       {/* Add to Order Button */}
       <button
-        onClick={handleEnhancedCreateOrder}
-        disabled={!parentOrder || orderItems.length === 0}
-        className={`flex items-center justify-center mx-auto px-8 py-4 text-lg font-medium rounded-lg transition-all duration-200 focus:outline-none w-3/4 min-w-[300px] max-w-[500px] ${
-          !parentOrder || orderItems.length === 0
-            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            : 'bg-[var(--primary-color)] text-[var(--text-color-button)] hover:brightness-90 hover:shadow-md'
-        }`}
+          onClick={handleEnhancedCreateOrder}
+          disabled={!isFormValid()}
+          className={`flex items-center justify-center mx-auto px-8 py-4 text-lg font-medium rounded-lg transition-all duration-200 focus:outline-none w-3/4 min-w-[300px] max-w-[500px] ${
+              !isFormValid()
+                  ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed'
+                  : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:brightness-90 hover:shadow-md'
+          }`}
       >
-        Add to Order
+        Confirm Order
       </button>
     </div>
   );
