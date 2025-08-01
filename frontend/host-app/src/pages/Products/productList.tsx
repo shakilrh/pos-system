@@ -264,87 +264,77 @@ export default function ProductList({
       {currentProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 w-full">
           {currentProducts.map((product) => (
-            <div
-              key={`product-${product._id}`}
-              className={`relative rounded-lg shadow-sm overflow-hidden hover:bg-[var(--background-secondary)] transition-colors duration-200 ${!product.isActive ? 'opacity-50' : ''} w-full max-w-[180px] mx-auto`}
-              style={{
-                backgroundColor: 'var(--background-color)',
-                border: '1px solid var(--border-color)',
-                height: '240px'
-              }}
-            >
-              <div className="relative h-1/2 cursor-pointer" onClick={() => !isCategoryFormActive && onViewDetails(product)}>
-                {product.pictureUrl ? (
-                  <img
-                    src={product.pictureUrl}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = 'https://via.placeholder.com/150?text=No+Image';
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: 'var(--background-secondary)' }}>
-                    <PhotoIcon className="w-8 h-8" style={{ color: 'var(--text-tertiary)' }} />
-                  </div>
-                )}
-              </div>
-              <div className="p-2 flex flex-col justify-between h-1/2">
-                <div>
-                  <h3 className="text-md font-semibold truncate" style={{ color: 'var(--text-color)' }}>{product.name}</h3>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="font-medium text-sm" style={{ color: 'var(--primary-color)' }} key={`${product._id}-${activeCurrency}`}>
-                      {formatPrice(product.price, activeCurrency)}
-                    </p>
-                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{product.categoryName}</p>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center mt-2">
-                  {userPermissions.includes('can_edit_products') && (
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={product.isActive}
-                          onChange={() => !isCategoryFormActive && onToggleActive(product)}
-                          className="sr-only"
-                          disabled={isCategoryFormActive}
-                        />
-                        <div
-                          className={`w-10 h-5 rounded-full transition duration-200 ${product.isActive ? 'bg-[var(--primary-color)]' : 'bg-[var(--background-secondary)]'}`}
-                        ></div>
-                        <div
-                          className={`absolute top-0.5 left-0.5 w-4 h-4 bg-[var(--surface-color)] rounded-full shadow transition duration-200 transform ${product.isActive ? 'translate-x-5' : 'translate-x-0'}`}
-                        ></div>
+              <div
+                  key={`product-${product._id}`}
+                  className={`relative rounded-lg shadow-sm overflow-hidden hover:bg-[var(--background-secondary)] transition-colors duration-200 w-full max-w-[180px] mx-auto`}
+                  style={{
+                    backgroundColor: 'var(--background-color)',
+                    border: '1px solid var(--border-color)',
+                    height: '240px'
+                  }}
+              >
+                <div className={`relative h-1/2 cursor-pointer ${!product.isActive ? 'opacity-50' : ''}`} onClick={() => !isCategoryFormActive && onViewDetails(product)}>
+                  {product.pictureUrl ? (
+                      <img
+                          src={product.pictureUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://via.placeholder.com/150?text=No+Image';
+                          }}
+                      />
+                  ) : (
+                      <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: 'var(--background-secondary)' }}>
+                        <PhotoIcon className="w-8 h-8" style={{ color: 'var(--text-tertiary)' }} />
                       </div>
-                      <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{product.isActive ? 'Active' : 'Deactive'}</span>
-                    </label>
                   )}
-                  <div className="flex space-x-1">
+                </div>
+                <div className="p-2 flex flex-col justify-between h-1/2">
+                  <div className={!product.isActive ? 'opacity-50' : ''}>
+                    <h3 className="text-md font-semibold truncate" style={{ color: 'var(--text-color)' }}>{product.name}</h3>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="font-medium text-sm" style={{ color: 'var(--primary-color)' }} key={`${product._id}-${activeCurrency}`}>
+                        {formatPrice(product.price, activeCurrency)}
+                      </p>
+                      <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{product.categoryName}</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
                     {userPermissions.includes('can_edit_products') && (
-                      <button
-                        onClick={() => !isCategoryFormActive && onEdit(product)}
-                        className={`p-0.5 rounded-full hover:bg-[var(--background-secondary)] ${isCategoryFormActive ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title="Edit"
-                        disabled={isCategoryFormActive}
-                      >
-                        <PencilIcon className="w-4 h-4" style={{ color: 'var(--primary-color)' }} />
-                      </button>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <div className="relative">
+                            <input
+                                type="checkbox"
+                                checked={product.isActive}
+                                onChange={() => !isCategoryFormActive && onToggleActive(product)}
+                                className="sr-only"
+                                disabled={isCategoryFormActive}
+                            />
+                            <div
+                                className={`w-10 h-5 rounded-full transition duration-200 ${product.isActive ? 'bg-[var(--primary-color)]' : 'bg-gray-300'}`}
+                            ></div>
+                            <div
+                                className={`absolute top-0.5 left-0.5 w-4 h-4 bg-[var(--surface-color)] rounded-full shadow transition duration-200 transform ${product.isActive ? 'translate-x-5' : 'translate-x-0'}`}
+                            ></div>
+                          </div>
+                          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{product.isActive ? 'Active' : 'Deactive'}</span>
+                        </label>
                     )}
-                    {/*{userPermissions.includes('can_delete_products') && (*/}
-                    {/*  <button*/}
-                    {/*    onClick={() => !isCategoryFormActive && onDelete(product._id)}*/}
-                    {/*    className={`p-0.5 rounded-full hover:bg-[var(--background-secondary)] ${isCategoryFormActive ? 'opacity-50 cursor-not-allowed' : ''}`}*/}
-                    {/*    title="Delete"*/}
-                    {/*    disabled={isCategoryFormActive}*/}
-                    {/*  >*/}
-                    {/*    <TrashIcon className="w-4 h-4" style={{ color: 'var(--error-color)' }} />*/}
-                    {/*  </button>*/}
-                    {/*)}*/}
+                    <div className={`flex space-x-1 ${!product.isActive ? 'opacity-50' : ''}`}>
+                      {userPermissions.includes('can_edit_products') && (
+                          <button
+                              onClick={() => !isCategoryFormActive && onEdit(product)}
+                              className={`p-0.5 rounded-full hover:bg-[var(--background-secondary)] ${isCategoryFormActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              title="Edit"
+                              disabled={isCategoryFormActive}
+                          >
+                            <PencilIcon className="w-4 h-4" style={{ color: 'var(--primary-color)' }} />
+                          </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
           ))}
         </div>
       ) : (
