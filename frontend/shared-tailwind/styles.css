@@ -34,7 +34,7 @@
 /* DEFAULT THEME - Orange Primary */
 [data-theme="default"] {
   --primary-color: #f97316; /* theme-default.primary (Orange-500) */
-  --primary-hover: #c2410c; /* theme-default.700 (Orange-700) */
+  --primary-hover: #f39555; /* theme-default.700 (Orange-700) */
   --text-on-primary: #ffffff; /* White text/icon for buttons/icons */
   --secondary-color: #64748b; /* secondary.DEFAULT (Slate-500) */
   --background-color: #ffffff; /* background.secondary (White) */
@@ -58,7 +58,7 @@
 /* BLUE THEME */
 [data-theme="blue"] {
   --primary-color: #3b82f6; /* theme-blue.primary (Blue-500) */
-  --primary-hover: #1d4ed8; /* theme-blue.700 (Blue-700) */
+  --primary-hover: #618fd8; /* theme-blue.700 (Blue-700) */
   --text-on-primary: #ffffff; /* White text/icon for buttons/icons */
   --secondary-color: #64748b; /* secondary.DEFAULT (Slate-500) */
   --background-color: #ffffff; /* background.secondary (White) */
@@ -82,7 +82,7 @@
 /* GREEN THEME */
 [data-theme="green"] {
   --primary-color: #059669; /* theme-green.primary (Emerald-600) */
-  --primary-hover: #065f46; /* theme-green.700 (Emerald-800) */
+  --primary-hover: #36dfa9; /* theme-green.700 (Emerald-800) */
   --text-on-primary: #ffffff; /* White text/icon for buttons/icons */
   --secondary-color: #64748b; /* secondary.DEFAULT (Slate-500) */
   --background-color: #ffffff; /* background.secondary (White) */
@@ -106,7 +106,7 @@
 /* Update [data-theme="professional"] section */
 [data-theme="professional"] {
   --primary-color: #1f2937; /* Gray-800 */
-  --primary-hover: #111827; /* Gray-900 */
+  --primary-hover: #314461; /* Gray-900 */
   --text-on-primary: #ffffff; /* White text/icon for buttons/icons */
   --secondary-color: #64748b; /* secondary.DEFAULT (Slate-500) */
   --background-color: #ffffff; /* background.secondary (White) */
@@ -145,7 +145,7 @@ button:disabled {
 /* WARM MINIMAL THEME */
 [data-theme="warm-minimal"] {
   --primary-color: #92400e; /* Amber-800 */
-  --primary-hover: #78350f; /* Amber-900 */
+  --primary-hover: #d17034; /* Amber-900 */
   --text-on-primary: #ffffff; /* White text/icon for buttons/icons */
   --secondary-color: #57534e; /* Stone-600 */
   --background-color: #fffbeb; /* Amber-50 */
@@ -166,7 +166,7 @@ button:disabled {
 /* DARK PRO THEME */
 [data-theme="dark-pro"] {
   --primary-color: #5497ff; /* Blue-500 adjusted */
-  --primary-hover: #3b74e6; /* Blue-600 adjusted */
+  --primary-hover: #638fd1; /* Blue-600 adjusted */
   --text-on-primary: #ffffff; /* White text/icon for buttons/icons */
   --secondary-color: #b0b8c6; /* Gray-400 */
   --background-color: #111827; /* Gray-900 */
