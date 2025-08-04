@@ -10,7 +10,8 @@ import { getUserDetails } from '../../services/UserService';
 import FlashMessage from '../FlashMessage';
 import OrderDetails from './OrderDetails';
 import OrderMenu from './OrderMenu';
-import ReceiptModal from './ReceiptModal';
+import toast from 'react-hot-toast';
+import { PrinterIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface Product {
   _id: string;
@@ -69,6 +70,13 @@ interface Order {
   waiter_id?: string;
 }
 
+interface StoreInfo {
+  storeName: string;
+  phoneNumber: string | null;
+  address: string | null;
+  store_logo?: string;
+  logoUrl?: string;
+}
 
 export default function CreateOrder() {
   const { isAuthenticated, isLoading, token, logout, user } = useAuth();
@@ -80,7 +88,6 @@ export default function CreateOrder() {
   const [customerName, setCustomerName] = useState('');
   const [receivedAmount, setReceivedAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('cash');
-  const [showReceipt, setShowReceipt] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -95,6 +102,32 @@ export default function CreateOrder() {
   const [selectedWaiter, setSelectedWaiter] = useState<Waiter | null>(null);
   const [isAddToOrder, setIsAddToOrder] = useState(false);
   const [freeWaiters, setFreeWaiters] = useState<Waiter[]>([]);
+  const [storeInfo, setStoreInfo] = useState<StoreInfo>({
+    storeName: 'POS Store',
+    phoneNumber: null,
+    address: null,
+  });
+  const [activeCurrency, setActiveCurrency] = useState('pkr');
+
+  const getCurrencySymbol = (currency: string) => {
+    const symbols = {
+      pkr: '₨',
+      dollar: '$',
+      euro: '€',
+    };
+    return symbols[currency as keyof typeof symbols] || '₨';
+  };
+
+  const formatPrice = (price: number, currency: string) => {
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${price.toFixed(2)}`;
+  };
+
+  const getCurrentCurrency = () => {
+    const domCurrency = document.documentElement.getAttribute('data-currency');
+    const storedCurrency = localStorage.getItem('appCurrency');
+    return domCurrency || storedCurrency || 'pkr';
+  };
 
   useEffect(() => {
     setClientLoaded(true);
@@ -118,9 +151,77 @@ export default function CreateOrder() {
       });
     }
 
-    return () => observer.disconnect();
-  }, []);
+    const handleCurrencyChange = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency && newCurrency !== activeCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
 
+    const handleSettingsLoaded = (event: CustomEvent) => {
+      const newCurrency = event.detail.currency;
+      if (newCurrency) {
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    const handleForceRerender = (event: CustomEvent) => {
+      if (event.detail.type === 'currency') {
+        const newCurrency = event.detail.value;
+        setActiveCurrency(newCurrency);
+      }
+    };
+
+    window.addEventListener('currencyChange', handleCurrencyChange as EventListener);
+    window.addEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+    window.addEventListener('forceRerender', handleForceRerender as EventListener);
+
+    const initialCurrency = getCurrentCurrency();
+    if (initialCurrency !== activeCurrency) {
+      setActiveCurrency(initialCurrency);
+    }
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('currencyChange', handleCurrencyChange as EventListener);
+      window.removeEventListener('settingsLoaded', handleSettingsLoaded as EventListener);
+      window.removeEventListener('forceRerender', handleForceRerender as EventListener);
+    };
+  }, [activeCurrency]);
+
+  useEffect(() => {
+    const fetchStoreData = async () => {
+      if (!token) {
+        setStoreInfo({
+          storeName: user?.store_name || user?.name || 'POS Store',
+          phoneNumber: user?.phone_number || null,
+          address: user?.address || null,
+          store_logo: user?.store_logo || user?.logoUrl,
+        });
+        return;
+      }
+
+      try {
+        const response = await getUserDetails(token);
+        setStoreInfo({
+          storeName: response.store_name || response.name || 'POS Store',
+          phoneNumber: response.phone_number || null,
+          address: response.address || null,
+          store_logo: response.store_logo || response.logoUrl,
+        });
+      } catch (err) {
+        console.error('Fetch store data error:', err);
+        setStoreInfo({
+          storeName: user?.store_name || user?.name || 'POS Store',
+          phoneNumber: user?.phone_number || null,
+          address: user?.address || null,
+          store_logo: user?.store_logo || user?.logoUrl,
+        });
+      }
+    };
+
+    fetchStoreData();
+  }, [token, user]);
 
   const getThemeColors = () => {
     if (currentTheme === 'dark' || currentTheme === 'dark-pro') {
@@ -182,11 +283,6 @@ export default function CreateOrder() {
         }
         const waitersResponse = await fetchFreeWaiters(token, logout);
         setFreeWaiters(waitersResponse);
-
-        if (token) {
-          // const userProfile = await fetchUserProfile(token, logout);
-
-        }
       } catch (error) {
         console.error('Error fetching data:', error);
         setFlashMessage({ message: error instanceof Error ? error.message : 'Failed to fetch data', type: 'error' });
@@ -200,11 +296,11 @@ export default function CreateOrder() {
     const existingItem = orderItems.find((item) => item.product_id === product._id);
     if (existingItem) {
       setOrderItems(
-        orderItems.map((item) =>
-          item.product_id === product._id
-            ? { ...item, quantity: item.quantity + 1, sub_total: (item.product?.price || 0) * (item.quantity + 1) }
-            : item
-        )
+          orderItems.map((item) =>
+              item.product_id === product._id
+                  ? { ...item, quantity: item.quantity + 1, sub_total: (item.product?.price || 0) * (item.quantity + 1) }
+                  : item
+          )
       );
     } else {
       setOrderItems([
@@ -301,7 +397,6 @@ export default function CreateOrder() {
       setSelectedWaiter(selectedWaiterData);
 
       setCreatedOrder(updatedOrder);
-      setShowReceipt(true);
       setFlashMessage({ message: 'Order created successfully', type: 'success' });
       await getAllOrders(token, logout);
       if (orderData.service_type === 'dine_in' && orderData.table_id) {
@@ -376,7 +471,6 @@ export default function CreateOrder() {
       setSelectedWaiter(selectedWaiterData);
 
       setCreatedOrder(updatedOrder);
-      setShowReceipt(true);
       setFlashMessage({ message: 'Items added to order successfully', type: 'success' });
       await getAllOrders(token, logout);
     } catch (error) {
@@ -386,9 +480,9 @@ export default function CreateOrder() {
   };
 
   const filteredProducts = products.filter(
-    (product: Product) =>
-      (!selectedCategory || product.category_id === selectedCategory) &&
-      product.name.toLowerCase().includes(searchTerm.toLowerCase())
+      (product: Product) =>
+          (!selectedCategory || product.category_id === selectedCategory) &&
+          product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getTableNumber = (tableId: string | undefined) => {
@@ -401,9 +495,7 @@ export default function CreateOrder() {
     return selectedWaiter.name || 'N/A';
   };
 
-  const handleCloseReceipt = () => {
-    setShowReceipt(false);
-    setCreatedOrder(null);
+  const handleClearOrder = () => {
     setOrderItems([]);
     setCustomerName('');
     setServiceType('dine_in');
@@ -415,190 +507,552 @@ export default function CreateOrder() {
     setWaiterId(null);
     setSelectedWaiter(null);
     setIsAddToOrder(false);
+    setCreatedOrder(null);
+    toast.success('Order cleared successfully');
+  };
+
+  const handleDirectPrint = () => {
+    if (!createdOrder) {
+      toast.error('No order to print. Please create an order first.');
+      return;
+    }
+
+    const storeName = storeInfo.storeName;
+    const storePhone = storeInfo.phoneNumber;
+    const storeAddress = storeInfo.address;
+    const tableNumber = getTableNumber(createdOrder.table_id);
+    const waiterName = getWaiterName(createdOrder.waiter_id);
+    const storeLogo = storeInfo.store_logo || storeInfo.logoUrl;
+    const isPaymentProcessed = createdOrder.payment_status === 'paid';
+    const shouldShowPaymentMethod = paymentMethod && isPaymentProcessed;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+<html>
+<head>
+<title>Receipt - Order #${createdOrder.order_number}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --background-color: #ffffff;
+    --surface-color: #ffffff;
+    --text-color: #1a202c;
+    --text-secondary: #4a5568;
+    --border-color: #e2e8f0;
+    --focus-ring: #3182ce;
+    --error-color: #e53e3e;
+    --background-secondary: #edf2f7;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, monospace, sans-serif;
+    margin: 0;
+    padding: 6px;
+    font-size: 10px;
+    line-height: 1.2;
+    color: var(--text-color);
+    background: var(--background-color);
+  }
+
+  .receipt-container {
+    max-width: 72mm;
+    margin: 0 auto;
+    background: var(--surface-color);
+    padding: 6px;
+    border: 1px solid var(--border-color);
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color);
+    gap: 8px;
+  }
+
+  .store-logo {
+    width: 35px;
+    height: 35px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  .store-name {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+    color: var(--text-color);
+  }
+
+  .order-header {
+    text-align: center;
+    margin: 6px 0;
+    font-weight: 700;
+    font-size: 12px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-color);
+  }
+
+  .order-details {
+    font-size: 9px;
+    margin: 6px 0;
+    line-height: 1.2;
+    color: var(--text-secondary);
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 1px 0;
+    padding: 1px 0;
+  }
+
+  .detail-row span:first-child {
+    font-weight: 600;
+  }
+
+  .completion-time {
+    text-align: center;
+    font-weight: 700;
+    margin: 6px 0;
+    font-size: 9px;
+    border: 1px solid var(--border-color);
+    padding: 4px;
+    background: var(--background-secondary);
+  }
+
+  .items-section {
+    margin: 6px 0;
+    padding-bottom: 3px;
+  }
+
+  .items-header {
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 3px;
+    padding-bottom: 2px;
+  }
+
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+  }
+
+  .items-table th {
+    padding: 2px;
+    text-align: left;
+    font-weight: 700;
+    color: var(--text-color);
+  }
+
+  .items-table td {
+    padding: 2px;
+    vertical-align: top;
+    color: var(--text-secondary);
+  }
+
+  .item-name {
+    max-width: 100px;
+    word-wrap: break-word;
+  }
+
+  .item-center {
+    text-align: center;
+    width: 25px;
+  }
+
+  .item-right {
+    text-align: right;
+    width: 40px;
+  }
+
+  .total-section {
+    margin: 6px 0;
+    padding-top: 3px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 1px 0;
+    font-size: 10px;
+    padding: 1px 0;
+    color: var(--text-color);
+  }
+
+  .total-row.grand-total {
+    font-weight: 700;
+    font-size: 12px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 3px;
+    margin-top: 3px;
+  }
+
+  .payment-info {
+    text-align: center;
+    font-size: 9px;
+    margin: 4px 0;
+    font-weight: 700;
+    border: 1px solid var(--border-color);
+    padding: 3px;
+    background: var(--background-secondary);
+    color: var(--text-color);
+  }
+
+  .thank-you {
+    text-align: center;
+    font-weight: 700;
+    font-size: 10px;
+    margin: 8px 0;
+    text-transform: uppercase;
+    color: var(--text-color);
+  }
+
+  .footer {
+    text-align: center;
+    font-size: 8px;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-secondary);
+  }
+
+  .store-contact {
+    font-size: 8px;
+    margin-top: 3px;
+    line-height: 1.2;
+  }
+
+  .divider {
+    text-align: center;
+    margin: 6px 0;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-color);
+  }
+
+  @media print {
+    body {
+      margin: 0;
+      padding: 0;
+    }
+    .receipt-container {
+      max-width: none;
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="receipt-container">
+  <div class="header">
+    ${storeLogo ? `<img src="${storeLogo}" class="store-logo" alt="Store Logo" />` : ''}
+    <div class="store-name">${storeName}</div>
+  </div>
+
+  <div class="order-header">
+    ORDER #${createdOrder.order_number}
+  </div>
+
+  <div class="order-details">
+    <div class="detail-row">
+      <span>Date:</span>
+      <span>${new Date().toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Karachi',
+    })}</span>
+    </div>
+    <div class="detail-row">
+      <span>Customer:</span>
+      <span>${createdOrder.customer_name}</span>
+    </div>
+    <div class="detail-row">
+      <span>Type:</span>
+      <span>${createdOrder.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}</span>
+    </div>
+    ${createdOrder.service_type === 'dine_in' && createdOrder.table_id && tableNumber ? `
+    <div class="detail-row">
+      <span>Table:</span>
+      <span>${tableNumber}</span>
+    </div>` : ''}
+    ${createdOrder.service_type === 'dine_in' && createdOrder.waiter_id && waiterName ? `
+    <div class="detail-row">
+      <span>Waiter:</span>
+      <span>${waiterName}</span>
+    </div>` : ''}
+    ${shouldShowPaymentMethod ? `
+    <div class="detail-row">
+      <span>Payment:</span>
+      <span>${paymentMethod.toUpperCase()}</span>
+    </div>` : ''}
+  </div>
+
+  ${createdOrder.estimated_completion ? `
+  <div class="completion-time">
+    ESTIMATED COMPLETION: ${createdOrder.estimated_completion}
+  </div>` : ''}
+
+  <div class="divider">----------</div>
+
+  <div class="items-section">
+    <table class="items-table">
+      <thead>
+        <tr class="items-header">
+          <th class="item-name">Item</th>
+          <th class="item-center">Qty</th>
+          <th class="item-right">Price</th>
+          <th class="item-right">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${createdOrder.items.map(item => `
+          <tr>
+            <td class="item-name">${item.product?.name || 'Unknown Item'}</td>
+            <td class="item-center">${item.quantity}</td>
+            <td class="item-right">${formatPrice(item.product?.price || 0, activeCurrency)}</td>
+            <td class="item-right">${formatPrice(item.sub_total || 0, activeCurrency)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="total-section">
+    <div class="total-row grand-total">
+      <span>TOTAL</span>
+      <span>${formatPrice(createdOrder.total_amount || 0, activeCurrency)}</span>
+    </div>
+    ${changeAmount > 0 && isPaymentProcessed ? `
+    <div class="total-row">
+      <span>Change Given:</span>
+      <span>${formatPrice(changeAmount, activeCurrency)}</span>
+    </div>` : ''}
+  </div>
+
+  ${isPaymentProcessed ? `
+  <div class="payment-info">
+    PAYMENT CONFIRMED ✓
+  </div>` : ''}
+
+  <div class="thank-you">
+    THANK YOU!
+  </div>
+
+  <div class="footer">
+    <div>${new Date().toLocaleDateString()} | ${storeName}</div>
+    ${(storeAddress || storePhone) ? `
+    <div class="store-contact">
+      ${storeAddress ? `${storeAddress}` : ''}
+      ${storeAddress && storePhone ? '<br/>' : ''}
+      ${storePhone ? `Tel: ${storePhone}` : ''}
+    </div>` : ''}
+  </div>
+</div>
+</body>
+</html>
+`);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+    toast.success('Receipt printed successfully!');
   };
 
   if (!clientLoaded) {
     return (
-      <div className="flex justify-center items-center h-screen bg-[var(--background-color)]">
-        <div
-          className="text-center p-6 max-w-md rounded-lg shadow-md border"
-          style={{
-            backgroundColor: themeColors.cardBackground,
-            borderColor: themeColors.cardBorder,
-            color: themeColors.cardText,
-          }}
-        >
-          <div className="text-2xl mb-4" style={{ color: themeColors.headingText }}>
-            Loading...
+        <div className="flex justify-center items-center h-screen bg-[var(--background-color)]">
+          <div
+              className="text-center p-6 max-w-md rounded-lg shadow-md border"
+              style={{
+                backgroundColor: themeColors.cardBackground,
+                borderColor: themeColors.cardBorder,
+                color: themeColors.cardText,
+              }}
+          >
+            <div className="text-2xl mb-4" style={{ color: themeColors.headingText }}>
+              Loading...
+            </div>
           </div>
         </div>
-      </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="flex justify-center items-center h-screen bg-[var(--background-color)]">
-        <div
-          className="text-center p-6 max-w-md rounded-lg shadow-md border"
-          style={{
-            backgroundColor: themeColors.cardBackground,
-            borderColor: themeColors.cardBorder,
-            color: themeColors.cardText,
-          }}
-        >
-          <h2 className="text-2xl font-bold mb-4" style={{ color: themeColors.headingText }}>
-            Access Denied
-          </h2>
-          <p className="mb-6" style={{ color: themeColors.cardText }}>
-            Please log in to access the Order Creation Dashboard.
-          </p>
-          <button
-            onClick={() => window.location.href = '/pos-system/login'}
-            className="px-4 py-2 bg-[var(--primary-color)] text-[var(--sidebar-text)] rounded-lg hover:bg-[var(--primary-700)] transition-colors"
+        <div className="flex justify-center items-center h-screen bg-[var(--background-color)]">
+          <div
+              className="text-center p-6 max-w-md rounded-lg shadow-md border"
+              style={{
+                backgroundColor: themeColors.cardBackground,
+                borderColor: themeColors.cardBorder,
+                color: themeColors.cardText,
+              }}
           >
-            Go to Log In
-          </button>
+            <h2 className="text-2xl font-bold mb-4" style={{ color: themeColors.headingText }}>
+              Access Denied
+            </h2>
+            <p className="mb-6" style={{ color: themeColors.cardText }}>
+              Please log in to access the Order Creation Dashboard.
+            </p>
+            <button
+                onClick={() => window.location.href = '/pos-system/login'}
+                className="px-4 py-2 bg-[var(--primary-color)] text-[var(--sidebar-text)] rounded-lg hover:bg-[var(--primary-700)] transition-colors"
+            >
+              Go to Log In
+            </button>
+          </div>
         </div>
-      </div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen py-4 bg-[var(--background-color)]">
-      {flashMessage && (
-        <FlashMessage
-          message={flashMessage.message}
-          type={flashMessage.type}
-          onClose={() => setFlashMessage(null)}
-        />
-      )}
-      <div
-        className="rounded-lg shadow-md border w-full p-4 mb-6"
-        style={{
-          backgroundColor: themeColors.cardBackground,
-          borderColor: themeColors.cardBorder,
-          color: themeColors.cardText,
-        }}
-      >
-        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
-          <div className="mb-3 lg:mb-0">
-            <h1 className="text-2xl font-bold" style={{ color: themeColors.headingText }}>Create Order</h1>
-          </div>
-          <div className="flex gap-4">
-            <button
-              onClick={() => {
-                setIsAddToOrder(false);
-                setOrderItems([]);
-                setCustomerName('');
-                setServiceType('dine_in');
-                setReceivedAmount(0);
-                setPaymentMethod('cash');
-                setSelectedTableId(null);
-                setSelectedTable(null);
-                setWaiterId(null);
-                setSelectedWaiter(null);
-              }}
-              className={`px-4 py-2 rounded-lg transition-all duration-200 ${!isAddToOrder ? 'bg-[var(--primary-color)] text-[var(--sidebar-text)]' : 'bg-[var(--background-secondary)] text-[var(--text-secondary)]'}`}
-            >
-              Create New Order
-            </button>
-            <button
-              onClick={() => {
-                setIsAddToOrder(true);
-                setOrderItems([]);
-                setCustomerName('');
-                setServiceType('dine_in');
-                setReceivedAmount(0);
-                setPaymentMethod('cash');
-                setSelectedTableId(null);
-                setSelectedTable(null);
-                setWaiterId(null);
-                setSelectedWaiter(null);
-              }}
-              className={`px-4 py-2 rounded-lg transition-all duration-200 ${isAddToOrder ? 'bg-[var(--primary-color)] text-[var(--sidebar-text)]' : 'bg-[var(--background-secondary)] text-[var(--text-secondary)]'}`}
-            >
-              Add to Existing Order
-            </button>
-          </div>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
-        <div className="lg:col-span-4">
-          <div
-            className="rounded-lg shadow-md border p-4"
+      <div className="w-full min-h-screen py-4 bg-[var(--background-color)]">
+        {flashMessage && (
+            <FlashMessage
+                message={flashMessage.message}
+                type={flashMessage.type}
+                onClose={() => setFlashMessage(null)}
+            />
+        )}
+        <div
+            className="rounded-lg shadow-md border w-full p-4 mb-6"
             style={{
               backgroundColor: themeColors.cardBackground,
               borderColor: themeColors.cardBorder,
               color: themeColors.cardText,
             }}
-          >
-            <OrderDetails
-              customerName={customerName}
-              setCustomerName={setCustomerName}
-              serviceType={serviceType}
-              setServiceType={setServiceType}
-              receivedAmount={receivedAmount}
-              setReceivedAmount={setReceivedAmount}
-              paymentMethod={paymentMethod}
-              setPaymentMethod={setPaymentMethod}
-              orderItems={orderItems}
-              setOrderItems={setOrderItems}
-              calculateTotalOrderAmount={calculateTotalOrderAmount}
-              handleCreateOrder={isAddToOrder ? handleAddToOrder : handleCreateOrder}
-              freeTables={freeTables}
-              selectedTableId={selectedTableId}
-              setSelectedTableId={setSelectedTableId}
-              token={token}
-              logout={logout}
-              orders={[]}
-              waiterId={waiterId}
-              setWaiterId={setWaiterId}
-              freeWaiters={freeWaiters}
-              isAddToOrder={isAddToOrder}
-              currentTheme={currentTheme}
-            />
+        >
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
+            <div className="mb-3 lg:mb-0">
+              <h1 className="text-2xl font-bold" style={{ color: themeColors.headingText }}>Create Order</h1>
+            </div>
+            <div className="flex gap-4">
+              <button
+                  onClick={() => {
+                    setIsAddToOrder(false);
+                    setOrderItems([]);
+                    setCustomerName('');
+                    setServiceType('dine_in');
+                    setReceivedAmount(0);
+                    setPaymentMethod('cash');
+                    setSelectedTableId(null);
+                    setSelectedTable(null);
+                    setWaiterId(null);
+                    setSelectedWaiter(null);
+                  }}
+                  className={`px-4 py-2 rounded-lg transition-all duration-200 ${!isAddToOrder ? 'bg-[var(--primary-color)] text-[var(--sidebar-text)]' : 'bg-[var(--background-secondary)] text-[var(--text-secondary)]'}`}
+              >
+                Create New Order
+              </button>
+              <button
+                  onClick={() => {
+                    setIsAddToOrder(true);
+                    setOrderItems([]);
+                    setCustomerName('');
+                    setServiceType('dine_in');
+                    setReceivedAmount(0);
+                    setPaymentMethod('cash');
+                    setSelectedTableId(null);
+                    setSelectedTable(null);
+                    setWaiterId(null);
+                    setSelectedWaiter(null);
+                  }}
+                  className={`px-4 py-2 rounded-lg transition-all duration-200 ${isAddToOrder ? 'bg-[var(--primary-color)] text-[var(--sidebar-text)]' : 'bg-[var(--background-secondary)] text-[var(--text-secondary)]'}`}
+              >
+                Add to Existing Order
+              </button>
+            </div>
           </div>
         </div>
-        <div className="lg:col-span-6">
-          <div
-            className="rounded-lg shadow-md border p-4"
-            style={{
-              backgroundColor: themeColors.cardBackground,
-              borderColor: themeColors.cardBorder,
-              color: themeColors.cardText,
-            }}
-          >
-            <OrderMenu
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              selectedCategory={selectedCategory}
-              setSelectedCategory={setSelectedCategory}
-              categories={categories}
-              filteredProducts={filteredProducts}
-              addProductToOrder={addProductToOrder}
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+          <div className="lg:col-span-4">
+            <div
+                className="rounded-lg shadow-md border p-4"
+                style={{
+                  backgroundColor: themeColors.cardBackground,
+                  borderColor: themeColors.cardBorder,
+                  color: themeColors.cardText,
+                }}
+            >
+              <OrderDetails
+                  customerName={customerName}
+                  setCustomerName={setCustomerName}
+                  serviceType={serviceType}
+                  setServiceType={setServiceType}
+                  receivedAmount={receivedAmount}
+                  setReceivedAmount={setReceivedAmount}
+                  paymentMethod={paymentMethod}
+                  setPaymentMethod={setPaymentMethod}
+                  orderItems={orderItems}
+                  setOrderItems={setOrderItems}
+                  calculateTotalOrderAmount={calculateTotalOrderAmount}
+                  handleCreateOrder={isAddToOrder ? handleAddToOrder : handleCreateOrder}
+                  freeTables={freeTables}
+                  selectedTableId={selectedTableId}
+                  setSelectedTableId={setSelectedTableId}
+                  token={token}
+                  logout={logout}
+                  orders={[]}
+                  waiterId={waiterId}
+                  setWaiterId={setWaiterId}
+                  freeWaiters={freeWaiters}
+                  isAddToOrder={isAddToOrder}
+                  currentTheme={currentTheme}
+                  currentCurrency={activeCurrency}
+                  createdOrder={createdOrder}
+                  selectedTable={selectedTable}
+                  selectedWaiter={selectedWaiter}
+                  changeAmount={changeAmount}
+              />
+            </div>
+          </div>
+          <div className="lg:col-span-6">
+            <div
+                className="rounded-lg shadow-md border p-4"
+                style={{
+                  backgroundColor: themeColors.cardBackground,
+                  borderColor: themeColors.cardBorder,
+                  color: themeColors.cardText,
+                }}
+            >
+              <OrderMenu
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  selectedCategory={selectedCategory}
+                  setSelectedCategory={setSelectedCategory}
+                  categories={categories}
+                  filteredProducts={filteredProducts}
+                  addProductToOrder={addProductToOrder}
+              />
+            </div>
           </div>
         </div>
-      </div>
-      {showReceipt && createdOrder && (
-        <ReceiptModal
-          customerName={customerName}
-          serviceType={serviceType}
-          order={createdOrder}
-          receivedAmount={receivedAmount}
-          changeAmount={changeAmount}
-          onPrint={() => {}}
-          onClose={handleCloseReceipt}
-          autoClose={false}
-          paymentMethod={paymentMethod}
-          showButtons={true}
-          title={isAddToOrder ? "Items Added to Order" : "Order Confirmed"}
-          selectedTable={selectedTable}
-          selectedWaiter={selectedWaiter}
+        {createdOrder && (
+            <div className="flex gap-4 mt-6 justify-center">
 
-        />
-      )}
-    </div>
+            </div>
+        )}
+      </div>
   );
 }

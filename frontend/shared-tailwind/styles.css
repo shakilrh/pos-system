@@ -195,12 +195,7 @@ button:disabled {
 }
 
 /* INTERACTIVE STATE ENHANCEMENTS */
-button:hover,
-a:hover,
-[role="button"]:hover {
-  opacity: var(--hover-opacity);
-  transition: opacity 0.2s ease-in-out;
-}
+
 
 button:active,
 a:active,
