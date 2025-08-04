@@ -34,6 +34,14 @@ export default function CategoryCrud({
   const [newCategoryName, setNewCategoryName] = useState(category?.name || '');
   const [newCategoryDesc, setNewCategoryDesc] = useState(category?.description || '');
   const [flashMessage, setFlashMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Add loading state similar to roleCrud and productCrud
+  const [isLoading, setIsLoading] = useState({
+    create: false,
+    update: false,
+    delete: false
+  });
+
   const [errors, setErrors] = useState<{
     name?: string[];
     description?: string[];
@@ -116,16 +124,16 @@ export default function CategoryCrud({
     const fieldErrors = errors[fieldName as keyof typeof errors] || [];
     if (fieldErrors.length === 0) return null;
     return (
-      <div className="mt-1 space-y-1">
-        {fieldErrors.map((error, index) => (
-          <p key={index} className="text-xs flex items-start" style={{ color: 'var(--error-color)' }}>
-            <svg className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            {error}
-          </p>
-        ))}
-      </div>
+        <div className="mt-1 space-y-1">
+          {fieldErrors.map((error, index) => (
+              <p key={index} className="text-xs flex items-start" style={{ color: 'var(--error-color)' }}>
+                <svg className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {error}
+              </p>
+          ))}
+        </div>
     );
   };
 
@@ -155,6 +163,15 @@ export default function CategoryCrud({
       return;
     }
 
+    // Set loading state based on mode
+    if (mode === 'add') {
+      setIsLoading(prev => ({ ...prev, create: true }));
+    } else if (mode === 'edit') {
+      setIsLoading(prev => ({ ...prev, update: true }));
+    } else if (mode === 'delete') {
+      setIsLoading(prev => ({ ...prev, delete: true }));
+    }
+
     try {
       let updatedCategory;
       if (mode === 'add') {
@@ -182,6 +199,15 @@ export default function CategoryCrud({
       const errorMessage = { message, type: 'error' };
       setFlashMessage(errorMessage);
       setFlashMessageInParent(errorMessage);
+    } finally {
+      // Reset loading state based on mode
+      if (mode === 'add') {
+        setIsLoading(prev => ({ ...prev, create: false }));
+      } else if (mode === 'edit') {
+        setIsLoading(prev => ({ ...prev, update: false }));
+      } else if (mode === 'delete') {
+        setIsLoading(prev => ({ ...prev, delete: false }));
+      }
     }
   };
 
@@ -204,7 +230,7 @@ export default function CategoryCrud({
             </div>
             <form onSubmit={handleSubmit} className="p-3 space-y-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div class="sm:col-span-2">
+                <div className="sm:col-span-2">
                   <label htmlFor="categoryName" className="block text-sm font-medium mb-1"
                          style={{color: 'var(--text-secondary)'}}>Category Name *</label>
                   <input
@@ -256,19 +282,29 @@ export default function CategoryCrud({
                 <button
                     type="button"
                     onClick={onCancel}
-                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isProductFormActive ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}`}
+                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isProductFormActive || isLoading.create || isLoading.update ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}`}
                     style={{backgroundColor: 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)'}}
-                    disabled={isProductFormActive}
+                    disabled={isProductFormActive || isLoading.create || isLoading.update}
                 >
                   Cancel
                 </button>
                 <button
                     type="submit"
-                    className={`flex-1 items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isProductFormActive || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-color)]'}`}
+                    className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 ${isProductFormActive || isLoading.create || isLoading.update || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-color)]'}`}
                     style={{ '--tw-ring-color': 'var(--focus-ring)' }}
-                    disabled={isProductFormActive || !isFormValid()}
+                    disabled={isProductFormActive || isLoading.create || isLoading.update || !isFormValid()}
                 >
-                  {mode === 'edit' ? 'Update Category' : 'Create Category'}
+                  {isLoading.create || isLoading.update ? (
+                      <span className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--text-on-primary)' }}>
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                        {mode === 'edit' ? 'Updating...' : 'Creating...'}
+                    </span>
+                  ) : (
+                      mode === 'edit' ? 'Update Category' : 'Create Category'
+                  )}
                 </button>
               </div>
             </form>
@@ -282,33 +318,45 @@ export default function CategoryCrud({
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="rounded-lg p-6 w-full max-w-md mx-4 shadow-xl"
                style={{backgroundColor: 'var(--surface-color)'}}>
-          <div className="flex items-center space-x-2 mb-4">
-            <svg className="w-6 h-6" fill="currentColor" style={{ color: 'var(--error-color)' }} viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Confirm Delete</h3>
-          </div>
-          <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-            Are you sure you want to delete the category "{category?.name}"? This action cannot be undone.
-          </p>
-          <div className="flex space-x-3">
-            <button
-              onClick={handleSubmit}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 bg-[var(--error-color)] text-[var(--text-on-primary)] hover:bg-opacity-90`}
-              style={{ '--tw-ring-color': 'var(--focus-ring)' }}
-            >
-              Delete
-            </button>
-            <button
-              onClick={onCancel}
-              className="flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]"
-              style={{ backgroundColor: 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' }}
-            >
-              Cancel
-            </button>
+            <div className="flex items-center space-x-2 mb-4">
+              <svg className="w-6 h-6" fill="currentColor" style={{ color: 'var(--error-color)' }} viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--text-color)' }}>Confirm Delete</h3>
+            </div>
+            <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+              Are you sure you want to delete the category "{category?.name}"? This action cannot be undone.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                  onClick={handleSubmit}
+                  disabled={isLoading.delete}
+                  className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isLoading.delete ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--error-color)] text-[var(--text-on-primary)] hover:bg-opacity-90'}`}
+                  style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+              >
+                {isLoading.delete ? (
+                    <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--text-on-primary)' }}>
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Deleting...
+                </span>
+                ) : (
+                    'Delete'
+                )}
+              </button>
+              <button
+                  onClick={onCancel}
+                  disabled={isLoading.delete}
+                  className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isLoading.delete ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}`}
+                  style={{ backgroundColor: 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
-      </div>
     );
   }
 
