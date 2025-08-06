@@ -240,12 +240,12 @@ export default function Header({
   }, []);
 
   const handleProfileClick = () => {
-    onNavigate('/profile');
+    onNavigate('/Settings/profile');
     setIsProfileOpen(false);
   };
 
   const handleSettingsClick = () => {
-    onNavigate('/settings');
+    onNavigate('/Settings/settings');
     setIsProfileOpen(false);
   };
 

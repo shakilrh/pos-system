@@ -7,7 +7,8 @@ import CreateOrder from './../Orders/createOrder';
 import MenuManagement from './../MenuManagement';
 import RoleAndUserManagement from './../RoleAndUserManagement';
 import FloorTableManagement from './../Tables/FloorTableManagement';
-import StoreSettings from './../settings';
+import Profile from './../Settings/profile';
+import Settings from './../Settings/settings';
 import NoAccess from './../NoAccess';
 
 const componentMap: { [key: string]: React.ComponentType<any> } = {
@@ -17,7 +18,8 @@ const componentMap: { [key: string]: React.ComponentType<any> } = {
     'MenuManagement': MenuManagement,
     'RoleAndUserManagement': RoleAndUserManagement,
     'Tables/FloorTableManagement': FloorTableManagement,
-    'Settings/storeSettings': StoreSettings,
+    'Settings/settings': Settings,
+    'Settings/profile': Profile,
     'NoAccess': NoAccess,
 };
 

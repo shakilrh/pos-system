@@ -90,7 +90,8 @@ function AppContent({ Component, pageProps }: AppProps) {
     if (allPermissions.includes('create_orders')) mapping['/Orders/createOrder'] = 'create_orders';
     if (allPermissions.includes('can_view_rolemanagement')) mapping['/RoleAndUserManagement'] = 'can_view_rolemanagement';
     if (allPermissions.includes('can_view_tablemanagement')) mapping['/Tables/FloorTableManagement'] = 'can_view_tablemanagement';
-    if (allPermissions.includes('can_view_storesettings')) mapping['/Settings/storeSettings'] = 'can_view_storesettings';
+    if (allPermissions.includes('can_view_storesettings')) mapping['/Settings/settings'] = 'can_view_storesettings';
+    if (allPermissions.includes('can_view_storesettings')) mapping['/Settings/profile'] = 'can_view_storesettings';
     return mapping;
   }, [allPermissions]);
 

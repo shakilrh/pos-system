@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { fetchUserProfile } from '../services/UserService';
+import { useAuth } from '../../context/AuthContext';
+import { fetchUserProfile } from '../../services/UserService';
 
 export default function Profile() {
   const { user, token, setUser, logout } = useAuth();
