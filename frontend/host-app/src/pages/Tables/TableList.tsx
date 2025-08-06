@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Edit3, Trash2, Plus, ChevronLeft, ChevronRight, Users, CheckCircle, Clock, BarChart3 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-
+// Import Heroicons for consistency with RoleList
+import { PlusIcon, PencilIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 interface Table {
   _id: string;
   number: number;
@@ -126,35 +127,29 @@ export default function TableList({
       <div className="mb-6">
         <div className="flex flex-wrap gap-2 mb-4">
           <button
-            onClick={() => handleFloorClick(null)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
-              activeFloor === null
-                ? 'bg-violet-600 text-white shadow-lg scale-105'
-                : 'bg-white hover:shadow-md border-2 border-gray-200'
-            }`}
-            style={{
-              color: activeFloor === null ? '#FFFFFF' : 'var(--text-color)',
-            }}
+              onClick={() => handleFloorClick(null)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  activeFloor === null
+                      ? 'bg-[var(--primary-color)] text-[var(--text-on-primary)]'
+                      : 'bg-[var(--background-secondary)] text-[var(--button-inactive-text, var(--text-secondary))] hover:bg-[var(--surface-secondary)]'
+              }`}
           >
             <i className="fas fa-layer-group mr-2"></i>
             All Floors
           </button>
           {floors.map(floor => (
-            <button
-              key={floor._id}
-              onClick={() => handleFloorClick(floor._id)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
-                activeFloor === floor._id
-                  ? 'bg-violet-600 text-white shadow-lg scale-105'
-                  : 'bg-white hover:shadow-md border-2 border-gray-200'
-              }`}
-              style={{
-                color: activeFloor === floor._id ? '#FFFFFF' : 'var(--text-color)',
-              }}
-            >
-              <i className="fas fa-building mr-2"></i>
-              {floor.name}
-            </button>
+              <button
+                  key={floor._id}
+                  onClick={() => handleFloorClick(floor._id)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                      activeFloor === floor._id
+                          ? 'bg-[var(--primary-color)] text-[var(--text-on-primary)]'
+                          : 'bg-[var(--background-secondary)] text-[var(--button-inactive-text, var(--text-secondary))] hover:bg-[var(--surface-secondary)]'
+                  }`}
+              >
+                <i className="fas fa-building mr-2"></i>
+                {floor.name}
+              </button>
           ))}
         </div>
 
@@ -218,13 +213,18 @@ export default function TableList({
         {/* Add Button Only */}
         <div className="flex justify-end mb-4">
           {userPermissions.includes('can_add_tables') && (
-            <button
-              onClick={onAdd}
-              className="flex items-center space-x-2 px-4 py-2 bg-violet-600 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
-            >
-              <Plus size={16} />
-              <span>Add New Table</span>
-            </button>
+              <button
+                  onClick={onAdd}
+                  className="flex items-center space-x-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200"
+                  style={{
+                    backgroundColor: 'var(--primary-color)',
+                    color: 'var(--text-on-primary)',
+                    '--tw-ring-color': 'var(--focus-ring)',
+                  }}
+              >
+                <PlusIcon className="w-5 h-5" />
+                <span>Add New Table</span>
+              </button>
           )}
         </div>
       </div>
@@ -414,15 +414,16 @@ export default function TableList({
               {/* Pagination */}
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="p-2 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-                  style={{
-                    backgroundColor: currentPage === 1 ? 'var(--border-color)' : '#8B5CF6',
-                    color: currentPage === 1 ? 'var(--text-secondary)' : '#FFFFFF'
-                  }}
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg text-sm transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: 'var(--background-secondary)',
+                      color: 'var(--text-secondary)',
+                      borderColor: 'var(--border-color)',
+                    }}
                 >
-                  <ChevronLeft size={16} />
+                  <ChevronLeftIcon className="w-5 h-5" />
                 </button>
 
                 <div className="flex gap-1">
@@ -439,34 +440,35 @@ export default function TableList({
                     }
 
                     return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`w-8 h-8 rounded-md text-sm font-medium transition-all duration-200 ${
-                          currentPage === pageNum ? 'scale-105 shadow-sm' : 'hover:scale-105'
-                        }`}
-                        style={{
-                          backgroundColor: currentPage === pageNum ? '#8B5CF6' : 'var(--background-color)',
-                          color: currentPage === pageNum ? '#FFFFFF' : 'var(--text-color)',
-                          border: `1px solid ${currentPage === pageNum ? '#8B5CF6' : 'var(--border-color)'}`
-                        }}
-                      >
-                        {pageNum}
-                      </button>
+                        <button
+                            key={pageNum}
+                            onClick={() => handlePageChange(pageNum)}
+                            className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                                currentPage === pageNum ? 'text-white' : ''
+                            }`}
+                            style={{
+                              backgroundColor: currentPage === pageNum ? 'var(--primary-color)' : 'var(--background-secondary)',
+                              color: currentPage === pageNum ? 'var(--text-on-primary)' : 'var(--text-secondary)',
+                              borderColor: 'var(--border-color)',
+                            }}
+                        >
+                          {pageNum}
+                        </button>
                     );
                   })}
                 </div>
 
                 <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="p-2 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-                  style={{
-                    backgroundColor: currentPage === totalPages ? 'var(--border-color)' : '#8B5CF6',
-                    color: currentPage === totalPages ? 'var(--text-secondary)' : '#FFFFFF'
-                  }}
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg text-sm transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: 'var(--background-secondary)',
+                      color: 'var(--text-secondary)',
+                      borderColor: 'var(--border-color)',
+                    }}
                 >
-                  <ChevronRight size={16} />
+                  <ChevronRightIcon className="w-5 h-5" />
                 </button>
 
                 <div className="text-sm font-medium ml-2" style={{ color: 'var(--text-secondary)' }}>
