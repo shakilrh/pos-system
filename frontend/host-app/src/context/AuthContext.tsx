@@ -32,6 +32,7 @@ interface MainPage {
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
+  profileLoading: boolean;
   profileError: string | null;
   user: User | null;
   token: string | null;
@@ -42,6 +43,7 @@ interface AuthContextType {
   restaurantSlug: string;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  setUser: (user: User | null) => void;
   refreshUserProfile: () => Promise<void>;
 }
 
@@ -52,35 +54,42 @@ const DEBOUNCE_MS = 1000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 const TIMEOUT_MS = 10000;
-const MAX_WAIT_MS = 30000; // Maximum wait time to prevent indefinite loading
 
 const createSlug = (storeName: string): string => {
   return storeName
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
+      ? storeName
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim()
+      : '';
 };
 
-const fetchMainPages = async (token: string): Promise<MainPage[]> => {
+const fetchMainPages = async (token: string, logout: () => void): Promise<MainPage[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/rolepermission/api/v1/pages/list`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await response.json();
+    if (response.status === 401) {
+      logout();
+      throw new Error('Unauthorized');
+    }
     if (!response.ok || !data.success) {
       throw new Error(data.message || 'Failed to fetch main pages');
     }
     return data.data?.data || [];
   } catch (err) {
-    throw new Error(err instanceof Error ? err.message : 'Failed to fetch main pages');
+    console.error('Error fetching main pages:', err);
+    return []; // Return empty array to allow app to continue
   }
 };
 
 const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -91,8 +100,6 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [restaurantSlug, setRestaurantSlug] = useState<string>('');
   const fetchInProgress = useRef(false);
   const lastFetchTime = useRef(0);
-  const abortController = useRef<AbortController | null>(null);
-  const startTime = useRef(Date.now());
 
   const withTimeout = async <T>(promise: Promise<T>, ms: number): Promise<T> => {
     const timeout = new Promise<T>((_, reject) => {
@@ -125,30 +132,21 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const now = Date.now();
     if (now - lastFetchTime.current < DEBOUNCE_MS) return;
 
-    if (abortController.current) {
-      abortController.current.abort();
-    }
-    abortController.current = new AbortController();
-
     fetchInProgress.current = true;
     lastFetchTime.current = now;
-    startTime.current = now;
+    setProfileLoading(true);
     setProfileError(null);
 
     try {
-      const updatedUser = await withTimeout(
-          fetchUserProfile(currentToken, () => logout()),
-          TIMEOUT_MS
-      );
+      const updatedUser = await withTimeout(fetchUserProfile(currentToken, logout), TIMEOUT_MS);
       localStorage.setItem('authUser', JSON.stringify(updatedUser));
       setUser(updatedUser);
-      if (updatedUser.store_name) {
-        const slug = createSlug(updatedUser.store_name);
-        setStoreName(updatedUser.store_name);
-        setRestaurantSlug(slug);
-        localStorage.setItem('storeName', updatedUser.store_name);
-        localStorage.setItem('restaurantSlug', slug);
-      }
+      const slug = updatedUser.store_name ? createSlug(updatedUser.store_name) : '';
+      setStoreName(updatedUser.store_name || '');
+      setRestaurantSlug(slug);
+      localStorage.setItem('storeName', updatedUser.store_name || '');
+      localStorage.setItem('restaurantSlug', slug);
+      console.log('User profile refreshed successfully:', updatedUser);
     } catch (error: any) {
       console.error('Error refreshing user profile:', error);
       if (error.message !== 'Request timed out' && MAX_RETRIES > 0) {
@@ -156,12 +154,23 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         return refreshUserProfile(currentToken);
       }
       setProfileError(error.message || 'Failed to load user profile');
+      // Preserve existing user data if available
+      if (user) {
+        setUser((prev) => ({
+          ...prev,
+          _id: prev?._id || '',
+          name: prev?.name || 'User',
+          email: prev?.email || '',
+          user_type: prev?.user_type || 'worker',
+          role_id: prev?.role_id || null,
+          logoUrl: prev?.logoUrl || '',
+          store_name: prev?.store_name || '',
+          store_logo: prev?.store_logo || '',
+        }));
+      }
     } finally {
       fetchInProgress.current = false;
-      abortController.current = null;
-      if (Date.now() - startTime.current > MAX_WAIT_MS) {
-        setIsLoading(false); // Force stop loading if it exceeds max wait time
-      }
+      setProfileLoading(false);
     }
   };
 
@@ -192,7 +201,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
           setIsAuthenticated(true);
 
           try {
-            const mainPages = await fetchMainPages(storedToken);
+            const mainPages = await fetchMainPages(storedToken, logout);
             const permissions = mainPages.flatMap((page) => page.permissions.map((perm) => perm.key));
             setAllPermissions(permissions);
 
@@ -221,7 +230,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
           logout();
         }
       }
-      setIsLoading(false); // Ensure loading stops even if no token
+      setIsLoading(false);
     };
 
     initializeAuth();
@@ -259,7 +268,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         store_logo: user.store_logo || '',
       };
 
-      const mainPages = await fetchMainPages(token);
+      const mainPages = await fetchMainPages(token, logout);
       const permissions = mainPages.flatMap((page) => page.permissions.map((perm) => perm.key));
       setAllPermissions(permissions);
 
@@ -296,9 +305,6 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   };
 
   const logout = () => {
-    if (abortController.current) {
-      abortController.current.abort();
-    }
     localStorage.removeItem('authToken');
     localStorage.removeItem('authUser');
     localStorage.removeItem('restaurantSlug');
@@ -321,6 +327,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
           value={{
             isAuthenticated,
             isLoading,
+            profileLoading,
             profileError,
             user,
             token,
@@ -331,6 +338,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             restaurantSlug,
             login,
             logout,
+            setUser,
             refreshUserProfile,
           }}
       >
