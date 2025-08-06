@@ -1,39 +1,44 @@
-const NextFederationPlugin = require('@module-federation/nextjs-mf');
+// next.config.js
+const { withModuleFederation } = require('@module-federation/nextjs-mf');
 
 module.exports = {
-  webpack(config, { isServer }) {
-    config.plugins.push(
-      new NextFederationPlugin({
-        name: 'host',
-        filename: 'static/chunks/remoteEntry.js',
-        remotes: {
-          remoteApp: `remoteApp@http://localhost:3001/_next/static/${
-            isServer ? 'ssr' : 'chunks'
-          }/remoteEntry.js`,
-        },
-        exposes: {
-          './AuthContext': './src/context/AuthContext.tsx', // Keep for other components if needed
-        },
-        shared: {
-          react: {
-            singleton: true,
-            eager: true,
-            requiredVersion: require('react/package.json').version,
-          },
-          'react-dom': {
-            singleton: true,
-            eager: true,
-            requiredVersion: require('react-dom/package.json').version,
-          },
-          'next/router': {
-            singleton: true,
-            eager: true,
-            requiredVersion: require('next/package.json').version,
-          },
-          'shared-tailwind': { singleton: true, eager: true, requiredVersion: false },
-        },
-      })
-    );
-    return config;
-  },
+    webpack: (config, options) => {
+        const { isServer } = options;
+
+        config.plugins.push(
+            new options.webpack.container.ModuleFederationPlugin({
+                name: 'host',
+                filename: 'static/chunks/remoteEntry.js',
+                remotes: {
+                    remoteApp: isServer
+                        ? 'remoteApp@http://localhost:3001/_next/static/chunks/remoteEntry.js'
+                        : 'remoteApp@http://localhost:3001/_next/static/chunks/remoteEntry.js',
+                },
+                shared: {
+                    'next/router': {
+                        singleton: true,
+                        eager: true,
+                        requiredVersion: false,
+                    },
+                    'next/link': {
+                        singleton: true,
+                        eager: true,
+                        requiredVersion: false,
+                    },
+                    react: {
+                        singleton: true,
+                        eager: true,
+                        requiredVersion: false,
+                    },
+                    'react-dom': {
+                        singleton: true,
+                        eager: true,
+                        requiredVersion: false,
+                    },
+                },
+            })
+        );
+
+        return config;
+    },
 };

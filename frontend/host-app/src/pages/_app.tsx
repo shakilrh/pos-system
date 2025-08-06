@@ -29,13 +29,46 @@ const Footer = dynamic(
 
 const publicRoutes = ['/Registration/login', '/Registration/forgotPassword', '/Registration/registerAdmin', '/NoAccess'];
 
+// Helper function to create slug from store name
+const createSlug = (storeName: string): string => {
+  return storeName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .trim();
+};
+
+// Helper function to extract slug from pathname
+const extractSlugFromPath = (pathname: string): string | null => {
+  const segments = pathname.split('/').filter(Boolean);
+  // Check if first segment looks like a slug (not a direct route)
+  if (segments.length > 0 && !publicRoutes.some(route => pathname.startsWith(route))) {
+    const firstSegment = segments[0];
+    // Verify it's not a direct route like 'Dashboard', 'Orders', etc.
+    const directRoutes = ['Dashboard', 'Orders', 'MenuManagement', 'RoleAndUserManagement', 'Tables', 'Settings'];
+    if (!directRoutes.includes(firstSegment)) {
+      return firstSegment;
+    }
+  }
+  return null;
+};
+
+// Helper function to get path without slug
+const getPathWithoutSlug = (pathname: string, slug: string | null): string => {
+  if (!slug) return pathname;
+  return pathname.replace(`/${slug}`, '') || '/';
+};
+
 function AppContent({ Component, pageProps }: AppProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isPageLoading, setIsPageLoading] = useState(false);
   const [currentTheme, setCurrentTheme] = useState('default');
   const [currentCurrency, setCurrentCurrency] = useState('pkr');
   const [themeLoaded, setThemeLoaded] = useState(false);
-  const [initialLoad, setInitialLoad] = useState(true); // Add this state to track initial load
+  const [initialLoad, setInitialLoad] = useState(true);
+  const [currentSlug, setCurrentSlug] = useState<string | null>(null);
+  const [storeName, setStoreName] = useState<string>('');
 
   const themePollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastKnownThemeRef = useRef<string>('default');
@@ -47,6 +80,10 @@ function AppContent({ Component, pageProps }: AppProps) {
 
   const API_BASE_URL = 'http://192.168.18.107:3000';
   const USER_DETAILS_ENDPOINT = '/users/api/v1/details';
+
+  // Extract slug from current pathname
+  const extractedSlug = extractSlugFromPath(pathname);
+  const pathWithoutSlug = getPathWithoutSlug(pathname, extractedSlug);
 
   const routePermissions = useMemo(() => {
     const mapping: { [key: string]: string } = {};
@@ -128,28 +165,62 @@ function AppContent({ Component, pageProps }: AppProps) {
 
       const userTheme = data.data?.data?.user?.theme || 'default';
       const userCurrency = data.data?.data?.user?.currency || 'pkr';
-      console.log('Loaded user settings from API:', { theme: userTheme, currency: userCurrency });
+      const userStoreName = data.data?.data?.user?.store_name || '';
+
+      console.log('Loaded user settings from API:', {
+        theme: userTheme,
+        currency: userCurrency,
+        storeName: userStoreName
+      });
 
       setCurrentTheme(userTheme);
       setCurrentCurrency(userCurrency);
+      setStoreName(userStoreName);
+
+      // Create slug from store name
+      const slug = createSlug(userStoreName);
+      setCurrentSlug(slug);
+
+      // Store slug in localStorage for persistence
+      localStorage.setItem('restaurantSlug', slug);
+      localStorage.setItem('storeName', userStoreName);
+
       applyThemeToDOM(userTheme);
       applyCurrencyToDOM(userCurrency);
       lastKnownThemeRef.current = userTheme;
       lastKnownCurrencyRef.current = userCurrency;
       setThemeLoaded(true);
 
+      // Check if current URL needs slug redirect
+      if (isAuthenticated && !extractedSlug && !publicRoutes.includes(pathname)) {
+        const newPath = `/${slug}${pathname === '/' ? '/Dashboard/dashboard' : pathname}`;
+        console.log('Redirecting to slug-based URL:', newPath);
+        router.replace(newPath);
+      }
+
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('settingsLoaded', {
-          detail: { theme: userTheme, currency: userCurrency }
+          detail: { theme: userTheme, currency: userCurrency, slug, storeName: userStoreName }
         }));
       }, 100);
     } catch (error) {
       console.error('Error loading user settings:', error);
       const savedTheme = localStorage.getItem('appTheme') || 'default';
       const savedCurrency = localStorage.getItem('appCurrency') || 'pkr';
-      console.log('API failed, using saved settings:', { theme: savedTheme, currency: savedCurrency });
+      const savedSlug = localStorage.getItem('restaurantSlug') || '';
+      const savedStoreName = localStorage.getItem('storeName') || '';
+
+      console.log('API failed, using saved settings:', {
+        theme: savedTheme,
+        currency: savedCurrency,
+        slug: savedSlug,
+        storeName: savedStoreName
+      });
+
       setCurrentTheme(savedTheme);
       setCurrentCurrency(savedCurrency);
+      setCurrentSlug(savedSlug);
+      setStoreName(savedStoreName);
       applyThemeToDOM(savedTheme);
       applyCurrencyToDOM(savedCurrency);
       lastKnownThemeRef.current = savedTheme;
@@ -378,6 +449,9 @@ function AppContent({ Component, pageProps }: AppProps) {
     console.log('Route protection useEffect triggered', {
       isAuthenticated,
       pathname,
+      pathWithoutSlug,
+      extractedSlug,
+      currentSlug,
       permissionsLoaded,
       userPermissions,
       isLoading,
@@ -391,36 +465,40 @@ function AppContent({ Component, pageProps }: AppProps) {
     }
 
     // Handle unauthenticated users
-    if (!isAuthenticated && !publicRoutes.includes(pathname)) {
+    if (!isAuthenticated && !publicRoutes.includes(pathWithoutSlug)) {
       console.log('Redirecting to login: User not authenticated');
       router.replace('/Registration/login');
       return;
     }
 
     // Only redirect from login page if user is authenticated AND not during initial load
-    if (isAuthenticated && pathname === '/Registration/login' && !initialLoad) {
+    if (isAuthenticated && pathWithoutSlug === '/Registration/login' && !initialLoad) {
       console.log('Redirecting to dashboard: User authenticated on login page');
-      router.replace('/Dashboard/dashboard');
+      const slug = currentSlug || localStorage.getItem('restaurantSlug') || '';
+      const dashboardPath = slug ? `/${slug}/Dashboard/dashboard` : '/Dashboard/dashboard';
+      router.replace(dashboardPath);
       return;
     }
 
     // Skip further checks for registerAdmin route when authenticated
-    if (isAuthenticated && pathname === '/Registration/registerAdmin') {
+    if (isAuthenticated && pathWithoutSlug === '/Registration/registerAdmin') {
       return;
     }
 
     // Handle permission-based access control
-    if (isAuthenticated && !publicRoutes.includes(pathname) && permissionsLoaded) {
-      const requiredPermission = routePermissions[pathname];
+    if (isAuthenticated && !publicRoutes.includes(pathWithoutSlug) && permissionsLoaded) {
+      const requiredPermission = routePermissions[pathWithoutSlug];
       if (requiredPermission && !userPermissions.includes(requiredPermission)) {
-        console.log(`Access denied to ${pathname}: Missing permission ${requiredPermission}`);
+        console.log(`Access denied to ${pathWithoutSlug}: Missing permission ${requiredPermission}`);
         console.log('User permissions:', userPermissions);
-        router.replace('/NoAccess');
+        const slug = currentSlug || extractedSlug || '';
+        const noAccessPath = slug ? `/${slug}/NoAccess` : '/NoAccess';
+        router.replace(noAccessPath);
       } else {
-        console.log(`Access granted to ${pathname}`);
+        console.log(`Access granted to ${pathWithoutSlug}`);
       }
     }
-  }, [isAuthenticated, pathname, router, userPermissions, permissionsLoaded, routePermissions, isLoading, initialLoad]);
+  }, [isAuthenticated, pathname, pathWithoutSlug, router, userPermissions, permissionsLoaded, routePermissions, isLoading, initialLoad, currentSlug, extractedSlug]);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -452,13 +530,27 @@ function AppContent({ Component, pageProps }: AppProps) {
       await logout();
       setSidebarOpen(false);
       setThemeLoaded(false);
-      setInitialLoad(true); // Reset initial load state on logout
+      setInitialLoad(true);
+      setCurrentSlug(null);
+      setStoreName('');
+
+      // Clear restaurant-specific data
+      localStorage.removeItem('restaurantSlug');
+      localStorage.removeItem('storeName');
+
       console.log('User logged out successfully');
       await router.replace('/Registration/login');
     } catch (error) {
       console.error('Error during logout:', error);
       window.location.href = '/Registration/login';
     }
+  };
+
+  // Custom navigation function that includes slug
+  const navigateWithSlug = (path: string) => {
+    const slug = currentSlug || extractedSlug || '';
+    const fullPath = slug ? `/${slug}${path}` : path;
+    router.push(fullPath);
   };
 
   // Show loading state while authentication is being determined
@@ -468,12 +560,15 @@ function AppContent({ Component, pageProps }: AppProps) {
           <div className="flex flex-col items-center">
             <div className="w-16 h-16 border-t-4 border-b-4 border-orange-500 rounded-full animate-spin"></div>
             <p className="mt-4 text-lg font-semibold text-gray-700">Loading...</p>
+            {storeName && (
+                <p className="mt-2 text-sm text-gray-500">{storeName}</p>
+            )}
           </div>
         </div>
     );
   }
 
-  if (!isAuthenticated && publicRoutes.includes(pathname)) {
+  if (!isAuthenticated && publicRoutes.includes(pathWithoutSlug)) {
     return <Component {...pageProps} />;
   }
 
@@ -481,12 +576,12 @@ function AppContent({ Component, pageProps }: AppProps) {
     return null;
   }
 
-  if (isAuthenticated && pathname === '/Registration/login') {
+  if (isAuthenticated && pathWithoutSlug === '/Registration/login') {
     return null; // Avoid rendering login page; redirect is handled
   }
 
-  if (isAuthenticated && pathname === '/Registration/registerAdmin') {
-    return <Component {...pageProps} key={pathname} currentCurrency={currentCurrency} />;
+  if (isAuthenticated && pathWithoutSlug === '/Registration/registerAdmin') {
+    return <Component {...pageProps} key={pathname} currentCurrency={currentCurrency} restaurantSlug={extractedSlug} storeName={storeName} />;
   }
 
   if (!Sidebar) {
@@ -503,10 +598,12 @@ function AppContent({ Component, pageProps }: AppProps) {
         <Header
             onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
             onLogout={handleLogout}
-            onNavigate={(path: string) => router.push(path)}
+            onNavigate={navigateWithSlug}
             token={token}
             user={user}
             className={headerHeight}
+            restaurantSlug={extractedSlug}
+            storeName={storeName}
         />
         <div className="flex flex-1 overflow-hidden mt-10" style={{ backgroundColor: 'var(--background-color)' }}>
           <Sidebar
@@ -514,6 +611,8 @@ function AppContent({ Component, pageProps }: AppProps) {
               setSidebarOpen={setSidebarOpen}
               sidebarOpen={sidebarOpen}
               userPermissions={userPermissions}
+              onNavigate={navigateWithSlug}
+              restaurantSlug={extractedSlug}
           />
           <main
               className={`flex-1 ${contentMargin} overflow-auto p-4 transition-all duration-300 ease-in-out main-content-container`}
@@ -527,16 +626,20 @@ function AppContent({ Component, pageProps }: AppProps) {
                   <div className="flex flex-col items-center">
                     <div className="w-16 h-16 border-t-4 border-b-4 border-orange-500 rounded-full animate-spin"></div>
                     <p className="mt-4 text-lg font-semibold text-gray-700">Loading...</p>
+                    {storeName && (
+                        <p className="mt-2 text-sm text-gray-500">{storeName}</p>
+                    )}
                   </div>
                 </div>
             ) : (
-                <Component {...pageProps} key={pathname} currentCurrency={currentCurrency} />
+                <Component {...pageProps} key={pathname} currentCurrency={currentCurrency} restaurantSlug={extractedSlug} storeName={storeName} />
             )}
           </main>
         </div>
         <Footer
             className={`p-4 shadow-inner ${contentMargin} transition-all duration-300 ease-in-out`}
             sidebarOpen={sidebarOpen}
+            restaurantSlug={extractedSlug}
         />
       </div>
   );
