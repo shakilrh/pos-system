@@ -33,19 +33,17 @@ const publicRoutes = ['/Registration/login', '/Registration/forgotPassword', '/R
 const createSlug = (storeName: string): string => {
   return storeName
       .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '') // Remove special characters
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
       .trim();
 };
 
 // Helper function to extract slug from pathname
 const extractSlugFromPath = (pathname: string): string | null => {
   const segments = pathname.split('/').filter(Boolean);
-  // Check if first segment looks like a slug (not a direct route)
   if (segments.length > 0 && !publicRoutes.some(route => pathname.startsWith(route))) {
     const firstSegment = segments[0];
-    // Verify it's not a direct route like 'Dashboard', 'Orders', etc.
     const directRoutes = ['Dashboard', 'Orders', 'MenuManagement', 'RoleAndUserManagement', 'Tables', 'Settings'];
     if (!directRoutes.includes(firstSegment)) {
       return firstSegment;
@@ -81,7 +79,6 @@ function AppContent({ Component, pageProps }: AppProps) {
   const API_BASE_URL = 'http://192.168.18.107:3000';
   const USER_DETAILS_ENDPOINT = '/users/api/v1/details';
 
-  // Extract slug from current pathname
   const extractedSlug = extractSlugFromPath(pathname);
   const pathWithoutSlug = getPathWithoutSlug(pathname, extractedSlug);
 
@@ -177,11 +174,9 @@ function AppContent({ Component, pageProps }: AppProps) {
       setCurrentCurrency(userCurrency);
       setStoreName(userStoreName);
 
-      // Create slug from store name
       const slug = createSlug(userStoreName);
       setCurrentSlug(slug);
 
-      // Store slug in localStorage for persistence
       localStorage.setItem('restaurantSlug', slug);
       localStorage.setItem('storeName', userStoreName);
 
@@ -191,11 +186,9 @@ function AppContent({ Component, pageProps }: AppProps) {
       lastKnownCurrencyRef.current = userCurrency;
       setThemeLoaded(true);
 
-      // Check if current URL needs slug redirect
       if (isAuthenticated && !extractedSlug && !publicRoutes.includes(pathname)) {
         const newPath = `/${slug}${pathname === '/' ? '/Dashboard/dashboard' : pathname}`;
-        console.log('Redirecting to slug-based URL:', newPath);
-        router.replace(newPath);
+        if (pathname !== newPath) router.replace(newPath);
       }
 
       setTimeout(() => {
@@ -438,7 +431,6 @@ function AppContent({ Component, pageProps }: AppProps) {
     };
   }, []);
 
-  // Set initial load to false after first render
   useEffect(() => {
     if (initialLoad) {
       setInitialLoad(false);
@@ -458,20 +450,17 @@ function AppContent({ Component, pageProps }: AppProps) {
       initialLoad,
     });
 
-    // Don't do any redirects while still loading or during initial load
     if (isLoading || initialLoad) {
       console.log('Still loading, skipping route protection');
       return;
     }
 
-    // Handle unauthenticated users
     if (!isAuthenticated && !publicRoutes.includes(pathWithoutSlug)) {
       console.log('Redirecting to login: User not authenticated');
       router.replace('/Registration/login');
       return;
     }
 
-    // Only redirect from login page if user is authenticated AND not during initial load
     if (isAuthenticated && pathWithoutSlug === '/Registration/login' && !initialLoad) {
       console.log('Redirecting to dashboard: User authenticated on login page');
       const slug = currentSlug || localStorage.getItem('restaurantSlug') || '';
@@ -480,12 +469,10 @@ function AppContent({ Component, pageProps }: AppProps) {
       return;
     }
 
-    // Skip further checks for registerAdmin route when authenticated
     if (isAuthenticated && pathWithoutSlug === '/Registration/registerAdmin') {
       return;
     }
 
-    // Handle permission-based access control
     if (isAuthenticated && !publicRoutes.includes(pathWithoutSlug) && permissionsLoaded) {
       const requiredPermission = routePermissions[pathWithoutSlug];
       if (requiredPermission && !userPermissions.includes(requiredPermission)) {
@@ -534,7 +521,6 @@ function AppContent({ Component, pageProps }: AppProps) {
       setCurrentSlug(null);
       setStoreName('');
 
-      // Clear restaurant-specific data
       localStorage.removeItem('restaurantSlug');
       localStorage.removeItem('storeName');
 
@@ -546,14 +532,33 @@ function AppContent({ Component, pageProps }: AppProps) {
     }
   };
 
-  // Custom navigation function that includes slug
   const navigateWithSlug = (path: string) => {
     const slug = currentSlug || extractedSlug || '';
     const fullPath = slug ? `/${slug}${path}` : path;
     router.push(fullPath);
   };
 
-  // Show loading state while authentication is being determined
+  useEffect(() => {
+    let faviconLink = document.querySelector("link[rel='icon']");
+    if (!faviconLink) {
+      faviconLink = document.createElement('link');
+      faviconLink.rel = 'icon';
+      document.head.appendChild(faviconLink);
+    }
+    if (user?.store_logo && faviconLink) {
+      faviconLink.href = user.store_logo;
+      faviconLink.type = 'image/jpeg';
+    }
+
+    const pageName = pathWithoutSlug
+        .split('/')
+        .filter(Boolean)
+        .pop()
+        ?.charAt(0)
+        .toUpperCase() + pathWithoutSlug.split('/').pop()?.slice(1).toLowerCase() || 'Dashboard';
+    document.title = `${storeName ? `${storeName} - ` : ''}${pageName}`;
+  }, [user, storeName, pathWithoutSlug]);
+
   if (isLoading || initialLoad) {
     return (
         <div className="flex items-center justify-center min-h-screen">
@@ -577,7 +582,7 @@ function AppContent({ Component, pageProps }: AppProps) {
   }
 
   if (isAuthenticated && pathWithoutSlug === '/Registration/login') {
-    return null; // Avoid rendering login page; redirect is handled
+    return null;
   }
 
   if (isAuthenticated && pathWithoutSlug === '/Registration/registerAdmin') {
