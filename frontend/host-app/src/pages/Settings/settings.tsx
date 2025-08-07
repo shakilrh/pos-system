@@ -20,7 +20,8 @@ import {
   faCheckCircle,
   faExclamationTriangle,
   faCheck,
-  faTimes
+  faTimes,
+  faStore
 } from '@fortawesome/free-solid-svg-icons';
 
 export default function Settings() {
@@ -33,7 +34,6 @@ export default function Settings() {
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>('');
 
-  // Confirmation states
   const [showThemeConfirmation, setShowThemeConfirmation] = useState(false);
   const [showCurrencyConfirmation, setShowCurrencyConfirmation] = useState(false);
   const [pendingTheme, setPendingTheme] = useState<string | null>(null);
@@ -336,7 +336,6 @@ export default function Settings() {
     }
   };
 
-  // Theme confirmation handlers
   const requestThemeChange = (selectedTheme: string) => {
     if (selectedTheme === theme) return;
     setPendingTheme(selectedTheme);
@@ -367,7 +366,6 @@ export default function Settings() {
     setPendingTheme(null);
   };
 
-  // Currency confirmation handlers
   const requestCurrencyChange = (selectedCurrency: string) => {
     if (selectedCurrency === currency) return;
     setPendingCurrency(selectedCurrency);
@@ -589,6 +587,27 @@ export default function Settings() {
                 })}
               </div>
             </div>
+
+            {isAdmin && (
+                <div className="bg-[var(--background-secondary)] rounded-xl shadow-sm border border-[var(--border-color)] p-6 transition-all duration-200 hover:shadow-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-[var(--text-color)] flex items-center">
+                        <FontAwesomeIcon icon={faStore} className="mr-2 text-[var(--primary-color)]" />
+                        Site Settings
+                      </h3>
+                      <p className="text-sm text-[var(--text-secondary)]">Manage store details and carousel images</p>
+                    </div>
+                  </div>
+                  <button
+                      onClick={() => window.location.href = '/Settings/site'}
+                      className="w-full px-4 py-2 bg-[var(--primary-color)] text-white rounded-lg hover:bg-[var(--primary-color)]/90 transition-colors duration-200 flex items-center justify-center"
+                  >
+                    <FontAwesomeIcon icon={faStore} className="mr-2" />
+                    Go to Site Settings
+                  </button>
+                </div>
+            )}
           </div>
         </div>
 

@@ -27,7 +27,7 @@ const Footer = dynamic(
     { ssr: false }
 );
 
-const publicRoutes = ['/Registration/login', '/Registration/forgotPassword', '/Registration/registerAdmin', '/NoAccess'];
+const publicRoutes = ['/Registration/login', '/Registration/forgotPassword', '/Registration/registerAdmin', 'public/[slug]','/NoAccess'];
 
 // Helper function to create slug from store name
 const createSlug = (storeName: string): string => {
@@ -40,7 +40,9 @@ const createSlug = (storeName: string): string => {
 };
 
 // Helper function to extract slug from pathname
-const extractSlugFromPath = (pathname: string): string | null => {
+// Helper function to extract slug from pathname
+const extractSlugFromPath = (pathname: string | null): string | null => {
+  if (!pathname) return null;
   const segments = pathname.split('/').filter(Boolean);
   if (segments.length > 0 && !publicRoutes.some(route => pathname.startsWith(route))) {
     const firstSegment = segments[0];
@@ -53,7 +55,9 @@ const extractSlugFromPath = (pathname: string): string | null => {
 };
 
 // Helper function to get path without slug
-const getPathWithoutSlug = (pathname: string, slug: string | null): string => {
+// Helper function to get path without slug
+const getPathWithoutSlug = (pathname: string | null, slug: string | null): string => {
+  if (!pathname) return '/';
   if (!slug) return pathname;
   return pathname.replace(`/${slug}`, '') || '/';
 };
@@ -92,6 +96,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     if (allPermissions.includes('can_view_tablemanagement')) mapping['/Tables/FloorTableManagement'] = 'can_view_tablemanagement';
     if (allPermissions.includes('can_view_storesettings')) mapping['/Settings/settings'] = 'can_view_storesettings';
     if (allPermissions.includes('can_view_storesettings')) mapping['/Settings/profile'] = 'can_view_storesettings';
+    if (allPermissions.includes('can_view_storesettings')) mapping['/Settings/site'] = 'can_view_storesettings';
     return mapping;
   }, [allPermissions]);
 
@@ -164,18 +169,19 @@ function AppContent({ Component, pageProps }: AppProps) {
       const userTheme = data.data?.data?.user?.theme || 'default';
       const userCurrency = data.data?.data?.user?.currency || 'pkr';
       const userStoreName = data.data?.data?.user?.store_name || '';
+      const slug = data.data?.data?.user?.slug || ''; // Use the slug directly from API
 
       console.log('Loaded user settings from API:', {
         theme: userTheme,
         currency: userCurrency,
-        storeName: userStoreName
+        storeName: userStoreName,
+        slug
       });
+
 
       setCurrentTheme(userTheme);
       setCurrentCurrency(userCurrency);
       setStoreName(userStoreName);
-
-      const slug = createSlug(userStoreName);
       setCurrentSlug(slug);
 
       localStorage.setItem('restaurantSlug', slug);
@@ -559,7 +565,6 @@ function AppContent({ Component, pageProps }: AppProps) {
         .toUpperCase() + pathWithoutSlug.split('/').pop()?.slice(1).toLowerCase() || 'Dashboard';
     document.title = `${storeName ? `${storeName} - ` : ''}${pageName}`;
   }, [user, storeName, pathWithoutSlug]);
-
   if (isLoading || initialLoad) {
     return (
         <div className="flex items-center justify-center min-h-screen">
@@ -574,20 +579,47 @@ function AppContent({ Component, pageProps }: AppProps) {
     );
   }
 
+// Render only the Component for /public/[slug] routes (dynamic slug)
+  if (pathname && pathname.startsWith('/public/')) {
+    return <Component {...pageProps} key={pathname} currentCurrency={currentCurrency} restaurantSlug={extractedSlug} storeName={storeName} />;
+  }
+
+// Render only the Component for other public routes when not authenticated
   if (!isAuthenticated && publicRoutes.includes(pathWithoutSlug)) {
     return <Component {...pageProps} />;
   }
 
+// Redirect unauthenticated users to login for non-public routes
   if (!isAuthenticated) {
+    console.log('Redirecting to login: User not authenticated');
+    router.replace('/Registration/login');
     return null;
   }
 
+// Redirect authenticated users from login page to dashboard
   if (isAuthenticated && pathWithoutSlug === '/Registration/login') {
+    console.log('Redirecting to dashboard: User authenticated on login page');
+    const slug = currentSlug || localStorage.getItem('restaurantSlug') || '';
+    const dashboardPath = slug ? `/${slug}/Dashboard/dashboard` : '/Dashboard/dashboard';
+    router.replace(dashboardPath);
     return null;
   }
 
+// Render Component for registerAdmin page without layout
   if (isAuthenticated && pathWithoutSlug === '/Registration/registerAdmin') {
     return <Component {...pageProps} key={pathname} currentCurrency={currentCurrency} restaurantSlug={extractedSlug} storeName={storeName} />;
+  }
+
+// Check permissions for authenticated users on non-public routes
+  if (isAuthenticated && permissionsLoaded) {
+    const requiredPermission = routePermissions[pathWithoutSlug];
+    if (requiredPermission && !userPermissions.includes(requiredPermission)) {
+      console.log(`Access denied to ${pathWithoutSlug}: Missing permission ${requiredPermission}`);
+      const slug = currentSlug || extractedSlug || '';
+      const noAccessPath = slug ? `/${slug}/NoAccess` : '/NoAccess';
+      router.replace(noAccessPath);
+      return null;
+    }
   }
 
   if (!Sidebar) {
@@ -599,6 +631,7 @@ function AppContent({ Component, pageProps }: AppProps) {
   const contentMargin = sidebarOpen ? 'ml-80' : 'ml-28';
   const headerHeight = 'h-16';
 
+// Render full layout for authenticated users on admin routes
   return (
       <div className="flex flex-col min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
         <Header

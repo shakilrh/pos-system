@@ -9,6 +9,7 @@ import RoleAndUserManagement from './../RoleAndUserManagement';
 import FloorTableManagement from './../Tables/FloorTableManagement';
 import Profile from './../Settings/profile';
 import Settings from './../Settings/settings';
+import Site from '../Settings/site';
 import NoAccess from './../NoAccess';
 
 const componentMap: { [key: string]: React.ComponentType<any> } = {
@@ -19,6 +20,7 @@ const componentMap: { [key: string]: React.ComponentType<any> } = {
     'RoleAndUserManagement': RoleAndUserManagement,
     'Tables/FloorTableManagement': FloorTableManagement,
     'Settings/settings': Settings,
+    'Settings/site': Site,
     'Settings/profile': Profile,
     'NoAccess': NoAccess,
 };

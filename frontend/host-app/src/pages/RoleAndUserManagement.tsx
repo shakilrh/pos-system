@@ -68,8 +68,7 @@ export default function RoleAndUserManagement() {
         };
       case 'green':
         return {
-          cardBackground: '#ffffff',
-          cardBorder: '#e5e7eb',
+
           cardText: '#064e3b',
           headingText: '#064e3b',
           inactiveTabText: '#6b7280',
@@ -77,8 +76,7 @@ export default function RoleAndUserManagement() {
         };
       default:
         return {
-          cardBackground: '#ffffff',
-          cardBorder: '#e5e7eb',
+
           cardText: '#111827',
           headingText: '#111827',
           inactiveTabText: '#6b7280',

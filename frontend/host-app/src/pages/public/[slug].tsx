@@ -1,0 +1,465 @@
+import { useRouter } from 'next/router';
+import { useState, useEffect } from 'react';
+
+export default function PublicHome() {
+    const router = useRouter();
+    const { slug } = router.query;
+    const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [store, setStore] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [currentSlide, setCurrentSlide] = useState(0);
+
+    useEffect(() => {
+        if (slug) {
+            fetchData();
+        }
+    }, [slug]);
+
+    // Auto-slide carousel
+    useEffect(() => {
+        if (store?.images && store.images.length > 1) {
+            const interval = setInterval(() => {
+                setCurrentSlide((prev) => (prev + 1) % store.images.length);
+            }, 4000);
+            return () => clearInterval(interval);
+        }
+    }, [store?.images]);
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const [productsRes, categoriesRes, storeRes] = await Promise.all([
+                fetch(`http://192.168.18.107:3000/products/api/v1/public/list/${slug}`),
+                fetch(`http://192.168.18.107:3000/categories/api/v1/public/list/${slug}`),
+                fetch(`http://192.168.18.107:3000/users/api/v1/public/store/${slug}`)
+            ]);
+
+            const [productsData, categoriesData, storeData] = await Promise.all([
+                productsRes.json(),
+                categoriesRes.json(),
+                storeRes.json()
+            ]);
+
+            setProducts(productsData.data?.data || []);
+            setCategories(categoriesData.data?.data || []);
+            setStore(storeData.data?.data || null);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filteredProducts = selectedCategory
+        ? products.filter(product => product.category_id?._id === selectedCategory)
+        : products;
+
+    const getCurrencySymbol = () => {
+        if (store?.currency === 'dollar') return '$';
+        if (store?.currency === 'euro') return '€';
+        return 'PKR ';
+    };
+
+    const nextSlide = () => {
+        if (store?.images && store.images.length > 0) {
+            setCurrentSlide((prev) => (prev + 1) % store.images.length);
+        }
+    };
+
+    const prevSlide = () => {
+        if (store?.images && store.images.length > 0) {
+            setCurrentSlide((prev) => (prev - 1 + store.images.length) % store.images.length);
+        }
+    };
+
+    const goToSlide = (index) => {
+        setCurrentSlide(index);
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="relative">
+                        <div className="w-16 h-16 border-4 border-gray-300 rounded-full animate-spin"></div>
+                        <div className="absolute top-1 left-1 w-14 h-14 border-4 border-gray-700 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                    <p className="mt-4 text-lg font-medium text-gray-800">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!slug) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <i className="fas fa-exclamation-triangle text-4xl text-gray-300 mb-4"></i>
+                    <h1 className="text-xl font-semibold text-gray-800">Restaurant not found</h1>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-50">
+            {/* Header */}
+            {/* Header */}
+            <header className="bg-white shadow-lg">
+                <div className="container mx-auto px-4 py-6">
+                    <div className="flex items-center justify-between">
+                        {/* Left: Hamburger + Logo + Store Name */}
+                        <div className="flex items-center space-x-4">
+                            {/* Hamburger Icon */}
+                            <button className="text-red-500 text-2xl focus:outline-none">
+                                <i className="fas fa-bars"></i>
+                            </button>
+
+                            {/* Store Logo */}
+                            {store?.store_logo && (
+                                <div className="h-14 w-auto flex-shrink-0">
+                                    <img
+                                        src={store.store_logo}
+                                        alt={store.store_name}
+                                        className="h-full w-auto object-contain"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Store Name + Tagline */}
+                            <div>
+                                <h1 className="text-3xl font-bold text-[#4c2c19]">
+                                    {store?.store_name || slug}
+                                </h1>
+                                <p className="text-yellow-500 font-medium">Quality Food, Fast Delivery</p>
+                            </div>
+                        </div>
+
+                        {/* Right: Cart and Login Buttons */}
+                        <div className="flex items-center space-x-4">
+                            {/* Cart Button */}
+                            <div className="relative">
+                                <button className="bg-[#FFD700] hover:bg-yellow-400 text-black font-semibold py-2 px-4 rounded-lg shadow-md flex items-center space-x-2">
+                                    <i className="fas fa-shopping-cart"></i>
+                                    <span>CART</span>
+                                </button>
+                                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold h-5 w-5 rounded-full flex items-center justify-center">
+            0
+          </span>
+                            </div>
+
+                            {/* Login Button */}
+                            <button className="bg-[#FFD700] hover:bg-yellow-400 text-black font-semibold py-2 px-4 rounded-lg shadow-md flex items-center space-x-2">
+                                <i className="fas fa-user"></i>
+                                <span>LOGIN</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            {/* Image Carousel Section */}
+            {store?.images && store.images.length > 0 && (
+                <section className="bg-white shadow-md">
+                    <div className="relative h-72 md:h-96 lg:h-[550px] overflow-hidden">
+                        {/* Carousel Images */}
+                        <div
+                            className="flex transition-transform duration-700 ease-in-out h-full"
+                            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                        >
+                            {store.images.map((image, index) => (
+                                <div key={index} className="w-full flex-shrink-0 h-full">
+                                    <img
+                                        src={image}
+                                        alt={`${store.store_name} showcase ${index + 1}`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Navigation Arrows */}
+                        {store.images.length > 1 && (
+                            <>
+                                <button
+                                    onClick={prevSlide}
+                                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-gray-800/80 hover:bg-gray-800 text-white rounded-full p-3 transition-all duration-300 shadow-lg hover:scale-110"
+                                >
+                                    <i className="fas fa-chevron-left"></i>
+                                </button>
+                                <button
+                                    onClick={nextSlide}
+                                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-gray-800/80 hover:bg-gray-800 text-white rounded-full p-3 transition-all duration-300 shadow-lg hover:scale-110"
+                                >
+                                    <i className="fas fa-chevron-right"></i>
+                                </button>
+                            </>
+                        )}
+
+                        {/* Dots Indicator */}
+                        {store.images.length > 1 && (
+                            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-3">
+                                {store.images.map((_, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => goToSlide(index)}
+                                        className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                                            currentSlide === index
+                                                ? 'bg-yellow-500 scale-125 shadow-lg'
+                                                : 'bg-gray-300 hover:bg-gray-400 hover:scale-110'
+                                        }`}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </section>
+            )}
+
+            {/* About Us Section */}
+            {store?.aboutUs && (
+                <section className="py-12 bg-gray-100 relative overflow-hidden">
+                    <div className="relative container mx-auto px-4">
+                        <div className="max-w-4xl mx-auto text-center">
+                            <div className="mb-8">
+                                <h2 className="text-4xl font-bold text-gray-800 mb-4">
+                                    <i className="fas fa-store text-gray-700 mr-3"></i>
+                                    About Us
+                                </h2>
+                                <div className="w-32 h-1 bg-gray-700 mx-auto rounded-full"></div>
+                            </div>
+                            <div className="bg-white rounded-3xl p-8 md:p-12 shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-300">
+                                <p className="text-gray-700 text-lg leading-relaxed font-medium">
+                                    {store.aboutUs}
+                                </p>
+                                <div className="flex justify-center items-center mt-8 space-x-8">
+                                    <div className="flex items-center text-gray-700 hover:scale-110 transition-transform duration-300">
+                                        <i className="fas fa-star text-2xl mr-2"></i>
+                                        <span className="font-bold">Quality</span>
+                                    </div>
+                                    <div className="w-px h-8 bg-gray-300"></div>
+                                    <div className="flex items-center text-yellow-500 hover:scale-110 transition-transform duration-300">
+                                        <i className="fas fa-heart text-2xl mr-2"></i>
+                                        <span className="font-bold">Passion</span>
+                                    </div>
+                                    <div className="w-px h-8 bg-gray-300"></div>
+                                    <div className="flex items-center text-gray-800 hover:scale-110 transition-transform duration-300">
+                                        <i className="fas fa-rocket text-2xl mr-2"></i>
+                                        <span className="font-bold">Service</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            )}
+
+            <div className="container mx-auto px-4 py-8">
+                {/* Categories Section */}
+                <section className="mb-12">
+                    <div className="text-center mb-10">
+                        <h2 className="text-4xl font-bold text-[#F4B400] mb-4">
+                            <i className="fas fa-utensils text-[#F4B400] mr-3"></i>
+                            Our Food Categories
+                        </h2>
+                        <div className="w-32 h-1 bg-[#F4B400] mx-auto rounded-full"></div>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-4 mb-8">
+                        <button
+                            onClick={() => setSelectedCategory(null)}
+                            className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
+                                selectedCategory === null
+                                    ? 'bg-[#F4B400] text-[#1E1E1E] shadow-lg'
+                                    : 'bg-[#FAFAFA] text-[#333333] border-2 border-[#CCCCCC] hover:border-[#F4B400] hover:shadow-md'
+                            }`}
+                        >
+                            <i className="fas fa-th-large mr-2"></i>All Items
+                        </button>
+                        {categories.map((category) => (
+                            <button
+                                key={category._id}
+                                onClick={() => setSelectedCategory(category._id)}
+                                className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
+                                    selectedCategory === category._id
+                                        ? 'bg-[#F4B400] text-[#1E1E1E] shadow-lg'
+                                        : 'bg-[#FAFAFA] text-[#333333] border-2 border-[#CCCCCC] hover:border-[#F4B400] hover:shadow-md'
+                                }`}
+                            >
+                                <i className="fas fa-tag mr-2"></i>{category.name}
+                            </button>
+                        ))}
+                    </div>
+                </section>
+
+                {/* Products Section */}
+                <section>
+                    <div className="text-center mb-10">
+                        <h2 className="text-4xl font-bold text-[#F4B400] mb-4">
+                            <i className="fas fa-pizza-slice text-[#F4B400] mr-3" style={{animationDuration: '3s'}}></i>
+                            Our Delicious Menu
+                        </h2>
+                        <div className="w-32 h-1 bg-[#F4B400] mx-auto rounded-full"></div>
+                        <p className="text-[#333333] mt-4 font-medium">
+                            {selectedCategory ? `${filteredProducts.length} items available` : `${products.length} delicious items to choose from`}
+                        </p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {filteredProducts.map((product) => (
+                            <div key={product._id} className="group bg-[#FAFAFA] rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-[#CCCCCC] overflow-hidden transform hover:scale-105">
+                                <div className="relative h-48 overflow-hidden">
+                                    {product.pictureUrl ? (
+                                        <img
+                                            src={product.pictureUrl}
+                                            alt={product.name}
+                                            className="w-full h-full object-contain hover:scale-110 transition-transform duration-300 p-2"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full bg-white flex items-center justify-center">
+                                            <i className="fas fa-utensils text-4xl text-[#F4B400]"></i>
+                                        </div>
+                                    )}
+                                    <div className="absolute top-3 right-3 bg-[#F4B400] text-[#1E1E1E] px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                                        <i className="fas fa-fire mr-1 animate-pulse"></i>Hot
+                                    </div>
+                                </div>
+                                <div className="p-5">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <h3 className="text-lg font-bold text-[#333333] capitalize leading-tight group-hover:text-[#F4B400] transition-colors duration-200">
+                                            {product.name}
+                                        </h3>
+                                        <span className="text-xl font-bold text-[#F4B400] ml-2">
+                                            {getCurrencySymbol()}{product.price}
+                                        </span>
+                                    </div>
+                                    {product.description && (
+                                        <p className="text-[#333333] text-sm mb-4 line-clamp-2">{product.description}</p>
+                                    )}
+                                    <div className="flex items-center justify-between mb-4">
+                                        {product.category_id?.name && (
+                                            <span className="bg-[#FAFAFA] text-[#F4B400] px-3 py-1 rounded-full text-xs font-medium capitalize">
+                                                <i className="fas fa-tag mr-1"></i>{product.category_id.name}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <button className="w-full bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                                        <i className="fas fa-shopping-cart mr-2"></i>
+                                        Order Now
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    {filteredProducts.length === 0 && (
+                        <div className="text-center py-12">
+                            <i className="fas fa-search text-4xl text-[#E0E0E0] mb-4"></i>
+                            <h3 className="text-lg font-semibold text-[#333333] mb-2">No items found</h3>
+                            <p className="text-[#333333]">Try selecting a different category</p>
+                        </div>
+                    )}
+                </section>
+            </div>
+
+            {/* Call to Action Section */}
+            <section className="bg-[#1E1E1E] py-12 relative">
+                <div className="absolute inset-0 bg-[#1E1E1E]/10"></div>
+                <div className="relative container mx-auto px-4 text-center text-[#E0E0E0]">
+                    <h2 className="text-4xl font-bold mb-6">
+                        <i className="fas fa-rocket mr-3"></i>
+                        Ready to Order?
+                    </h2>
+                    <p className="text-xl mb-8 max-w-2xl mx-auto font-medium">
+                        Join thousands of satisfied customers who trust us for delicious food!
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                        <button className="bg-[#FAFAFA]/20 hover:bg-[#FAFAFA]/30 text-[#E0E0E0] font-semibold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-xl border border-[#E0E0E0]/20">
+                            <i className="fas fa-phone mr-2"></i>
+                            Call: +92-XXX-XXXXXXX
+                        </button>
+                        <button className="bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-semibold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-xl">
+                            <i className="fab fa-whatsapp mr-2"></i>
+                            WhatsApp Order
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            {/* Footer */}
+            <footer className="bg-[#1E1E1E] text-[#E0E0E0] py-8">
+                <div className="container mx-auto px-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                        {/* Brand Section */}
+                        <div className="md:col-span-2">
+                            <div className="flex items-center space-x-3 mb-4">
+                                {store?.store_logo && (
+                                    <div className="w-12 h-12 bg-[#FAFAFA] rounded-lg p-2">
+                                        <img
+                                            src={store.store_logo}
+                                            alt={store.store_name}
+                                            className="w-full h-full object-contain"
+                                        />
+                                    </div>
+                                )}
+                                <div>
+                                    <h3 className="text-xl font-bold text-[#F4B400]">{store?.store_name || slug}</h3>
+                                    <p className="text-[#E0E0E0] text-sm">Quality Food, Fast Delivery</p>
+                                </div>
+                            </div>
+                            <p className="text-[#E0E0E0] text-sm mb-4 max-w-md">
+                                {store?.aboutUs || "We're passionate about serving you the finest quality food with exceptional taste and service."}
+                            </p>
+                            <div className="flex space-x-3">
+                                <div className="w-8 h-8 bg-[#F4B400] rounded-lg flex items-center justify-center hover:bg-[#F4B400]/90 transition-colors cursor-pointer">
+                                    <i className="fab fa-facebook-f text-sm"></i>
+                                </div>
+                                <div className="w-8 h-8 bg-[#F4B400] rounded-lg flex items-center justify-center hover:bg-[#F4B400]/90 transition-colors cursor-pointer">
+                                    <i className="fab fa-instagram text-sm"></i>
+                                </div>
+                                <div className="w-8 h-8 bg-[#F4B400] rounded-lg flex items-center justify-center hover:bg-[#F4B400]/90 transition-colors cursor-pointer">
+                                    <i className="fab fa-youtube text-sm"></i>
+                                </div>
+                            </div>
+                        </div>
+                        {/* Quick Links */}
+                        <div>
+                            <h4 className="font-semibold mb-4 text-[#F4B400]">Quick Links</h4>
+                            <ul className="space-y-2 text-sm">
+                                <li><a href="#" className="text-gray-400 hover:text-white transition-colors"><i className="fas fa-home mr-2"></i>Home</a></li>
+                                <li><a href="#" className="text-gray-400 hover:text-white transition-colors"><i className="fas fa-utensils mr-2"></i>Menu</a></li>
+                                <li><a href="#" className="text-gray-400 hover:text-white transition-colors"><i className="fas fa-info-circle mr-2"></i>About</a></li>
+                                <li><a href="#" className="text-gray-400 hover:text-white transition-colors"><i className="fas fa-phone mr-2"></i>Contact</a></li>
+                            </ul>
+                        </div>
+
+                        {/* Contact Info */}
+                        <div>
+                            <h4 className="font-semibold mb-4 text-gray-300">Contact</h4>
+                            <ul className="space-y-2 text-sm text-gray-400">
+                                <li><i className="fas fa-map-marker-alt mr-2 text-yellow-500"></i>{store?.address || "123 Food Street, Karachi"}</li>
+                                <li><i className="fas fa-phone mr-2 text-yellow-500"></i>+92-XXX-XXXXXXX</li>
+                                <li><i className="fas fa-envelope mr-2 text-yellow-500"></i>info@{slug}.com</li>
+                                <li><i className="fas fa-clock mr-2 text-yellow-500"></i>24/7 Open</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="border-t border-gray-700 pt-4 text-center">
+                        <p className="text-gray-400 text-sm">
+                            © 2025 {store?.store_name || slug}. All rights reserved.
+                        </p>
+                    </div>
+                </div>
+            </footer>
+
+            {/* FontAwesome CDN */}
+            <link
+                rel="stylesheet"
+                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+                integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+                crossOrigin="anonymous"
+                referrerPolicy="no-referrer"
+            />
+        </div>
+    );
+}
