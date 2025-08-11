@@ -57,20 +57,22 @@ const handleApiError = (response: ApiResponse, logout?: () => void): string => {
 
 export const adminAuthService = {
   registerAdmin: async (
-    name: string,
-    email: string,
-    password: string,
-    logo: File | null,
-    storeName: string,
-    phoneNumber: string | null,
-    address: string | null,
-    logout?: () => void
+      name: string,
+      email: string,
+      password: string,
+      logo: File | null,
+      storeName: string,
+      phoneNumber: string | null,
+      address: string | null,
+      slug: string | null,
+      logout?: () => void
   ): Promise<any> => {
     try {
       const formData = new FormData();
       formData.append('name', name);
       formData.append('email', email);
       formData.append('password', password);
+      formData.append('slug', slug);
       if (logo) {
         formData.append('logo', logo);
       }
@@ -128,9 +130,9 @@ export const adminAuthService = {
   },
 
   loginAdmin: async (
-    email: string,
-    password: string,
-    logout?: () => void
+      email: string,
+      password: string,
+      logout?: () => void
   ): Promise<any> => {
     try {
       const response = await fetch(`${API_BASE_URL}/users/api/v1/login`, {
@@ -228,9 +230,9 @@ export const adminAuthService = {
   },
 
   resetPassword: async (
-    email: string,
-    resetCode: string,
-    newPassword: string
+      email: string,
+      resetCode: string,
+      newPassword: string
   ): Promise<any> => {
     try {
       const response = await fetch(`${API_BASE_URL}/users/api/v1/reset-password`, {
@@ -283,4 +285,7 @@ export const adminAuthService = {
     }
   },
 };
+
+
+
 
