@@ -27,7 +27,7 @@ const Footer = dynamic(
     { ssr: false }
 );
 
-const publicRoutes = ['/Registration/login', '/Registration/forgotPassword', '/Registration/registerAdmin', 'public/[slug]','/NoAccess'];
+const publicRoutes = ['/Registration/login', '/Registration/forgotPassword', '/Registration/registerAdmin', '/public/[slug]', '/NoAccess'];
 
 // Helper function to create slug from store name
 const createSlug = (storeName: string): string => {
@@ -40,11 +40,18 @@ const createSlug = (storeName: string): string => {
 };
 
 // Helper function to extract slug from pathname
-// Helper function to extract slug from pathname
 const extractSlugFromPath = (pathname: string | null): string | null => {
   if (!pathname) return null;
   const segments = pathname.split('/').filter(Boolean);
-  if (segments.length > 0 && !publicRoutes.some(route => pathname.startsWith(route))) {
+  // If the route is public, return the slug from /public/[slug]
+  if (pathname.startsWith('/public/') && segments.length >= 2) {
+    return segments[1]; // Return the slug (e.g., 'cheezious')
+  }
+  // For non-public routes, apply existing logic
+  if (segments.length > 0 && !publicRoutes.some(route => {
+    if (route === '/public/[slug]') return pathname.startsWith('/public/');
+    return pathname.startsWith(route);
+  })) {
     const firstSegment = segments[0];
     const directRoutes = ['Dashboard', 'Orders', 'MenuManagement', 'RoleAndUserManagement', 'Tables', 'Settings'];
     if (!directRoutes.includes(firstSegment)) {
@@ -55,9 +62,9 @@ const extractSlugFromPath = (pathname: string | null): string | null => {
 };
 
 // Helper function to get path without slug
-// Helper function to get path without slug
 const getPathWithoutSlug = (pathname: string | null, slug: string | null): string => {
   if (!pathname) return '/';
+  if (pathname.startsWith('/public/')) return pathname; // Preserve /public/[slug]
   if (!slug) return pathname;
   return pathname.replace(`/${slug}`, '') || '/';
 };
@@ -82,6 +89,8 @@ function AppContent({ Component, pageProps }: AppProps) {
 
   const API_BASE_URL = 'http://192.168.18.107:3000';
   const USER_DETAILS_ENDPOINT = '/users/api/v1/details';
+
+  console.log('AppContent:', { pathname, extractedSlug: extractSlugFromPath(pathname), currentSlug });
 
   const extractedSlug = extractSlugFromPath(pathname);
   const pathWithoutSlug = getPathWithoutSlug(pathname, extractedSlug);
@@ -135,9 +144,13 @@ function AppContent({ Component, pageProps }: AppProps) {
     if (!token) {
       const savedTheme = localStorage.getItem('appTheme') || 'default';
       const savedCurrency = localStorage.getItem('appCurrency') || 'pkr';
-      console.log('No token, using saved settings:', { theme: savedTheme, currency: savedCurrency });
+      const savedSlug = localStorage.getItem('restaurantSlug') || '';
+      const savedStoreName = localStorage.getItem('storeName') || '';
+      console.log('No token, using saved settings:', { theme: savedTheme, currency: savedCurrency, slug: savedSlug });
       setCurrentTheme(savedTheme);
       setCurrentCurrency(savedCurrency);
+      setCurrentSlug(savedSlug || null);
+      setStoreName(savedStoreName);
       applyThemeToDOM(savedTheme);
       applyCurrencyToDOM(savedCurrency);
       lastKnownThemeRef.current = savedTheme;
@@ -169,7 +182,7 @@ function AppContent({ Component, pageProps }: AppProps) {
       const userTheme = data.data?.data?.user?.theme || 'default';
       const userCurrency = data.data?.data?.user?.currency || 'pkr';
       const userStoreName = data.data?.data?.user?.store_name || '';
-      const slug = data.data?.data?.user?.slug || ''; // Use the slug directly from API
+      const slug = data.data?.data?.user?.slug || '';
 
       console.log('Loaded user settings from API:', {
         theme: userTheme,
@@ -178,11 +191,10 @@ function AppContent({ Component, pageProps }: AppProps) {
         slug
       });
 
-
       setCurrentTheme(userTheme);
       setCurrentCurrency(userCurrency);
       setStoreName(userStoreName);
-      setCurrentSlug(slug);
+      setCurrentSlug(slug || null);
 
       localStorage.setItem('restaurantSlug', slug);
       localStorage.setItem('storeName', userStoreName);
@@ -193,7 +205,7 @@ function AppContent({ Component, pageProps }: AppProps) {
       lastKnownCurrencyRef.current = userCurrency;
       setThemeLoaded(true);
 
-      if (isAuthenticated && !extractedSlug && !publicRoutes.includes(pathname)) {
+      if (isAuthenticated && pathname && !pathname.startsWith('/public/') && !publicRoutes.includes(pathname)) {
         const newPath = `/${slug}${pathname === '/' ? '/Dashboard/dashboard' : pathname}`;
         if (pathname !== newPath) router.replace(newPath);
       }
@@ -219,7 +231,7 @@ function AppContent({ Component, pageProps }: AppProps) {
 
       setCurrentTheme(savedTheme);
       setCurrentCurrency(savedCurrency);
-      setCurrentSlug(savedSlug);
+      setCurrentSlug(savedSlug || null);
       setStoreName(savedStoreName);
       applyThemeToDOM(savedTheme);
       applyCurrencyToDOM(savedCurrency);
@@ -462,6 +474,12 @@ function AppContent({ Component, pageProps }: AppProps) {
       return;
     }
 
+    // Skip authentication for /public/[slug] routes
+    if (pathname && pathname.startsWith('/public/')) {
+      console.log('Public route detected, skipping authentication');
+      return;
+    }
+
     if (!isAuthenticated && !publicRoutes.includes(pathWithoutSlug)) {
       console.log('Redirecting to login: User not authenticated');
       router.replace('/Registration/login');
@@ -565,6 +583,7 @@ function AppContent({ Component, pageProps }: AppProps) {
         .toUpperCase() + pathWithoutSlug.split('/').pop()?.slice(1).toLowerCase() || 'Dashboard';
     document.title = `${storeName ? `${storeName} - ` : ''}${pageName}`;
   }, [user, storeName, pathWithoutSlug]);
+
   if (isLoading || initialLoad) {
     return (
         <div className="flex items-center justify-center min-h-screen">
@@ -579,24 +598,24 @@ function AppContent({ Component, pageProps }: AppProps) {
     );
   }
 
-// Render only the Component for /public/[slug] routes (dynamic slug)
+  // Render only the Component for /public/[slug] routes (dynamic slug)
   if (pathname && pathname.startsWith('/public/')) {
     return <Component {...pageProps} key={pathname} currentCurrency={currentCurrency} restaurantSlug={extractedSlug} storeName={storeName} />;
   }
 
-// Render only the Component for other public routes when not authenticated
+  // Render only the Component for other public routes when not authenticated
   if (!isAuthenticated && publicRoutes.includes(pathWithoutSlug)) {
     return <Component {...pageProps} />;
   }
 
-// Redirect unauthenticated users to login for non-public routes
+  // Redirect unauthenticated users to login for non-public routes
   if (!isAuthenticated) {
     console.log('Redirecting to login: User not authenticated');
     router.replace('/Registration/login');
     return null;
   }
 
-// Redirect authenticated users from login page to dashboard
+  // Redirect authenticated users from login page to dashboard
   if (isAuthenticated && pathWithoutSlug === '/Registration/login') {
     console.log('Redirecting to dashboard: User authenticated on login page');
     const slug = currentSlug || localStorage.getItem('restaurantSlug') || '';
@@ -605,12 +624,12 @@ function AppContent({ Component, pageProps }: AppProps) {
     return null;
   }
 
-// Render Component for registerAdmin page without layout
+  // Render Component for registerAdmin page without layout
   if (isAuthenticated && pathWithoutSlug === '/Registration/registerAdmin') {
     return <Component {...pageProps} key={pathname} currentCurrency={currentCurrency} restaurantSlug={extractedSlug} storeName={storeName} />;
   }
 
-// Check permissions for authenticated users on non-public routes
+  // Check permissions for authenticated users on non-public routes
   if (isAuthenticated && permissionsLoaded) {
     const requiredPermission = routePermissions[pathWithoutSlug];
     if (requiredPermission && !userPermissions.includes(requiredPermission)) {
@@ -631,7 +650,7 @@ function AppContent({ Component, pageProps }: AppProps) {
   const contentMargin = sidebarOpen ? 'ml-80' : 'ml-28';
   const headerHeight = 'h-16';
 
-// Render full layout for authenticated users on admin routes
+  // Render full layout for authenticated users on admin routes
   return (
       <div className="flex flex-col min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
         <Header
