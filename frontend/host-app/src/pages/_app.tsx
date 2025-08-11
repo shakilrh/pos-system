@@ -564,25 +564,56 @@ function AppContent({ Component, pageProps }: AppProps) {
   };
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+
     let faviconLink = document.querySelector("link[rel='icon']");
     if (!faviconLink) {
       faviconLink = document.createElement('link');
       faviconLink.rel = 'icon';
       document.head.appendChild(faviconLink);
     }
-    if (user?.store_logo && faviconLink) {
-      faviconLink.href = user.store_logo;
-      faviconLink.type = 'image/jpeg';
-    }
 
-    const pageName = pathWithoutSlug
-        .split('/')
-        .filter(Boolean)
-        .pop()
-        ?.charAt(0)
-        .toUpperCase() + pathWithoutSlug.split('/').pop()?.slice(1).toLowerCase() || 'Dashboard';
-    document.title = `${storeName ? `${storeName} - ` : ''}${pageName}`;
-  }, [user, storeName, pathWithoutSlug]);
+    // Fetch store logo for public routes
+    const updateFaviconForPublicRoute = async () => {
+      if (pathname && pathname.startsWith('/public/') && extractedSlug) {
+        try {
+          const response = await fetch(`http://192.168.18.107:3000/users/api/v1/public/store/${extractedSlug}`);
+          const data = await response.json();
+          const storeLogo = data.data?.data?.store_logo;
+          if (storeLogo && faviconLink) {
+            faviconLink.href = storeLogo;
+            faviconLink.type = 'image/jpeg';
+          }
+        } catch (error) {
+          console.error('Error fetching store logo for favicon:', error);
+        }
+      } else if (user?.store_logo && faviconLink && (!pathname || !pathname.startsWith('/public/'))) {
+        // Use logged-in user's store logo for non-public routes
+        faviconLink.href = user.store_logo;
+        faviconLink.type = 'image/jpeg';
+      } else if (faviconLink) {
+        // Default favicon if no store logo
+        faviconLink.href = '/default-favicon.ico'; // Add a default favicon in public folder if needed
+      }
+    };
+
+    updateFaviconForPublicRoute();
+
+    // Title logic
+    let title = '';
+    if (pathname && pathname.startsWith('/public/')) {
+      title = extractedSlug ? extractedSlug.charAt(0).toUpperCase() + extractedSlug.slice(1) : 'Restaurant';
+    } else {
+      const pageName = pathWithoutSlug
+          .split('/')
+          .filter(Boolean)
+          .pop()
+          ?.charAt(0)
+          .toUpperCase() + (pathWithoutSlug.split('/').pop()?.slice(1).toLowerCase() || '') || 'Dashboard';
+      title = `${storeName ? `${storeName} - ` : ''}${pageName}`;
+    }
+    document.title = title;
+  }, [user, storeName, pathWithoutSlug, pathname, extractedSlug]);
 
   if (isLoading || initialLoad) {
     return (
