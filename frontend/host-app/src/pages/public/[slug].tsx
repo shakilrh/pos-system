@@ -1,5 +1,9 @@
+
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
+import AuthModal from './AuthModal';
+import CustomerProfileModal from './CustomerProfileModal';
+import { useAuth } from '../../context/AuthContext';
 
 export default function PublicHome() {
     const router = useRouter();
@@ -10,14 +14,31 @@ export default function PublicHome() {
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [currentSlide, setCurrentSlide] = useState(0);
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const [cart, setCart] = useState([]);
+    const [cartCount, setCartCount] = useState(0);
+
+    const {
+        isAuthenticated,
+        user,
+        login,
+        logout,
+        refreshUserProfile
+    } = useAuth();
 
     useEffect(() => {
         if (slug) {
             fetchData();
         }
-    }, [slug]);
 
-    // Auto-slide carousel
+        // Check for existing customer session
+        if (isAuthenticated && user?.user_type === 'customer') {
+            refreshUserProfile();
+        }
+    }, [slug, isAuthenticated]);
+
+
     useEffect(() => {
         if (store?.images && store.images.length > 1) {
             const interval = setInterval(() => {
@@ -26,6 +47,11 @@ export default function PublicHome() {
             return () => clearInterval(interval);
         }
     }, [store?.images]);
+
+    useEffect(() => {
+        const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+        setCartCount(totalItems);
+    }, [cart]);
 
     const fetchData = async () => {
         try {
@@ -49,6 +75,59 @@ export default function PublicHome() {
             console.error('Error fetching data:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleLoginSuccess = () => {
+        setIsAuthModalOpen(false);
+
+        // Check if customer needs to complete profile
+        if (!user?.name || !user.name.trim()) {
+            setTimeout(() => {
+                setIsProfileModalOpen(true);
+            }, 500);
+        }
+    };
+
+    const handleProfileUpdated = () => {
+        refreshUserProfile();
+        setIsProfileModalOpen(false);
+    };
+
+    const handleLogout = () => {
+        logout();
+        setCart([]);
+    };
+
+    const handleProfileClick = () => {
+        setIsProfileModalOpen(true);
+    };
+
+    const handleAddToCart = (product) => {
+        if (!isAuthenticated || user?.user_type !== 'customer') {
+            setIsAuthModalOpen(true);
+            return;
+        }
+
+        const existingItem = cart.find(item => item._id === product._id);
+        if (existingItem) {
+            setCart(cart.map(item =>
+                item._id === product._id
+                    ? { ...item, quantity: item.quantity + 1 }
+                    : item
+            ));
+        } else {
+            setCart([...cart, { ...product, quantity: 1 }]);
+        }
+
+        const button = document.querySelector(`[data-product-id="${product._id}"]`);
+        if (button) {
+            button.innerHTML = '<i class="fas fa-check mr-2"></i>Added!';
+            button.classList.add('bg-green-500', 'hover:bg-green-600');
+            setTimeout(() => {
+                button.innerHTML = '<i class="fas fa-shopping-cart mr-2"></i>Order Now';
+                button.classList.remove('bg-green-500', 'hover:bg-green-600');
+            }, 2000);
         }
     };
 
@@ -78,6 +157,22 @@ export default function PublicHome() {
         setCurrentSlide(index);
     };
 
+    const getDisplayName = () => {
+        if (!isAuthenticated) return 'User';
+        if (user?.name && user.name.trim()) {
+            return user.name.split(' ')[0];
+        }
+        return user?.email ? user.email.split('@')[0] : 'User';
+    };
+
+    const getFullDisplayName = () => {
+        if (!isAuthenticated) return 'User';
+        if (user?.name && user.name.trim()) {
+            return user.name;
+        }
+        return user?.email || 'User';
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -105,19 +200,14 @@ export default function PublicHome() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            {/* Header */}
             <header className="bg-white shadow-lg">
                 <div className="container mx-auto px-4 py-6">
                     <div className="flex items-center justify-between">
-                        {/* Left: Hamburger + Logo + Store Name */}
                         <div className="flex items-center space-x-4">
-                            {/* Hamburger Icon */}
                             <button className="text-red-500 text-2xl focus:outline-none">
                                 <i className="fas fa-bars"></i>
                             </button>
 
-                            {/* Store Logo */}
                             {store?.store_logo && (
                                 <div className="h-14 w-auto flex-shrink-0">
                                     <img
@@ -128,7 +218,6 @@ export default function PublicHome() {
                                 </div>
                             )}
 
-                            {/* Store Name + Tagline */}
                             <div>
                                 <h1 className="text-3xl font-bold text-[#4c2c19]">
                                     {store?.store_name || slug}
@@ -137,28 +226,63 @@ export default function PublicHome() {
                             </div>
                         </div>
 
-                        {/* Right: Cart and Login Buttons */}
                         <div className="flex items-center space-x-4">
-                            {/* Cart Button */}
                             <div className="relative">
-                                <button className="bg-[#FFD700] hover:bg-yellow-400 text-black font-semibold py-2 px-4 rounded-lg shadow-md flex items-center space-x-2">
+                                <button
+                                    onClick={() => isAuthenticated ? console.log('Show cart') : setIsAuthModalOpen(true)}
+                                    className="bg-[#FFD700] hover:bg-yellow-400 text-black font-semibold py-2 px-4 rounded-lg shadow-md flex items-center space-x-2"
+                                >
                                     <i className="fas fa-shopping-cart"></i>
                                     <span>CART</span>
                                 </button>
                                 <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold h-5 w-5 rounded-full flex items-center justify-center">
-            0
-          </span>
+                                    {cartCount}
+                                </span>
                             </div>
 
-                            {/* Login Button */}
-                            <button className="bg-[#FFD700] hover:bg-yellow-400 text-black font-semibold py-2 px-4 rounded-lg shadow-md flex items-center space-x-2">
-                                <i className="fas fa-user"></i>
-                                <span>LOGIN</span>
-                            </button>
+                            {isAuthenticated ? (
+                                <div className="relative group">
+                                    <button className="bg-[#FFD700] hover:bg-yellow-400 text-black font-semibold py-2 px-4 rounded-lg shadow-md flex items-center space-x-2">
+                                        <i className="fas fa-user"></i>
+                                        <span className="hidden sm:inline">{getDisplayName()}</span>
+                                        <i className="fas fa-chevron-down text-xs"></i>
+                                    </button>
+
+                                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                        <div className="p-3 border-b border-gray-100">
+                                            <span className="text-gray-800 font-medium">{getFullDisplayName()}</span>
+                                            <p className="text-gray-500 text-xs">{user?.email}</p>
+                                        </div>
+                                        <button
+                                            onClick={handleProfileClick}
+                                            className="w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-100 transition-colors"
+                                        >
+                                            <i className="fas fa-user mr-2"></i>
+                                            Profile
+                                        </button>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-100 transition-colors"
+                                        >
+                                            <i className="fas fa-sign-out-alt mr-2"></i>
+                                            Logout
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setIsAuthModalOpen(true)}
+                                    className="bg-[#FFD700] hover:bg-yellow-400 text-black font-semibold py-2 px-4 rounded-lg shadow-md flex items-center space-x-2"
+                                >
+                                    <i className="fas fa-user"></i>
+                                    <span>Login</span>
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
             </header>
+
 
             {/* Image Carousel Section */}
             {store?.images && store.images.length > 0 && (
@@ -217,7 +341,6 @@ export default function PublicHome() {
                     </div>
                 </section>
             )}
-
             {/* About Us Section */}
             {store?.aboutUs && (
                 <section className="py-12 bg-gray-100 relative overflow-hidden">
@@ -385,11 +508,9 @@ export default function PublicHome() {
                 </div>
             </section>
 
-            {/* Footer */}
             <footer className="bg-[#1E1E1E] text-[#E0E0E0] py-8">
                 <div className="container mx-auto px-4">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                        {/* Brand Section */}
                         <div className="md:col-span-2">
                             <div className="flex items-center space-x-3 mb-4">
                                 {store?.store_logo && (
@@ -421,7 +542,6 @@ export default function PublicHome() {
                                 </div>
                             </div>
                         </div>
-                        {/* Quick Links */}
                         <div>
                             <h4 className="font-semibold mb-4 text-[#F4B400]">Quick Links</h4>
                             <ul className="space-y-2 text-sm">
@@ -432,7 +552,6 @@ export default function PublicHome() {
                             </ul>
                         </div>
 
-                        {/* Contact Info */}
                         <div>
                             <h4 className="font-semibold mb-4 text-gray-300">Contact</h4>
                             <ul className="space-y-2 text-sm text-gray-400">
@@ -452,7 +571,19 @@ export default function PublicHome() {
                 </div>
             </footer>
 
-            {/* FontAwesome CDN */}
+            <AuthModal
+                isOpen={isAuthModalOpen}
+                onClose={() => setIsAuthModalOpen(false)}
+                store={store}
+                onLoginSuccess={handleLoginSuccess}
+            />
+
+            <CustomerProfileModal
+                isOpen={isProfileModalOpen}
+                onClose={() => setIsProfileModalOpen(false)}
+                onProfileUpdated={handleProfileUpdated}
+            />
+
             <link
                 rel="stylesheet"
                 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
@@ -463,3 +594,30 @@ export default function PublicHome() {
         </div>
     );
 }
+
+export async function getServerSideProps(context) {
+    const { slug } = context.params;
+
+    const [productsRes, categoriesRes, storeRes] = await Promise.all([
+        fetch(`http://192.168.18.107:3000/products/api/v1/public/list/${slug}`),
+        fetch(`http://192.168.18.107:3000/categories/api/v1/public/list/${slug}`),
+        fetch(`http://192.168.18.107:3000/users/api/v1/public/store/${slug}`)
+    ]);
+
+    const [productsData, categoriesData, storeData] = await Promise.all([
+        productsRes.json(),
+        categoriesRes.json(),
+        storeRes.json()
+    ]);
+
+    return {
+        props: {
+            initialProducts: productsData.data?.data || [],
+            initialCategories: categoriesData.data?.data || [],
+            initialStore: storeData.data?.data || null,
+            slug
+        }
+    };
+}
+
+

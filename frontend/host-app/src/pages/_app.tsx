@@ -39,6 +39,18 @@ const createSlug = (storeName: string): string => {
       .trim();
 };
 
+// Helper function to check if a route is public
+const isPublicRoute = (pathname: string | null): boolean => {
+  if (!pathname) return false;
+
+  if (pathname.startsWith('/public/')) return true;
+
+  return publicRoutes.some(route => {
+    if (route === '/public/[slug]') return pathname.startsWith('/public/');
+    return pathname === route || pathname.startsWith(route);
+  });
+};
+
 // Helper function to extract slug from pathname
 const extractSlugFromPath = (pathname: string | null): string | null => {
   if (!pathname) return null;
@@ -48,10 +60,7 @@ const extractSlugFromPath = (pathname: string | null): string | null => {
     return segments[1]; // Return the slug (e.g., 'cheezious')
   }
   // For non-public routes, apply existing logic
-  if (segments.length > 0 && !publicRoutes.some(route => {
-    if (route === '/public/[slug]') return pathname.startsWith('/public/');
-    return pathname.startsWith(route);
-  })) {
+  if (segments.length > 0 && !isPublicRoute(pathname)) {
     const firstSegment = segments[0];
     const directRoutes = ['Dashboard', 'Orders', 'MenuManagement', 'RoleAndUserManagement', 'Tables', 'Settings'];
     if (!directRoutes.includes(firstSegment)) {
@@ -90,10 +99,23 @@ function AppContent({ Component, pageProps }: AppProps) {
   const API_BASE_URL = 'http://192.168.18.107:3000';
   const USER_DETAILS_ENDPOINT = '/users/api/v1/details';
 
-  console.log('AppContent:', { pathname, extractedSlug: extractSlugFromPath(pathname), currentSlug });
+  // Use window.location.pathname as fallback when pathname is null (hydration issue)
+  const actualPathname = pathname || (typeof window !== 'undefined' ? window.location.pathname : null);
 
-  const extractedSlug = extractSlugFromPath(pathname);
-  const pathWithoutSlug = getPathWithoutSlug(pathname, extractedSlug);
+  console.log('AppContent:', {
+    pathname,
+    actualPathname,
+    windowPathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR',
+    extractedSlug: extractSlugFromPath(actualPathname),
+    currentSlug,
+    isPublic: isPublicRoute(actualPathname)
+  });
+
+  const extractedSlug = extractSlugFromPath(actualPathname);
+  const pathWithoutSlug = getPathWithoutSlug(actualPathname, extractedSlug);
+
+  // Check if current route is public using actual pathname
+  const isCurrentRoutePublic = isPublicRoute(actualPathname);
 
   const routePermissions = useMemo(() => {
     const mapping: { [key: string]: string } = {};
@@ -205,9 +227,9 @@ function AppContent({ Component, pageProps }: AppProps) {
       lastKnownCurrencyRef.current = userCurrency;
       setThemeLoaded(true);
 
-      if (isAuthenticated && pathname && !pathname.startsWith('/public/') && !publicRoutes.includes(pathname)) {
-        const newPath = `/${slug}${pathname === '/' ? '/Dashboard/dashboard' : pathname}`;
-        if (pathname !== newPath) router.replace(newPath);
+      if (isAuthenticated && actualPathname && !actualPathname.startsWith('/public/') && !publicRoutes.includes(actualPathname)) {
+        const newPath = `/${slug}${actualPathname === '/' ? '/Dashboard/dashboard' : actualPathname}`;
+        if (actualPathname !== newPath) router.replace(newPath);
       }
 
       setTimeout(() => {
@@ -420,15 +442,29 @@ function AppContent({ Component, pageProps }: AppProps) {
     });
   };
 
+  // Load settings for public routes without requiring authentication
   useEffect(() => {
     console.log('Settings loading useEffect triggered', {
       isAuthenticated,
       token: !!token,
       isLoading,
       themeLoaded,
+      isCurrentRoutePublic,
     });
 
-    if (!themeLoaded && isAuthenticated) {
+    // For public routes, load basic settings without requiring authentication
+    if (isCurrentRoutePublic && !themeLoaded) {
+      const savedTheme = localStorage.getItem('appTheme') || 'default';
+      const savedCurrency = localStorage.getItem('appCurrency') || 'pkr';
+      setCurrentTheme(savedTheme);
+      setCurrentCurrency(savedCurrency);
+      applyThemeToDOM(savedTheme);
+      applyCurrencyToDOM(savedCurrency);
+      setThemeLoaded(true);
+    }
+
+    // For authenticated routes, load user settings
+    if (!themeLoaded && isAuthenticated && !isCurrentRoutePublic) {
       loadUserSettings();
     }
 
@@ -440,7 +476,7 @@ function AppContent({ Component, pageProps }: AppProps) {
         clearInterval(themePollingIntervalRef.current);
       }
     };
-  }, [isAuthenticated, isLoading, token, themeLoaded]);
+  }, [isAuthenticated, isLoading, token, themeLoaded, isCurrentRoutePublic]);
 
   useEffect(() => {
     return () => {
@@ -460,6 +496,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     console.log('Route protection useEffect triggered', {
       isAuthenticated,
       pathname,
+      actualPathname,
       pathWithoutSlug,
       extractedSlug,
       currentSlug,
@@ -467,21 +504,22 @@ function AppContent({ Component, pageProps }: AppProps) {
       userPermissions,
       isLoading,
       initialLoad,
+      isCurrentRoutePublic,
     });
+
+    // Skip authentication for public routes entirely
+    if (isCurrentRoutePublic) {
+      console.log('Public route detected, skipping all authentication checks');
+      return;
+    }
 
     if (isLoading || initialLoad) {
       console.log('Still loading, skipping route protection');
       return;
     }
 
-    // Skip authentication for /public/[slug] routes
-    if (pathname && pathname.startsWith('/public/')) {
-      console.log('Public route detected, skipping authentication');
-      return;
-    }
-
-    if (!isAuthenticated && !publicRoutes.includes(pathWithoutSlug)) {
-      console.log('Redirecting to login: User not authenticated');
+    if (!isAuthenticated && !isCurrentRoutePublic) {
+      console.log('Redirecting to login: User not authenticated for protected route');
       router.replace('/Registration/login');
       return;
     }
@@ -498,7 +536,7 @@ function AppContent({ Component, pageProps }: AppProps) {
       return;
     }
 
-    if (isAuthenticated && !publicRoutes.includes(pathWithoutSlug) && permissionsLoaded) {
+    if (isAuthenticated && !isCurrentRoutePublic && permissionsLoaded) {
       const requiredPermission = routePermissions[pathWithoutSlug];
       if (requiredPermission && !userPermissions.includes(requiredPermission)) {
         console.log(`Access denied to ${pathWithoutSlug}: Missing permission ${requiredPermission}`);
@@ -510,7 +548,7 @@ function AppContent({ Component, pageProps }: AppProps) {
         console.log(`Access granted to ${pathWithoutSlug}`);
       }
     }
-  }, [isAuthenticated, pathname, pathWithoutSlug, router, userPermissions, permissionsLoaded, routePermissions, isLoading, initialLoad, currentSlug, extractedSlug]);
+  }, [isAuthenticated, pathname, actualPathname, pathWithoutSlug, router, userPermissions, permissionsLoaded, routePermissions, isLoading, initialLoad, currentSlug, extractedSlug, isCurrentRoutePublic]);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -615,7 +653,8 @@ function AppContent({ Component, pageProps }: AppProps) {
     document.title = title;
   }, [user, storeName, pathWithoutSlug, pathname, extractedSlug]);
 
-  if (isLoading || initialLoad) {
+  // Show loading only for authenticated routes or when authentication is still being determined
+  if ((isLoading || initialLoad) && !isCurrentRoutePublic) {
     return (
         <div className="flex items-center justify-center min-h-screen">
           <div className="flex flex-col items-center">
@@ -629,14 +668,10 @@ function AppContent({ Component, pageProps }: AppProps) {
     );
   }
 
-  // Render only the Component for /public/[slug] routes (dynamic slug)
-  if (pathname && pathname.startsWith('/public/')) {
+  // Render public routes immediately without any authentication checks
+  if (isCurrentRoutePublic) {
+    console.log('Rendering public route directly');
     return <Component {...pageProps} key={pathname} currentCurrency={currentCurrency} restaurantSlug={extractedSlug} storeName={storeName} />;
-  }
-
-  // Render only the Component for other public routes when not authenticated
-  if (!isAuthenticated && publicRoutes.includes(pathWithoutSlug)) {
-    return <Component {...pageProps} />;
   }
 
   // Redirect unauthenticated users to login for non-public routes

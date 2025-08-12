@@ -6,12 +6,16 @@ interface User {
   _id: string;
   name: string;
   email: string;
-  user_type: string;
-  role_id: string | null;
+  user_type: string; // 'worker', 'isadmin', or 'customer'
+  role_id?: string | null;
   profile?: any;
   logoUrl?: string;
   store_name?: string;
   store_logo?: string;
+  phone?: string; // Added for customer
+  phone_number?: string;
+  addresses?: string[];
+  verified?: boolean; // Added for customer
 }
 
 interface Permission {
@@ -41,7 +45,7 @@ interface AuthContextType {
   allPermissions: string[];
   storeName: string;
   restaurantSlug: string;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, passwordOrOtp: string, isCustomer?: boolean) => Promise<void>;
   logout: () => void;
   setUser: (user: User | null) => void;
   refreshUserProfile: () => Promise<void>;
@@ -82,7 +86,7 @@ const fetchMainPages = async (token: string, logout: () => void): Promise<MainPa
     return data.data?.data || [];
   } catch (err) {
     console.error('Error fetching main pages:', err);
-    return []; // Return empty array to allow app to continue
+    return [];
   }
 };
 
@@ -146,7 +150,6 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       setRestaurantSlug(slug);
       localStorage.setItem('storeName', updatedUser.store_name || '');
       localStorage.setItem('restaurantSlug', slug);
-      console.log('User profile refreshed successfully:', updatedUser);
     } catch (error: any) {
       console.error('Error refreshing user profile:', error);
       if (error.message !== 'Request timed out' && MAX_RETRIES > 0) {
@@ -154,18 +157,20 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         return refreshUserProfile(currentToken);
       }
       setProfileError(error.message || 'Failed to load user profile');
-      // Preserve existing user data if available
       if (user) {
         setUser((prev) => ({
           ...prev,
           _id: prev?._id || '',
           name: prev?.name || 'User',
           email: prev?.email || '',
-          user_type: prev?.user_type || 'worker',
+          user_type: prev?.user_type || 'customer',
           role_id: prev?.role_id || null,
           logoUrl: prev?.logoUrl || '',
           store_name: prev?.store_name || '',
           store_logo: prev?.store_logo || '',
+          phone: prev?.phone || '',
+          address: prev?.address || '',
+          verified: prev?.verified || false,
         }));
       }
     } finally {
@@ -188,11 +193,14 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             _id: parsedUser._id || parsedUser.id || '',
             name: parsedUser.name || 'User',
             email: parsedUser.email || '',
-            user_type: parsedUser.user_type || 'worker',
+            user_type: parsedUser.user_type || 'customer',
             role_id: parsedUser.role_id || null,
             logoUrl: parsedUser.logoUrl || '',
             store_name: parsedUser.store_name || '',
             store_logo: parsedUser.store_logo || '',
+            phone: parsedUser.phone || '',
+            address: parsedUser.address || '',
+            verified: parsedUser.verified || false,
           };
           setToken(storedToken);
           setUser(normalizedUser);
@@ -200,26 +208,30 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
           setRestaurantSlug(storedSlug);
           setIsAuthenticated(true);
 
-          try {
-            const mainPages = await fetchMainPages(storedToken, logout);
-            const permissions = mainPages.flatMap((page) => page.permissions.map((perm) => perm.key));
-            setAllPermissions(permissions);
-
-            const decodedToken = decodeToken(storedToken);
-            if (decodedToken) {
-              const userPerms = decodedToken.user_type === 'isadmin'
-                  ? permissions
-                  : Array.isArray(decodedToken.permissions)
-                      ? decodedToken.permissions.filter((key: string) => typeof key === 'string')
-                      : [];
-              setUserPermissions(userPerms);
-              setPermissionsLoaded(true);
-            } else {
+          if (normalizedUser.user_type !== 'customer') {
+            try {
+              const mainPages = await fetchMainPages(storedToken, logout);
+              const permissions = mainPages.flatMap((page) => page.permissions.map((perm) => perm.key));
+              setAllPermissions(permissions);
+              const decodedToken = decodeToken(storedToken);
+              if (decodedToken) {
+                const userPerms = decodedToken.user_type === 'isadmin'
+                    ? permissions
+                    : Array.isArray(decodedToken.permissions)
+                        ? decodedToken.permissions.filter((key: string) => typeof key === 'string')
+                        : [];
+                setUserPermissions(userPerms);
+                setPermissionsLoaded(true);
+              } else {
+                setUserPermissions([]);
+                setPermissionsLoaded(true);
+              }
+            } catch (error) {
+              console.error('Failed to fetch permissions:', error);
               setUserPermissions([]);
               setPermissionsLoaded(true);
             }
-          } catch (error) {
-            console.error('Failed to fetch permissions:', error);
+          } else {
             setUserPermissions([]);
             setPermissionsLoaded(true);
           }
@@ -236,13 +248,15 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
+// Update the login function in AuthProvider
+  const login = async (email: string, passwordOrOtp: string, isCustomer: boolean = false) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/users/api/v1/login`, {
+      const endpoint = isCustomer ? '/users/api/v1/customer-login' : '/users/api/v1/login';
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(isCustomer ? { email, code: passwordOrOtp } : { email, password: passwordOrOtp }),
       });
 
       if (!response.ok) {
@@ -251,39 +265,49 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       }
 
       const responseData = await response.json();
-      const { token, user } = responseData.data.data;
+      const { token, user: apiUser } = responseData.data.data;
 
       if (!token) {
         throw new Error('No token received');
       }
 
       const normalizedUser: User = {
-        _id: user._id || user.id || '',
-        name: user.name || 'User',
-        email: user.email || '',
-        user_type: user.user_type || 'worker',
-        role_id: user.role_id || null,
-        logoUrl: user.logoUrl || '',
-        store_name: user.store_name || '',
-        store_logo: user.store_logo || '',
+        _id: apiUser._id || apiUser.id || '',
+        name: apiUser.name || 'User',
+        email: apiUser.email || '',
+        user_type: isCustomer ? 'customer' : apiUser.user_type || 'worker',
+        role_id: isCustomer ? null : apiUser.role_id || null,
+        logoUrl: apiUser.logoUrl || '',
+        store_name: apiUser.store_name || '',
+        store_logo: apiUser.store_logo || '',
+        phone: apiUser.phone || apiUser.phone_number || '',
+        address: apiUser.address || (apiUser.addresses && apiUser.addresses[0]) || '',
+        verified: apiUser.verified || false,
+        phone_number: apiUser.phone_number || apiUser.phone || '',
+        addresses: apiUser.addresses || [],
       };
 
-      const mainPages = await fetchMainPages(token, logout);
-      const permissions = mainPages.flatMap((page) => page.permissions.map((perm) => perm.key));
-      setAllPermissions(permissions);
-
-      const decodedToken = decodeToken(token);
-      if (!decodedToken) {
-        throw new Error('Failed to decode token');
+      // For customers, we don't need permissions
+      if (isCustomer) {
+        setUserPermissions([]);
+        setPermissionsLoaded(true);
+      } else {
+        // Existing admin/worker permission logic
+        const mainPages = await fetchMainPages(token, logout);
+        const permissions = mainPages.flatMap((page) => page.permissions.map((perm) => perm.key));
+        setAllPermissions(permissions);
+        const decodedToken = decodeToken(token);
+        if (!decodedToken) {
+          throw new Error('Failed to decode token');
+        }
+        const userPerms = decodedToken.user_type === 'isadmin'
+            ? permissions
+            : Array.isArray(decodedToken.permissions)
+                ? decodedToken.permissions.filter((key: string) => typeof key === 'string')
+                : [];
+        setUserPermissions(userPerms);
+        setPermissionsLoaded(true);
       }
-
-      const userPerms = decodedToken.user_type === 'isadmin'
-          ? permissions
-          : Array.isArray(decodedToken.permissions)
-              ? decodedToken.permissions.filter((key: string) => typeof key === 'string')
-              : [];
-      setUserPermissions(userPerms);
-      setPermissionsLoaded(true);
 
       const slug = normalizedUser.store_name ? createSlug(normalizedUser.store_name) : '';
       setStoreName(normalizedUser.store_name || '');
@@ -295,6 +319,8 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       setToken(token);
       setUser(normalizedUser);
       setIsAuthenticated(true);
+
+      return normalizedUser; // Return user data for the modal to use
     } catch (error) {
       console.error('Login error:', error);
       setProfileError(error instanceof Error ? error.message : 'Login failed');
