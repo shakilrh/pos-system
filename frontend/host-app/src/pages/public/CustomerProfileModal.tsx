@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 const API_BASE_URL = 'http://192.168.18.107:3000';
@@ -17,6 +16,10 @@ export default function CustomerProfileModal({
                                                  onProfileUpdated
                                              }: Omit<CustomerProfileModalProps, 'token' | 'customer'>) {
     const { user, token, refreshUserProfile } = useAuth();
+
+    // Add missing state declarations
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const [formData, setFormData] = useState({
         name: user?.name || '',

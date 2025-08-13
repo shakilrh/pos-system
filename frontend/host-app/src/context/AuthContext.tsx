@@ -248,7 +248,6 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     initializeAuth();
   }, []);
 
-// Update the login function in AuthProvider
   const login = async (email: string, passwordOrOtp: string, isCustomer: boolean = false) => {
     setIsLoading(true);
     try {
@@ -265,7 +264,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       }
 
       const responseData = await response.json();
-      const { token, user: apiUser } = responseData.data.data;
+      const { token, data: apiUser } = responseData.data.data;
 
       if (!token) {
         throw new Error('No token received');
@@ -274,7 +273,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       const normalizedUser: User = {
         _id: apiUser._id || apiUser.id || '',
         name: apiUser.name || 'User',
-        email: apiUser.email || '',
+        email: apiUser.email || email,
         user_type: isCustomer ? 'customer' : apiUser.user_type || 'worker',
         role_id: isCustomer ? null : apiUser.role_id || null,
         logoUrl: apiUser.logoUrl || '',
@@ -287,12 +286,10 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         addresses: apiUser.addresses || [],
       };
 
-      // For customers, we don't need permissions
       if (isCustomer) {
         setUserPermissions([]);
         setPermissionsLoaded(true);
       } else {
-        // Existing admin/worker permission logic
         const mainPages = await fetchMainPages(token, logout);
         const permissions = mainPages.flatMap((page) => page.permissions.map((perm) => perm.key));
         setAllPermissions(permissions);
@@ -320,7 +317,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       setUser(normalizedUser);
       setIsAuthenticated(true);
 
-      return normalizedUser; // Return user data for the modal to use
+      return normalizedUser;
     } catch (error) {
       console.error('Login error:', error);
       setProfileError(error instanceof Error ? error.message : 'Login failed');

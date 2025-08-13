@@ -10,23 +10,29 @@ export interface NavigationHook {
     getSluggedPath: (path: string) => string;
 }
 
-export const useSlugNavigation = (): NavigationHook => {
-    const router = useRouter();
-    const { restaurantSlug, storeName, isLoading } = useAuth();
-    const [currentSlug, setCurrentSlug] = useState<string | null>(null);
-    const [isSlugReady, setIsSlugReady] = useState(false);
+const extractSlugFromPath = (pathname: string | null): string | null => {
+    if (!pathname) return null;
+    const segments = pathname.split('/').filter(Boolean);
 
-    const extractSlugFromPath = useCallback((pathname: string): string | null => {
-        const segments = pathname.split('/').filter(Boolean);
-        if (segments.length > 0) {
-            const firstSegment = segments[0];
-            const directRoutes = ['Dashboard', 'Orders', 'MenuManagement', 'RoleAndUserManagement', 'Tables', 'Settings', 'Registration', 'NoAccess'];
-            if (!directRoutes.includes(firstSegment)) {
-                return firstSegment;
-            }
+    // FORCE: For public routes, ALWAYS return the slug
+    if (pathname.startsWith('/public/') && segments.length >= 2) {
+        console.log('Extracting slug from public route:', segments[1]);
+        return segments[1]; // Return the slug (e.g., 'cheezious')
+    }
+
+    // For non-public routes, apply existing logic
+    if (segments.length > 0 && !publicRoutes.some(route => {
+        if (route === '/public/[slug]') return pathname.startsWith('/public/');
+        return pathname.startsWith(route);
+    })) {
+        const firstSegment = segments[0];
+        const directRoutes = ['Dashboard', 'Orders', 'MenuManagement', 'RoleAndUserManagement', 'Tables', 'Settings'];
+        if (!directRoutes.includes(firstSegment)) {
+            return firstSegment;
         }
-        return null;
-    }, []);
+    }
+    return null;
+};
 
     useEffect(() => {
         if (isLoading) return;
