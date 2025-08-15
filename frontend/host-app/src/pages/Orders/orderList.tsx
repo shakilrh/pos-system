@@ -8,6 +8,8 @@ import {
   markOrderAsCompleted,
   markNotificationAsRead,
   QueueOrder,
+  confirmOrder,
+  cancelOrder
 } from '../../services/orderService';
 import { useAuth } from '../../context/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -112,6 +114,7 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -453,6 +456,7 @@ export default function OrderList({
   const groupedOrders = React.useMemo(() => {
     const groups: Record<string, Order[]> = {
       pending: [],
+      confirmed: [],
       to_be_prepared: [],
       ready: [],
       served: [],
@@ -460,18 +464,30 @@ export default function OrderList({
       completed: [],
     };
 
+
     filteredOrdersByType.forEach((order) => {
-      const status = order.status.toLowerCase();
-      if (status === 'pending' && outerActiveTab === 'online') groups.pending.push(order);
-      else if (status === 'processing') groups.to_be_prepared.push(order);
-      else if (status === 'ready') groups.ready.push(order);
-      else if (status === 'served') groups.served.push(order);
-      else if (status === 'cancelled') groups.cancelled.push(order);
-      else if (status === 'completed') groups.completed.push(order);
+      const status = order.status?.toLowerCase();
+      const type = order.order_type?.toLowerCase();
+
+      if (status === 'pending' && type === 'online' && outerActiveTab === 'online') {
+        groups.pending.push(order);
+      } else if (status === 'pending' && type === 'physical' && outerActiveTab === 'physical') {
+        groups.pending.push(order);
+      } else if (status === 'processing' || (status === 'confirmed' && type === 'online' && outerActiveTab === 'online')) {
+        groups.to_be_prepared.push(order);
+      } else if (status === 'ready') {
+        groups.ready.push(order);
+      } else if (status === 'served') {
+        groups.served.push(order);
+      } else if (status === 'cancelled') {
+        groups.cancelled.push(order);
+      } else if (status === 'completed') {
+        groups.completed.push(order);
+      }
     });
 
     Object.keys(groups).forEach((status) =>
-      groups[status].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        groups[status].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
     );
 
     return groups;
@@ -501,9 +517,13 @@ export default function OrderList({
   const paginatedOrders = filteredOrders.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   const getTabUnreadCount = (tabKey: string): number => {
-    const currentTabOrders = groupedOrders[tabKey] || [];
+    const currentTabOrders = (groupedOrders[tabKey] || []).filter(
+        o => o.order_type?.toLowerCase() === outerActiveTab
+    );
     return currentTabOrders.filter((order) => order.notification_status === 0).length;
   };
+
+
 
   const getTimeDisplay = (order: Order) => {
     const timeLeft = getQueueTimeLeft(order.order_number);
@@ -933,15 +953,17 @@ export default function OrderList({
         />
       )}
 
-      {outerActiveTab === 'physical' && activeTab && (
-        <div className="space-y-2">
-          {paginatedOrders.length > 0 ? (
-            paginatedOrders.map((order) => (
-              <div
-                key={order._id}
-                className={`rounded-lg shadow-sm border-l-4 transition-all duration-200 hover:shadow-md ${order.notification_status === 0 ? 'ring-2 ring-[var(--primary-light)]' : ''} p-3`}
-                style={{ backgroundColor: 'var(--background-color)', borderColor: currentTab?.borderColor }}
-              >
+      {activeTab && (
+          <div className="space-y-2">
+            {paginatedOrders.length > 0 ? (
+                paginatedOrders.map((order) => (
+                    <div
+                        key={order._id}
+                        className={`rounded-lg shadow-sm border-l-4 transition-all duration-200 hover:shadow-md ${
+                            order.notification_status === 0 ? 'ring-2 ring-[var(--primary-light)]' : ''
+                        } p-3`}
+                        style={{ backgroundColor: 'var(--background-color)', borderColor: currentTab?.borderColor }}
+                    >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="flex flex-col">
@@ -1054,6 +1076,80 @@ export default function OrderList({
                       </div>
                     )}
                     <div className="flex flex-col space-y-2">
+                      {activeTab === 'pending' && outerActiveTab === 'online' && (
+                          <>
+                            {/* Accept / Confirm Order */}
+                            <button
+                                onClick={async () => {
+                                  if (!token) {
+                                    setMessage('Please log in to retry this action.');
+                                    return;
+                                  }
+                                  setIsLoading(true);
+                                  try {
+                                    const updatedOrder = await confirmOrder(token, logout, order.order_number);
+                                    setOrders((prevOrders) =>
+                                        prevOrders.map((o) =>
+                                            o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
+                                        )
+                                    );
+                                    setMessage(`✅ Order #${order.order_number} is now confirmed!`);
+                                  } catch (error) {
+                                    setMessage(`❌ ${error instanceof Error ? error.message : 'Failed to mark order as confirmed'}`);
+                                  } finally {
+                                    setIsLoading(false);
+                                  }
+                                }}
+                                className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md ${
+                                    isLoading ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : ''
+                                }`}
+                                style={{
+                                  backgroundColor: isLoading ? undefined : 'var(--primary-color)',
+                                  color: isLoading ? 'var(--disabled-text)' : 'var(--text-on-primary)',
+                                  '--tw-ring-color': 'var(--focus-ring)',
+                                }}
+                                disabled={isLoading}
+                            >
+                              Accept Order
+                            </button>
+
+                            {/* Cancel Order */}
+                            <button
+                                onClick={async () => {
+                                  if (!token) {
+                                    setMessage('Please log in to retry this action.');
+                                    return;
+                                  }
+                                  setIsLoading(true);
+                                  try {
+                                    const updatedOrder = await cancelOrder(token, logout, order.order_number);
+                                    setOrders((prevOrders) =>
+                                        prevOrders.map((o) =>
+                                            o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
+                                        )
+                                    );
+                                    setMessage(`✅ Order #${order.order_number} has been cancelled.`);
+                                  } catch (error) {
+                                    setMessage(`❌ ${error instanceof Error ? error.message : 'Failed to cancel order'}`);
+                                  } finally {
+                                    setIsLoading(false);
+                                  }
+                                }}
+                                className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md ${
+                                    isLoading ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : ''
+                                }`}
+                                style={{
+                                  backgroundColor: isLoading ? undefined : 'var(--error-color)',
+                                  color: isLoading ? 'var(--disabled-text)' : 'var(--text-on-primary)',
+                                  '--tw-ring-color': 'var(--focus-ring)',
+                                }}
+                                disabled={isLoading}
+                            >
+                              Cancel Order
+                            </button>
+                          </>
+                      )}
+
                       {activeTab === 'to_be_prepared' && (
                           <button
                               onClick={async () => {
@@ -1207,7 +1303,7 @@ export default function OrderList({
         />
       )}
 
-      {outerActiveTab === 'physical' && filteredOrders.length > 0 && (
+      {filteredOrders.length > 0 && (
         <div className="mt-6 rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
           <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
             <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>

@@ -580,14 +580,7 @@ export default function PublicHome() {
                         Join thousands of satisfied customers who trust us for delicious food!
                     </p>
                     <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                        <button className="bg-[#FAFAFA]/20 hover:bg-[#FAFAFA]/30 text-[#E0E0E0] font-semibold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-xl border border-[#E0E0E0]/20">
-                            <i className="fas fa-phone mr-2"></i>
-                            Call: +92-XXX-XXXXXXX
-                        </button>
-                        <button className="bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-semibold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-xl">
-                            <i className="fab fa-whatsapp mr-2"></i>
-                            WhatsApp Order
-                        </button>
+
                     </div>
                 </div>
             </section>

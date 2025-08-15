@@ -262,33 +262,6 @@ export const assignTable = async (
   }
 };
 
-export const confirmOrder = async (
-  token: string,
-  logout: () => void,
-  order_id: string,
-  preparation_time: number
-): Promise<Order> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/orders/api/v1/confirm`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ order_id, preparation_time }),
-    });
-
-    const data: ApiResponse<Order> = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || handleApiError(data, logout));
-    }
-
-    return 'data' in data.data ? data.data.data : data.data;
-  } catch (err) {
-    throw new Error(err instanceof Error ? err.message : 'Failed to confirm order');
-  }
-};
-
 export const markOrderAsReady = async (
   token: string,
   logout: () => void,
@@ -367,10 +340,37 @@ export const markOrderAsCompleted = async (
   }
 };
 
+export const confirmOrder = async (
+    token: string,
+    logout: () => void,
+    order_number: string, // Change parameter name
+    preparation_time: number
+): Promise<Order> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/api/v1/confirm`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ order_number, preparation_time }), // Use order_number
+    });
+
+    const data: ApiResponse<Order> = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || handleApiError(data, logout));
+    }
+
+    return 'data' in data.data ? data.data.data : data.data;
+  } catch (err) {
+    throw new Error(err instanceof Error ? err.message : 'Failed to confirm order');
+  }
+};
+
 export const cancelOrder = async (
-  token: string,
-  logout: () => void,
-  order_id: string
+    token: string,
+    logout: () => void,
+    order_number: string // Change parameter name
 ): Promise<Order> => {
   try {
     const response = await fetch(`${API_BASE_URL}/orders/api/v1/cancel`, {
@@ -379,7 +379,7 @@ export const cancelOrder = async (
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ order_id }),
+      body: JSON.stringify({ order_number }), // Use order_number
     });
 
     const data: ApiResponse<Order> = await response.json();

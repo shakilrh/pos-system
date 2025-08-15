@@ -107,15 +107,14 @@ export default function Orders() {
           getOrderQueue(token, logout)
         ]);
 
-        const filteredOrders = orderList.filter(order => order.order_type === 'physical');
-        setOrders(filteredOrders.map(order => ({
+        setOrders(orderList.map(order => ({
           ...order,
           customer_name: order.customer_name || 'N/A',
           location: order.location || 'N/A',
           total_amount: order.total_amount || 0,
           items: order.items || []
         })));
-        setTotalPages(Math.ceil(filteredOrders.length / itemsPerPage));
+        setTotalPages(Math.ceil(orderList.length / itemsPerPage));
 
         let queueArray = [];
         if (queue && typeof queue === 'object') {
