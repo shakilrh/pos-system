@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import AuthModal from './AuthModal';
 import CustomerProfileModal from './CustomerProfileModal';
 import AddressConfirmationModal from './AddressConfirmationModal';
-
+import CartModal from './CartModal';
+import OrderSuccessModal from './OrderSuccessModal'; // Add this import
 import { useAuth } from '../../context/AuthContext';
 
 export default function PublicHome() {
@@ -18,8 +19,10 @@ export default function PublicHome() {
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isAddressConfirmationModalOpen, setIsAddressConfirmationModalOpen] = useState(false);
-    const [cart, setCart] = useState([]);
+    const [isCartModalOpen, setIsCartModalOpen] = useState(false);
     const [cartCount, setCartCount] = useState(0);
+    const [showSuccessModal, setShowSuccessModal] = useState(false); // Add this
+    const [orderData, setOrderData] = useState(null); // Add this
 
     const {
         isAuthenticated,
@@ -32,6 +35,7 @@ export default function PublicHome() {
     useEffect(() => {
         if (slug) {
             fetchData();
+            loadCartCount();
         }
 
         // Check for existing customer session
@@ -39,7 +43,6 @@ export default function PublicHome() {
             refreshUserProfile();
         }
     }, [slug, isAuthenticated]);
-
 
     useEffect(() => {
         if (store?.images && store.images.length > 1) {
@@ -50,10 +53,31 @@ export default function PublicHome() {
         }
     }, [store?.images]);
 
+    // Listen for cart updates
     useEffect(() => {
-        const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-        setCartCount(totalItems);
-    }, [cart]);
+        const handleCartUpdate = (event) => {
+            const cart = event.detail || [];
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            setCartCount(totalItems);
+        };
+
+        window.addEventListener('cartUpdated', handleCartUpdate);
+        return () => window.removeEventListener('cartUpdated', handleCartUpdate);
+    }, []);
+
+    const loadCartCount = () => {
+        try {
+            const savedCart = localStorage.getItem(`cart_${slug || 'default'}`);
+            if (savedCart) {
+                const cart = JSON.parse(savedCart);
+                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+                setCartCount(totalItems);
+            }
+        } catch (error) {
+            console.error('Error loading cart count:', error);
+        }
+    };
+
 
     const fetchData = async () => {
         try {
@@ -72,7 +96,13 @@ export default function PublicHome() {
 
             setProducts(productsData.data?.data || []);
             setCategories(categoriesData.data?.data || []);
-            setStore(storeData.data?.data || null);
+
+            // Set store with slug for cart storage
+            const storeWithSlug = {
+                ...(storeData.data?.data || null),
+                slug: slug
+            };
+            setStore(storeWithSlug);
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -105,7 +135,9 @@ export default function PublicHome() {
 
     const handleLogout = () => {
         logout();
-        setCart([]);
+        // Clear cart on logout
+        localStorage.removeItem(`cart_${slug || 'default'}`);
+        setCartCount(0);
     };
 
     const handleProfileClick = () => {
@@ -119,26 +151,62 @@ export default function PublicHome() {
             return;
         }
 
-        const existingItem = cart.find(item => item._id === product._id);
-        if (existingItem) {
-            setCart(cart.map(item =>
-                item._id === product._id
-                    ? { ...item, quantity: item.quantity + 1 }
-                    : item
-            ));
-        } else {
-            setCart([...cart, { ...product, quantity: 1 }]);
-        }
+        try {
+            // Get existing cart
+            const savedCart = localStorage.getItem(`cart_${slug || 'default'}`);
+            let cart = savedCart ? JSON.parse(savedCart) : [];
 
-        const button = document.querySelector(`[data-product-id="${product._id}"]`);
-        if (button) {
-            button.innerHTML = '<i class="fas fa-check mr-2"></i>Added!';
-            button.classList.add('bg-green-500', 'hover:bg-green-600');
-            setTimeout(() => {
-                button.innerHTML = '<i class="fas fa-shopping-cart mr-2"></i>Order Now';
-                button.classList.remove('bg-green-500', 'hover:bg-green-600');
-            }, 2000);
+            // Check if item already exists in cart
+            const existingItemIndex = cart.findIndex(item => item._id === product._id);
+
+            if (existingItemIndex >= 0) {
+                // Update quantity
+                cart[existingItemIndex].quantity += 1;
+            } else {
+                // Add new item
+                cart.push({ ...product, quantity: 1 });
+            }
+
+            // Save updated cart
+            localStorage.setItem(`cart_${slug || 'default'}`, JSON.stringify(cart));
+
+            // Update cart count
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            setCartCount(totalItems);
+
+            // Visual feedback
+            const button = document.querySelector(`[data-product-id="${product._id}"]`);
+            if (button) {
+                const originalContent = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check mr-2"></i>Added!';
+                button.classList.add('bg-green-500', 'hover:bg-green-600');
+                setTimeout(() => {
+                    button.innerHTML = originalContent;
+                    button.classList.remove('bg-green-500', 'hover:bg-green-600');
+                }, 2000);
+            }
+
+            // Dispatch cart update event
+            window.dispatchEvent(new CustomEvent('cartUpdated', { detail: cart }));
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            alert('Error adding item to cart');
         }
+    };
+
+    const handleCartClick = () => {
+        if (!isAuthenticated || user?.user_type !== 'customer') {
+            setIsAuthModalOpen(true);
+            return;
+        }
+        setIsCartModalOpen(true);
+    };
+
+    const handleOrderSuccess = (orderData) => {
+        setIsCartModalOpen(false); // Close cart modal
+        setOrderData(orderData); // Store order data
+        setShowSuccessModal(true); // Show success modal
+        setCartCount(0); // Reset cart count
     };
 
     const filteredProducts = selectedCategory
@@ -147,7 +215,7 @@ export default function PublicHome() {
 
     const getCurrencySymbol = () => {
         if (store?.currency === 'dollar') return '$';
-        if (store?.currency === 'euro') return '€';
+        if (store?.currency === 'euro') return 'â‚¬';
         return 'PKR ';
     };
 
@@ -210,7 +278,7 @@ export default function PublicHome() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <header className="bg-white shadow-lg">
+            <header className="bg-white shadow-lg sticky top-0 z-40">
                 <div className="container mx-auto px-4 py-6">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
@@ -239,15 +307,17 @@ export default function PublicHome() {
                         <div className="flex items-center space-x-4">
                             <div className="relative">
                                 <button
-                                    onClick={() => isAuthenticated ? console.log('Show cart') : setIsAuthModalOpen(true)}
-                                    className="bg-[#FFD700] hover:bg-yellow-400 text-black font-semibold py-2 px-4 rounded-lg shadow-md flex items-center space-x-2"
+                                    onClick={handleCartClick}
+                                    className="bg-[#FFD700] hover:bg-yellow-400 text-black font-semibold py-2 px-4 rounded-lg shadow-md flex items-center space-x-2 transition-all duration-200 hover:scale-105"
                                 >
                                     <i className="fas fa-shopping-cart"></i>
                                     <span>CART</span>
                                 </button>
-                                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold h-5 w-5 rounded-full flex items-center justify-center">
-                                    {cartCount}
-                                </span>
+                                {cartCount > 0 && (
+                                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold h-6 w-6 rounded-full flex items-center justify-center animate-pulse">
+                                        {cartCount}
+                                    </span>
+                                )}
                             </div>
 
                             {isAuthenticated ? (
@@ -601,7 +671,31 @@ export default function PublicHome() {
                 title="Confirm Delivery Address"
                 subtitle="Please confirm your delivery address to continue ordering"
             />
-            <CustomerProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} onProfileUpdated={handleProfileUpdated} />
+
+            {/* Customer Profile Modal */}
+            <CustomerProfileModal
+                isOpen={isProfileModalOpen}
+                onClose={() => setIsProfileModalOpen(false)}
+                onProfileUpdated={handleProfileUpdated}
+            />
+
+            {/* Cart Modal */}
+            <CartModal
+                isOpen={isCartModalOpen}
+                onClose={() => setIsCartModalOpen(false)}
+                store={store}
+                onOrderSuccess={handleOrderSuccess}
+            />
+
+            {/* Order Success Modal */}
+            <OrderSuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => {
+                    setShowSuccessModal(false);
+                    setOrderData(null);
+                }}
+                orderData={orderData}
+            /> {/* Add this */}
 
             <link
                 rel="stylesheet"

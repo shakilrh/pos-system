@@ -264,14 +264,16 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       }
 
       const responseData = await response.json();
-      const { token, data: apiUser } = responseData.data.data;
+      // Handle different response structures
+      const data = responseData.data?.data || responseData.data || {}; // Fallback to data or empty object
+      const { token, ...apiUser } = data; // Destructure token and rest as apiUser
 
       if (!token) {
         throw new Error('No token received');
       }
 
       const normalizedUser: User = {
-        _id: apiUser._id || apiUser.id || '',
+        _id: apiUser._id || apiUser.id || '', // Fallback to id or empty string
         name: apiUser.name || 'User',
         email: apiUser.email || email,
         user_type: isCustomer ? 'customer' : apiUser.user_type || 'worker',
