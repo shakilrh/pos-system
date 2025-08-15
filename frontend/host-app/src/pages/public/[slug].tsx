@@ -1,8 +1,9 @@
-
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import AuthModal from './AuthModal';
 import CustomerProfileModal from './CustomerProfileModal';
+import AddressConfirmationModal from './AddressConfirmationModal';
+
 import { useAuth } from '../../context/AuthContext';
 
 export default function PublicHome() {
@@ -16,6 +17,7 @@ export default function PublicHome() {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const [isAddressConfirmationModalOpen, setIsAddressConfirmationModalOpen] = useState(false);
     const [cart, setCart] = useState([]);
     const [cartCount, setCartCount] = useState(0);
 
@@ -81,7 +83,14 @@ export default function PublicHome() {
     const handleLoginSuccess = () => {
         setIsAuthModalOpen(false);
 
-        // Check if customer needs to complete profile
+        // Always show address confirmation modal after successful login
+        setTimeout(() => {
+            setIsAddressConfirmationModalOpen(true);
+        }, 500);
+    };
+
+    const handleAddressConfirmed = () => {
+        // Check if customer needs to complete profile after address confirmation
         if (!user?.name || !user.name.trim()) {
             setTimeout(() => {
                 setIsProfileModalOpen(true);
@@ -100,6 +109,7 @@ export default function PublicHome() {
     };
 
     const handleProfileClick = () => {
+        // This opens the CustomerProfileModal when user clicks profile button
         setIsProfileModalOpen(true);
     };
 
@@ -466,7 +476,11 @@ export default function PublicHome() {
                                             </span>
                                         )}
                                     </div>
-                                    <button className="w-full bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                                    <button
+                                        onClick={() => handleAddToCart(product)}
+                                        data-product-id={product._id}
+                                        className="w-full bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg"
+                                    >
                                         <i className="fas fa-shopping-cart mr-2"></i>
                                         Order Now
                                     </button>
@@ -571,6 +585,7 @@ export default function PublicHome() {
                 </div>
             </footer>
 
+            {/* Auth Modal */}
             <AuthModal
                 isOpen={isAuthModalOpen}
                 onClose={() => setIsAuthModalOpen(false)}
@@ -578,11 +593,15 @@ export default function PublicHome() {
                 onLoginSuccess={handleLoginSuccess}
             />
 
-            <CustomerProfileModal
-                isOpen={isProfileModalOpen}
-                onClose={() => setIsProfileModalOpen(false)}
-                onProfileUpdated={handleProfileUpdated}
+            {/* Address Confirmation Modal - Opens after successful login */}
+            <AddressConfirmationModal
+                isOpen={isAddressConfirmationModalOpen}
+                onClose={() => setIsAddressConfirmationModalOpen(false)}
+                onConfirm={handleAddressConfirmed}
+                title="Confirm Delivery Address"
+                subtitle="Please confirm your delivery address to continue ordering"
             />
+            <CustomerProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} onProfileUpdated={handleProfileUpdated} />
 
             <link
                 rel="stylesheet"
@@ -619,5 +638,3 @@ export async function getServerSideProps(context) {
         }
     };
 }
-
-

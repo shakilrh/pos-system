@@ -9,33 +9,30 @@ interface CustomerDetails {
     addresses: string[];
 }
 
-interface CustomerProfileModalProps {
+interface AddressConfirmationModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onProfileUpdated: (updatedCustomer: any) => void;
+    onConfirm: () => void;
+    title?: string;
+    subtitle?: string;
 }
 
-export default function CustomerProfileModal({
-                                                 isOpen,
-                                                 onClose,
-                                                 onProfileUpdated
-                                             }: CustomerProfileModalProps) {
+export default function AddressConfirmationModal({
+                                                     isOpen,
+                                                     onClose,
+                                                     onConfirm,
+                                                     title = "Confirm Delivery Address",
+                                                     subtitle = "Where should we deliver your order?"
+                                                 }: AddressConfirmationModalProps) {
     const { user, token, refreshUserProfile } = useAuth();
-
-    // State declarations
     const [customerDetails, setCustomerDetails] = useState<CustomerDetails | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
+    const [editAddress, setEditAddress] = useState('');
     const [updating, setUpdating] = useState(false);
-    const [initialLoading, setInitialLoading] = useState(true);
 
-    const [formData, setFormData] = useState({
-        name: '',
-        phone_number: '',
-        addresses: ''
-    });
-
-    // Fetch customer details when modal opens
+    // Fetch customer details
     useEffect(() => {
         if (isOpen && token) {
             fetchCustomerDetails();
@@ -44,7 +41,7 @@ export default function CustomerProfileModal({
 
     const fetchCustomerDetails = async () => {
         try {
-            setInitialLoading(true);
+            setLoading(true);
             setError('');
 
             const response = await fetch(`${API_BASE_URL}/orders/api/v1/customer/details`, {
@@ -67,43 +64,28 @@ export default function CustomerProfileModal({
                 console.log('Customer Data:', customerData);
 
                 setCustomerDetails(customerData);
-
-                // Set form data with fetched customer details
-                setFormData({
-                    name: customerData?.name || user?.name || '',
-                    phone_number: customerData?.phone_number || user?.phone_number || '',
-                    addresses: customerData?.addresses?.[0] || ''
-                });
+                setEditAddress(customerData.addresses?.[0] || '');
             } else {
                 throw new Error(data.message || 'Failed to fetch customer details');
             }
         } catch (err: any) {
             setError(err.message);
             console.error('Error fetching customer details:', err);
-
-            // Fallback to user data from auth context
-            setFormData({
-                name: user?.name || '',
-                phone_number: user?.phone_number || '',
-                addresses: user?.addresses?.[0] || ''
-            });
         } finally {
-            setInitialLoading(false);
+            setLoading(false);
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!formData.name.trim()) {
-            setError('Name is required');
+    const handleUpdateAddress = async () => {
+        if (!editAddress.trim()) {
+            setError('Please enter a valid address');
             return;
         }
 
-        setUpdating(true);
-        setError('');
-
         try {
+            setUpdating(true);
+            setError('');
+
             const response = await fetch(`${API_BASE_URL}/users/api/v1/customer-profile`, {
                 method: 'PUT',
                 headers: {
@@ -111,43 +93,45 @@ export default function CustomerProfileModal({
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    name: formData.name.trim(),
-                    phone_number: formData.phone_number.trim(),
-                    addresses: formData.addresses.trim() ? [formData.addresses.trim()] : []
+                    name: customerDetails?.name || user?.name || '',
+                    phone_number: customerDetails?.phone_number || user?.phone_number || '',
+                    addresses: [editAddress]
                 }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || `HTTP ${response.status}: Failed to update profile`);
+                throw new Error(data.message || `HTTP ${response.status}: Failed to update address`);
             }
 
             if (data.success) {
                 await refreshUserProfile();
-                await fetchCustomerDetails(); // Refresh customer details
-                onProfileUpdated(data.data?.data || data.data);
-                onClose();
+                await fetchCustomerDetails();
+                setIsEditing(false);
+                setError('');
             } else {
-                throw new Error(data.message || 'Failed to update profile');
+                throw new Error(data.message || 'Failed to update address');
             }
         } catch (err: any) {
             setError(err.message);
-            console.error('Error updating profile:', err);
+            console.error('Error updating address:', err);
         } finally {
             setUpdating(false);
         }
+    };
+
+    const handleConfirmAddress = () => {
+        onConfirm();
+        onClose();
     };
 
     // Reset state when modal closes
     useEffect(() => {
         if (!isOpen) {
             setError('');
-            setFormData({
-                name: '',
-                phone_number: '',
-                addresses: ''
-            });
+            setIsEditing(false);
+            setEditAddress('');
         }
     }, [isOpen]);
 
@@ -163,14 +147,13 @@ export default function CustomerProfileModal({
                         <div className="flex items-center space-x-3">
                             <div className="bg-[#1E1E1E]/20 backdrop-blur-sm p-3 rounded-xl shadow-lg">
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold">Complete Your Profile</h2>
-                                <p className="text-[#1E1E1E]/80 text-xs font-medium mt-1">
-                                    Keep your information up to date
-                                </p>
+                                <h2 className="text-xl font-bold">{title}</h2>
+                                <p className="text-[#1E1E1E]/80 text-xs font-medium mt-1">{subtitle}</p>
                             </div>
                         </div>
                         <button
@@ -185,7 +168,7 @@ export default function CustomerProfileModal({
                 </div>
 
                 <div className="p-4">
-                    {initialLoading ? (
+                    {loading ? (
                         <div className="flex flex-col items-center justify-center py-8">
                             <div className="relative">
                                 <div className="w-10 h-10 border-4 border-gray-300 rounded-full animate-spin"></div>
@@ -195,7 +178,7 @@ export default function CustomerProfileModal({
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {/* Current Info Display (moved to top) */}
+                            {/* Current Info Display */}
                             {customerDetails && (
                                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                                     <h3 className="text-base font-bold text-gray-800 mb-2 flex items-center">
@@ -204,7 +187,7 @@ export default function CustomerProfileModal({
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                         </div>
-                                        Current Information
+                                        Customer Information
                                     </h3>
                                     <div className="space-y-1 text-xs">
                                         <div className="flex">
@@ -251,51 +234,10 @@ export default function CustomerProfileModal({
                                 </div>
                             )}
 
-                            <form onSubmit={handleSubmit} className="space-y-3">
-                                {/* Full Name */}
-                                <div>
-                                    <label className="flex items-center text-xs font-semibold text-gray-700 mb-1">
-                                        <div className="bg-[#F4B400]/20 p-1 rounded mr-1.5">
-                                            <svg className="w-3 h-3 text-[#F4B400]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
-                                        </div>
-                                        Full Name *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#F4B400] focus:border-[#F4B400] transition-all duration-200 text-gray-800 placeholder-gray-400 text-sm"
-                                        placeholder="Enter your full name"
-                                        disabled={updating}
-                                    />
-                                </div>
-
-                                {/* Phone Number */}
-                                <div>
-                                    <label className="flex items-center text-xs font-semibold text-gray-700 mb-1">
-                                        <div className="bg-green-500/20 p-1 rounded mr-1.5">
-                                            <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                            </svg>
-                                        </div>
-                                        Phone Number
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        value={formData.phone_number}
-                                        onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
-                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#F4B400] focus:border-[#F4B400] transition-all duration-200 text-gray-800 placeholder-gray-400 text-sm"
-                                        placeholder="Enter your phone number"
-                                        disabled={updating}
-                                    />
-                                </div>
-
-                                {/* Address */}
-                                <div>
-                                    <label className="flex items-center text-xs font-semibold text-gray-700 mb-1">
+                            {/* Address Section */}
+                            <div>
+                                <div className="flex items-center justify-between mb-3">
+                                    <label className="flex items-center text-xs font-semibold text-gray-700">
                                         <div className="bg-blue-500/20 p-1 rounded mr-1.5">
                                             <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -304,52 +246,115 @@ export default function CustomerProfileModal({
                                         </div>
                                         Delivery Address
                                     </label>
-                                    <div className="relative">
-                                        <textarea
-                                            value={formData.addresses}
-                                            onChange={(e) => setFormData({ ...formData, addresses: e.target.value })}
-                                            className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#F4B400] focus:border-[#F4B400] transition-all duration-200 text-gray-800 placeholder-gray-400 resize-none text-sm"
-                                            placeholder="Enter your address..."
-                                            rows={2}
-                                            disabled={updating}
-                                        />
-                                        <div className="absolute bottom-2 right-2 text-xs text-gray-400">
-                                            {formData.addresses.length}/500
-                                        </div>
-                                    </div>
+                                    {!isEditing && (
+                                        <button
+                                            onClick={() => setIsEditing(true)}
+                                            className="flex items-center text-[#F4B400] hover:text-[#F4B400]/80 text-xs font-medium"
+                                        >
+                                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                            Edit
+                                        </button>
+                                    )}
                                 </div>
 
-                                {/* Action Buttons */}
+                                {isEditing ? (
+                                    <div className="space-y-3">
+                                        <div className="relative">
+                                            <textarea
+                                                value={editAddress}
+                                                onChange={(e) => setEditAddress(e.target.value)}
+                                                className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#F4B400] focus:border-[#F4B400] transition-all duration-200 text-gray-800 placeholder-gray-400 resize-none text-sm"
+                                                placeholder="Enter your complete delivery address..."
+                                                rows={3}
+                                                disabled={updating}
+                                            />
+                                            <div className="absolute bottom-2 right-2 text-xs text-gray-400">
+                                                {editAddress.length}/500
+                                            </div>
+                                        </div>
+                                        <div className="flex space-x-2">
+                                            <button
+                                                onClick={() => {
+                                                    setIsEditing(false);
+                                                    setEditAddress(customerDetails?.addresses?.[0] || '');
+                                                    setError('');
+                                                }}
+                                                disabled={updating}
+                                                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3 rounded-lg transition-all duration-200 disabled:opacity-50 text-sm"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={handleUpdateAddress}
+                                                disabled={updating || !editAddress.trim()}
+                                                className="flex-1 bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-bold py-2 px-3 rounded-lg transition-all duration-200 flex items-center justify-center shadow-lg disabled:opacity-50 text-sm"
+                                            >
+                                                {updating ? (
+                                                    <>
+                                                        <div className="animate-spin rounded-full h-3 w-3 border-2 border-[#1E1E1E] border-t-transparent mr-1"></div>
+                                                        Saving...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        Save
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="bg-gray-50 border border-gray-300 rounded-lg p-3">
+                                        {customerDetails?.addresses?.[0] ? (
+                                            <p className="text-gray-800 text-sm leading-relaxed">
+                                                {customerDetails.addresses[0]}
+                                            </p>
+                                        ) : (
+                                            <div className="text-center py-4">
+                                                <div className="bg-gray-200 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                                                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    </svg>
+                                                </div>
+                                                <p className="text-gray-500 text-xs mb-2">No address provided</p>
+                                                <button
+                                                    onClick={() => setIsEditing(true)}
+                                                    className="text-[#F4B400] hover:text-[#F4B400]/80 text-xs font-medium"
+                                                >
+                                                    Add Address
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Action Buttons */}
+                            {!isEditing && (
                                 <div className="flex space-x-2 pt-3">
                                     <button
-                                        type="button"
                                         onClick={onClose}
-                                        disabled={updating}
-                                        className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2.5 px-3 rounded-lg transition-all duration-200 disabled:opacity-50 text-sm"
+                                        className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2.5 px-3 rounded-lg transition-all duration-200 text-sm"
                                     >
-                                        Cancel
+                                        Skip for Now
                                     </button>
                                     <button
-                                        type="submit"
-                                        disabled={updating || !formData.name.trim()}
-                                        className="flex-1 bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-bold py-2.5 px-3 rounded-lg transition-all duration-200 flex items-center justify-center shadow-lg disabled:opacity-50 text-sm"
+                                        onClick={handleConfirmAddress}
+                                        disabled={!customerDetails?.addresses?.[0]}
+                                        className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white font-bold py-2.5 px-3 rounded-lg transition-all duration-200 flex items-center justify-center shadow-lg text-sm"
                                     >
-                                        {updating ? (
-                                            <>
-                                                <div className="animate-spin rounded-full h-3 w-3 border-2 border-[#1E1E1E] border-t-transparent mr-1"></div>
-                                                Saving...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                                Save
-                                            </>
-                                        )}
+                                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Confirm & Continue
                                     </button>
                                 </div>
-                            </form>
+                            )}
                         </div>
                     )}
                 </div>
