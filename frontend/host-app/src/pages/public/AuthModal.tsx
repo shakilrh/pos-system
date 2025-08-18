@@ -11,6 +11,12 @@ interface AuthModalProps {
         id?: string;
         store_logo?: string;
         store_name?: string;
+        // Add support for nested store structure from API
+        store?: {
+            id?: string;
+            logo?: string;
+            name?: string;
+        };
     };
     onLoginSuccess: (customerData: any, token: string) => void;
 }
@@ -27,6 +33,27 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
     const [emailErrors, setEmailErrors] = useState<string[]>([]);
     const [touchedFields, setTouchedFields] = useState(new Set<string>());
     const [showAddressModal, setShowAddressModal] = useState(false);
+
+    // Helper function to get store details from either structure
+    const getStoreDetails = () => {
+        if (!store) return { id: 'default_admin_id', logo: null, name: 'Store' };
+
+        // Check if store has nested store structure (from API response)
+        if (store.store) {
+            return {
+                id: store.store.id || 'default_admin_id',
+                logo: store.store.logo,
+                name: store.store.name || 'Store'
+            };
+        }
+
+        // Fallback to original structure
+        return {
+            id: store.id || 'default_admin_id',
+            logo: store.store_logo,
+            name: store.store_name || 'Store'
+        };
+    };
 
     // Auto-hide success message after 5 seconds
     useEffect(() => {
@@ -115,11 +142,13 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
         setSuccess('');
 
         try {
-            const createdBy = store?.id || 'default_admin_id';
+            const storeDetails = getStoreDetails();
             const requestBody = {
                 email: email.trim().toLowerCase(),
-                created_by: createdBy,
+                created_by: storeDetails.id,
             };
+
+            console.log('Sending OTP request with:', requestBody); // Debug log
 
             const response = await fetch(`${API_BASE_URL}/users/api/v1/create-customer`, {
                 method: 'POST',
@@ -190,11 +219,13 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
         setError('');
         setSuccess('');
         try {
-            const createdBy = store?.id || 'default_admin_id';
+            const storeDetails = getStoreDetails();
             const requestBody = {
                 email: email.trim().toLowerCase(),
-                created_by: createdBy,
+                created_by: storeDetails.id,
             };
+
+            console.log('Resending OTP with:', requestBody); // Debug log
 
             const response = await fetch(`${API_BASE_URL}/users/api/v1/create-customer`, {
                 method: 'POST',
@@ -229,6 +260,8 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
 
     if (!isOpen && !showAddressModal) return null;
 
+    const storeDetails = getStoreDetails();
+
     return (
         <>
             {/* Auth Modal */}
@@ -245,10 +278,10 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
                                     <div className="relative">
                                         <div className="absolute inset-0 bg-white/30 rounded-full blur-sm"></div>
                                         <div className="relative bg-white/20 backdrop-blur-sm p-2.5 rounded-full border border-white/30">
-                                            {store?.store_logo ? (
+                                            {storeDetails.logo ? (
                                                 <img
-                                                    src={store.store_logo}
-                                                    alt={store.store_name}
+                                                    src={storeDetails.logo}
+                                                    alt={storeDetails.name}
                                                     className="w-5 h-5 object-contain"
                                                 />
                                             ) : (
@@ -264,7 +297,7 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
                                         </h2>
                                         <p className="text-[#1E1E1E]/80 text-xs">
                                             {currentStep === 'email'
-                                                ? 'Sign in to continue your journey'
+                                                ? `Sign in to ${storeDetails.name}`
                                                 : 'Check your inbox for the code'
                                             }
                                         </p>
@@ -444,6 +477,7 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
                                     </div>
                                 </form>
                             )}
+
                         </div>
                     </div>
                 </div>

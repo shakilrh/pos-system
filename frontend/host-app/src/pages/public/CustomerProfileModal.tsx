@@ -63,7 +63,9 @@ export default function CustomerProfileModal({
             }
 
             if (data.success) {
-                const customerData = data.data?.data || data.data;
+                // Fix: Handle the nested data structure properly
+                // Try multiple levels of nesting to find the actual customer data
+                const customerData = data.data?.data?.data || data.data?.data || data.data;
                 console.log('Customer Data:', customerData);
 
                 setCustomerDetails(customerData);
