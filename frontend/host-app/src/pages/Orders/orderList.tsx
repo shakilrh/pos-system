@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Order } from './orderTypes';
 import PaymentModal, { OrderSearch } from './paymentModal';
 import OrderNotifications from './orderNotifications';
@@ -7,12 +7,22 @@ import {
   markOrderAsServed,
   markOrderAsCompleted,
   markNotificationAsRead,
+  markOrderOutForDelivery,
+  fetchFreeRiders,
   QueueOrder,
   confirmOrder,
   cancelOrder
 } from '../../services/orderService';
 import { useAuth } from '../../context/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faTruck,
+  faUser,
+  faMapMarkerAlt,
+  faMotorcycle,
+  faChevronDown,
+  faExclamationTriangle
+} from '@fortawesome/free-solid-svg-icons';
 import {
   faChartLine,
   faClipboardList,
@@ -21,10 +31,10 @@ import {
   faSearch,
   faClipboardCheck,
   faHashtag,
-  faUser,
   faClipboard,
   faUserTie,
   faCalendarAlt,
+
 } from '@fortawesome/free-solid-svg-icons';
 
 interface OrderListProps {
@@ -55,17 +65,11 @@ interface OrderListProps {
 const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessage, activeTab, currentCurrency = 'pkr' }: any) => {
   const [isLoading, setIsLoading] = useState(false);
 
-  // Function to get currency symbol based on current currency
   const getCurrencySymbol = (currency: string) => {
-    const symbols = {
-      pkr: '₨',
-      dollar: '$',
-      euro: '€'
-    };
+    const symbols = { pkr: '₨', dollar: '$', euro: '€' };
     return symbols[currency as keyof typeof symbols] || '₨';
   };
 
-  // Function to format price with currency
   const formatPrice = (price: number, currency: string) => {
     const symbol = getCurrencySymbol(currency);
     return `${symbol}${price.toFixed(2)}`;
@@ -80,9 +84,9 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
     try {
       const updatedOrder = await markOrderAsReady(token, logout, order.order_number);
       setOrders((prevOrders) =>
-        prevOrders.map((o) =>
-          o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
-        )
+          prevOrders.map((o) =>
+              o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
+          )
       );
       setMessage(`Order #${order.order_number} is now ready!`);
       onClose();
@@ -102,9 +106,9 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
     try {
       const updatedOrder = await markOrderAsServed(token, logout, order.order_number);
       setOrders((prevOrders) =>
-        prevOrders.map((o) =>
-          o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
-        )
+          prevOrders.map((o) =>
+              o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
+          )
       );
       setMessage(`Order #${order.order_number} is now served!`);
       onClose();
@@ -115,74 +119,309 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
     }
   };
 
+  const handleMarkOutForDelivery = async () => {
+    if (!token) {
+      setMessage('Please log in.');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const updatedOrder = await markOrderOutForDelivery(token, logout, order.order_number, order.rider_id);
+      setOrders((prevOrders) =>
+          prevOrders.map((o) =>
+              o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
+          )
+      );
+      setMessage(`Order #${order.order_number} is now out for delivery!`);
+      onClose();
+    } catch (error) {
+      setMessage(`Failed to mark order as out for delivery`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="rounded-lg p-6 max-w-sm w-full mx-4" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-        <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-color)' }}>Order #{order.order_number}</h2>
-        <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>👤 {order.customer_name || 'Guest'}</p>
-        {order.table_number && <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)', backgroundColor: 'var(--info-light)', padding: '2px 8px', borderRadius: '9999px' }}>Table: {order.table_number}</p>}
-        {order.waiter_name && <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)', backgroundColor: 'var(--primary-light)', padding: '2px 8px', borderRadius: '9999px' }}>Waiter: {order.waiter_name}</p>}
-        {order.linked_orders?.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-2">
-            {order.linked_orders.map((linkedOrder, index) => (
-              <span key={index} className="text-sm px-2 py-0.5 rounded-full" style={{ backgroundColor: index % 2 === 0 ? 'var(--warning-light)' : 'var(--success-light)', color: 'var(--text-color)' }}>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="rounded-lg p-6 max-w-sm w-full mx-4" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+          <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-color)' }}>Order #{order.order_number}</h2>
+          <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>👤 {order.customer_name || 'Guest'}</p>
+          {order.table_number && <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)', backgroundColor: 'var(--info-light)', padding: '2px 8px', borderRadius: '9999px' }}>Table: {order.table_number}</p>}
+          {order.waiter_name && <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)', backgroundColor: 'var(--primary-light)', padding: '2px 8px', borderRadius: '9999px' }}>Waiter: {order.waiter_name}</p>}
+          {order.rider_name && <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)', backgroundColor: 'var(--success-light)', padding: '2px 8px', borderRadius: '9999px' }}>Rider: {order.rider_name}</p>}
+          {order.linked_orders?.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {order.linked_orders.map((linkedOrder, index) => (
+                    <span key={index} className="text-sm px-2 py-0.5 rounded-full" style={{ backgroundColor: index % 2 === 0 ? 'var(--warning-light)' : 'var(--success-light)', color: 'var(--text-color)' }}>
                 Linked: {linkedOrder}
               </span>
-            ))}
-          </div>
-        )}
-        <div className="space-y-2 mb-4">
-          {order.items?.map((item, index) => (
-            <div key={index} className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: 'var(--background-secondary)' }}>
-              <span className="text-sm font-medium" style={{ color: 'var(--text-color)' }}>{item.product?.name || 'Unknown'}</span>
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>x{item.quantity}</span>
-            </div>
-          )) || <div className="text-sm" style={{ color: 'var(--text-tertiary)' }}>No items</div>}
-          {(activeTab === 'completed' || activeTab === 'cancelled') && (
-            <div className="text-sm font-bold" style={{ color: 'var(--text-color)' }}>
-              Total: {formatPrice(order.total_amount || 0, currentCurrency)}
-            </div>
+                ))}
+              </div>
           )}
+          <div className="space-y-2 mb-4">
+            {order.items?.map((item, index) => (
+                <div key={index} className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: 'var(--background-secondary)' }}>
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-color)' }}>{item.product?.name || 'Unknown'}</span>
+                  <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>x{item.quantity}</span>
+                </div>
+            )) || <div className="text-sm" style={{ color: 'var(--text-tertiary)' }}>No items</div>}
+            {(activeTab === 'completed' || activeTab === 'cancelled') && (
+                <div className="text-sm font-bold" style={{ color: 'var(--text-color)' }}>
+                  Total: {formatPrice(order.total_amount || 0, currentCurrency)}
+                </div>
+            )}
+          </div>
+
+          <button
+              onClick={onClose}
+              className="mt-4 w-full py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md"
+              style={{
+                backgroundColor: 'var(--background-secondary)',
+                color: 'var(--text-secondary)',
+              }}
+          >
+            Close
+          </button>
         </div>
-        {activeTab === 'to_be_prepared' && (
-          <button
-            onClick={handleMarkAsReady}
-            disabled={isLoading}
-            className="w-full py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md disabled:opacity-50"
-            style={{
-              backgroundColor: 'var(--primary-color)',
-              color: 'var(--text-on-primary)',
-            }}
-          >
-            {isLoading ? 'Processing...' : 'Mark as Ready'}
-          </button>
-        )}
-        {activeTab === 'ready' && (
-          <button
-            onClick={handleMarkAsServed}
-            disabled={isLoading}
-            className="w-full py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md disabled:opacity-50"
-            style={{
-              backgroundColor: 'var(--success-color)',
-              color: 'var(--text-on-primary)',
-            }}
-          >
-            {isLoading ? 'Processing...' : 'Mark as Served'}
-          </button>
-        )}
-        <button
-          onClick={onClose}
-          className="mt-4 w-full py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md"
-          style={{
-            backgroundColor: 'var(--background-secondary)',
-            color: 'var(--text-secondary)',
-          }}
-        >
-          Close
-        </button>
       </div>
-    </div>
+  );
+};
+
+const RiderAssignmentModal = ({
+                                order,
+                                token,
+                                logout,
+                                onClose,
+                                setOrders,
+                                setMessage
+                              }: {
+  order: Order;
+  token: string;
+  logout: () => void;
+  onClose: () => void;
+  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
+  setMessage: (message: string) => void;
+}) => {
+  const [riders, setRiders] = useState<any[]>([]);
+  const [selectedRider, setSelectedRider] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingRiders, setLoadingRiders] = useState(true);
+
+  useEffect(() => {
+    const loadRiders = async () => {
+      try {
+        const response = await fetch('http://192.168.18.107:3000/users/api/v1/all-riders', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch riders: ${response.status}`);
+        }
+
+        const ridersData = await response.json();
+        console.log('Riders API response:', ridersData); // Debug log
+
+        // Access the correct nested structure
+        const ridersList = ridersData?.data?.data || [];
+        console.log('Extracted riders:', ridersList); // Debug log
+
+        setRiders(Array.isArray(ridersList) ? ridersList : []);
+      } catch (error) {
+        console.error('Error loading riders:', error);
+        setMessage('Failed to load riders');
+        setRiders([]);
+      } finally {
+        setLoadingRiders(false);
+      }
+    };
+    loadRiders();
+  }, [token, logout, setMessage]);
+
+  const handleAssignRider = async () => {
+    if (!selectedRider) {
+      setMessage('Please select a rider');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://192.168.18.107:3000/orders/api/v1/out-for-delivery', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          order_number: order.order_number,
+          rider_id: selectedRider
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to assign rider: ${response.status}`);
+      }
+
+      const resData = await response.json();
+      const updatedOrder = resData.data || resData; // normalize API response
+      updatedOrder.status = updatedOrder.status?.toLowerCase(); // normalize status
+
+      setOrders(prev =>
+          prev.map(o =>
+              o.order_number === updatedOrder.order_number
+                  ? { ...updatedOrder, items: o.items, notification_status: 1 }
+                  : o
+          )
+      );
+
+      setMessage(`✅ Order #${order.order_number} is now out for delivery!`);
+      onClose();
+    } catch (error) {
+      setMessage(`❌ ${error instanceof Error ? error.message : 'Failed to assign rider'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+  return (
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div className="relative overflow-hidden rounded-2xl max-w-md w-full mx-4 shadow-2xl transform transition-all duration-300 hover:scale-105"
+             style={{
+               backgroundColor: 'var(--background-color)',
+               border: '2px solid var(--primary-color)',
+               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px var(--primary-color)'
+             }}>
+
+          {/* Gradient Header */}
+          <div className="relative p-6 pb-4"
+               style={{
+                 background: `linear-gradient(135deg, var(--primary-color), var(--primary-color-dark, var(--primary-color)))`,
+                 color: 'var(--text-on-primary)'
+               }}>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+            <div className="relative flex items-center">
+              <div className="p-3 rounded-full bg-white/20 backdrop-blur-sm mr-3">
+                <FontAwesomeIcon icon={faTruck} className="text-xl" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Assign Delivery Rider</h2>
+                <p className="text-sm opacity-90">Order #{order.order_number}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 pt-4">
+            {/* Order Details Card */}
+            <div className="mb-6 p-4 rounded-xl"
+                 style={{
+                   backgroundColor: 'var(--background-secondary)',
+                   border: '1px solid var(--border-color)'
+                 }}>
+              <div className="flex items-center mb-2">
+                <FontAwesomeIcon icon={faUser} className="mr-2 text-sm" style={{ color: 'var(--primary-color)' }} />
+                <span className="text-sm font-medium" style={{ color: 'var(--text-color)' }}>
+              {order.customer_name || 'Guest Customer'}
+            </span>
+              </div>
+              {order.delivery_address && (
+                  <div className="flex items-start">
+                    <FontAwesomeIcon icon={faMapMarkerAlt} className="mr-2 text-sm mt-0.5" style={{ color: 'var(--primary-color)' }} />
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                {order.delivery_address}
+              </span>
+                  </div>
+              )}
+            </div>
+
+            {loadingRiders ? (
+                <div className="text-center py-8">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-t-transparent"
+                       style={{ borderColor: 'var(--primary-color)' }}></div>
+                  <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    Loading available riders...
+                  </p>
+                </div>
+            ) : (
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold mb-3" style={{ color: 'var(--text-color)' }}>
+                    <FontAwesomeIcon icon={faMotorcycle} className="mr-2" style={{ color: 'var(--primary-color)' }} />
+                    Choose Delivery Rider:
+                  </label>
+                  <div className="relative">
+                    <select
+                        value={selectedRider}
+                        onChange={(e) => setSelectedRider(e.target.value)}
+                        className="w-full p-4 pr-10 border-2 rounded-xl transition-all duration-200 focus:ring-4 focus:ring-opacity-20 focus:outline-none appearance-none cursor-pointer"
+                        style={{
+                          backgroundColor: 'var(--background-color)',
+                          borderColor: selectedRider ? 'var(--primary-color)' : 'var(--border-color)',
+                          color: 'var(--text-color)',
+                          focusRingColor: 'var(--primary-color)',
+                        }}
+                    >
+                      <option value="" disabled>Select a rider...</option>
+                      {riders.map((rider) => (
+                          <option key={rider._id} value={rider._id}>
+                            {rider.name} ({rider.email})
+                          </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <FontAwesomeIcon icon={faChevronDown} className="text-sm" style={{ color: 'var(--text-secondary)' }} />
+                    </div>
+                  </div>
+                  {riders.length === 0 && (
+                      <p className="mt-2 text-sm text-amber-600">
+                        <FontAwesomeIcon icon={faExclamationTriangle} className="mr-1" />
+                        No riders available
+                      </p>
+                  )}
+                </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex space-x-3">
+              <button
+                  onClick={handleAssignRider}
+                  disabled={isLoading || !selectedRider || loadingRiders}
+                  className="flex-1 py-4 px-6 rounded-xl text-sm font-semibold transition-all duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: 'var(--primary-color)',
+                    color: 'var(--text-on-primary)',
+                  }}
+              >
+                {isLoading ? (
+                    <span className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-t-transparent border-white mr-2"></div>
+                Assigning...
+              </span>
+                ) : (
+                    <span className="flex items-center justify-center">
+                <FontAwesomeIcon icon={faTruck} className="mr-2" />
+                Assign & Send Out
+              </span>
+                )}
+              </button>
+              <button
+                  onClick={onClose}
+                  className="flex-1 py-4 px-6 rounded-xl text-sm font-medium transition-all duration-200 hover:shadow-md transform hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: 'var(--background-secondary)',
+                    color: 'var(--text-secondary)',
+                    border: '2px solid var(--border-color)',
+                  }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-white/10 to-transparent rounded-bl-full"></div>
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-white/5 to-transparent rounded-tr-full"></div>
+        </div>
+      </div>
   );
 };
 
@@ -217,47 +456,49 @@ export default function OrderList({
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [messageTimeout, setMessageTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [timeLeft, setTimeLeft] = useState<{ [key: string]: number }>([]);
+  const [timeLeft, setTimeLeft] = useState<{ [key: string]: number }>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [queueCountdowns, setQueueCountdowns] = useState<{ [key: string]: number }>([]);
+  const [queueCountdowns, setQueueCountdowns] = useState<{ [key: string]: number }>({});
   const [blink, setBlink] = useState(false);
   const [selectedNotificationTab, setSelectedNotificationTab] = useState<string>('');
   const [paymentSearchTerm, setPaymentSearchTerm] = useState('');
   const [preparationSearchTerm, setPreparationSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(preparationSearchTerm);
   const [selectedPaymentOrder, setSelectedPaymentOrder] = useState<Order | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [activeCurrency, setActiveCurrency] = useState(currentCurrency);
+  const [showRiderModal, setShowRiderModal] = useState(false);
+  const [selectedRiderOrder, setSelectedRiderOrder] = useState<Order | null>(null);
 
-  // Function to get currency symbol based on current currency
+  // Debounce search term to reduce re-renders
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(preparationSearchTerm);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [preparationSearchTerm]);
+
   const getCurrencySymbol = (currency: string) => {
-    const symbols = {
-      pkr: '₨',
-      dollar: '$',
-      euro: '€'
-    };
+    const symbols = { pkr: '₨', dollar: '$', euro: '€' };
     return symbols[currency as keyof typeof symbols] || '₨';
   };
 
-  // Function to format price with currency
   const formatPrice = (price: number, currency: string) => {
     const symbol = getCurrencySymbol(currency);
     return `${symbol}${price.toFixed(2)}`;
   };
 
-  // Function to get current currency from various sources
   const getCurrentCurrency = () => {
     const domCurrency = document.documentElement.getAttribute('data-currency');
     const storedCurrency = localStorage.getItem('appCurrency');
     return domCurrency || currentCurrency || storedCurrency || 'pkr';
   };
 
-  // Update currency when prop changes
   useEffect(() => {
     setActiveCurrency(currentCurrency);
   }, [currentCurrency]);
 
-  // Listen for currency changes from the app
   useEffect(() => {
     const handleCurrencyChange = (event: CustomEvent) => {
       const newCurrency = event.detail.currency;
@@ -356,6 +597,14 @@ export default function OrderList({
       textColor: 'var(--text-color)',
       borderColor: 'var(--success-border)'
     }] : []),
+    ...(userPermissions.includes('manage_ready_orders') ? [{
+      key: 'out_for_delivery',
+      label: 'Out for Delivery',
+      color: 'var(--info-color)',
+      lightColor: 'var(--info-light)',
+      textColor: 'var(--text-color)',
+      borderColor: 'var(--info-border)'
+    }] : []),
     ...(userPermissions.includes('manage_completed_orders') ? [{
       key: 'completed',
       label: 'Completed',
@@ -433,37 +682,42 @@ export default function OrderList({
     }
   }, [message, setMessage]);
 
-  const filteredOrdersByType = React.useMemo(
-    () => orders.filter((order) => {
-      const orderDate = new Date(order.order_date).toISOString().split('T')[0];
-      const isToday = orderDate === selectedDate;
-      const isCompletedOrCancelled = order.status.toLowerCase() === 'completed' || order.status.toLowerCase() === 'cancelled';
-      return (order.order_type === outerActiveTab || !order.order_type) && (!isCompletedOrCancelled || isToday);
-    }),
-    [orders, outerActiveTab, selectedDate]
+  const filteredOrdersByType = useMemo(
+      () => orders.filter((order) => {
+        const orderDate = new Date(order.order_date).toISOString().split('T')[0];
+        const isToday = orderDate === selectedDate;
+        const isCompletedOrCancelled = order.status.toLowerCase() === 'completed' || order.status.toLowerCase() === 'cancelled';
+        return (order.order_type === outerActiveTab || !order.order_type) && (!isCompletedOrCancelled || isToday);
+      }),
+      [orders, outerActiveTab, selectedDate]
   );
 
-  const handlePaymentOrderSelect = (order: Order) => {
+  const handlePaymentOrderSelect = useCallback((order: Order) => {
     setSelectedPaymentOrder(order);
     setShowPaymentModal(true);
-  };
+  }, []);
 
-  const handlePreparationOrderSelect = (order: Order) => {
+  const handlePreparationOrderSelect = useCallback((order: Order) => {
     setSelectedOrder(order);
     setShowOrderModal(true);
-  };
+  }, []);
 
-  const groupedOrders = React.useMemo(() => {
+  const handleRiderAssignment = useCallback((order: Order) => {
+    setSelectedRiderOrder(order);
+    setShowRiderModal(true);
+  }, []);
+
+  const groupedOrders = useMemo(() => {
     const groups: Record<string, Order[]> = {
       pending: [],
       confirmed: [],
       to_be_prepared: [],
       ready: [],
       served: [],
+      out_for_delivery: [],
       cancelled: [],
       completed: [],
     };
-
 
     filteredOrdersByType.forEach((order) => {
       const status = order.status?.toLowerCase();
@@ -477,8 +731,10 @@ export default function OrderList({
         groups.to_be_prepared.push(order);
       } else if (status === 'ready') {
         groups.ready.push(order);
-      } else if (status === 'served') {
+      } else if (status === 'served' && type === 'physical') {
         groups.served.push(order);
+      } else if (status === 'out_for_delivery' && type === 'online') {
+        groups.out_for_delivery.push(order);
       } else if (status === 'cancelled') {
         groups.cancelled.push(order);
       } else if (status === 'completed') {
@@ -493,61 +749,62 @@ export default function OrderList({
     return groups;
   }, [filteredOrdersByType, outerActiveTab]);
 
-  const filteredOrders = React.useMemo(() => {
+  const filteredOrders = useMemo(() => {
     const ordersInActiveTab = groupedOrders[activeTab || ''] || [];
     let filtered = ordersInActiveTab;
     if (activeTab === 'to_be_prepared' || activeTab === 'pending') {
       filtered = ordersInActiveTab.filter(
-        (order) =>
-          order.customer_name?.toLowerCase().includes(preparationSearchTerm.toLowerCase()) ||
-          order._id?.toLowerCase().includes(preparationSearchTerm.toLowerCase()) ||
-          order.order_number.toString().includes(preparationSearchTerm.toLowerCase())
+          (order) =>
+              order.customer_name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+              order._id?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+              order.order_number.toString().includes(debouncedSearchTerm.toLowerCase())
       );
-    } else if (activeTab === 'ready' || activeTab === 'served') {
+    } else if (activeTab === 'ready' || activeTab === 'out_for_delivery') {
       filtered = ordersInActiveTab.filter(
-        (order) =>
-          order.customer_name?.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
-          order._id?.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
-          order.order_number.toString().includes(paymentSearchTerm.toLowerCase())
+          (order) =>
+              order.customer_name?.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
+              order._id?.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
+              order.order_number.toString().includes(paymentSearchTerm.toLowerCase())
       );
     }
     return filtered;
-  }, [groupedOrders, activeTab, preparationSearchTerm, paymentSearchTerm]);
+  }, [groupedOrders, activeTab, debouncedSearchTerm, paymentSearchTerm]);
 
-  const paginatedOrders = filteredOrders.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const paginatedOrders = useMemo(
+      () => filteredOrders.slice((page - 1) * itemsPerPage, page * itemsPerPage),
+      [filteredOrders, page, itemsPerPage]
+  );
 
-  const getTabUnreadCount = (tabKey: string): number => {
+  const getTabUnreadCount = useCallback((tabKey: string): number => {
     const currentTabOrders = (groupedOrders[tabKey] || []).filter(
         o => o.order_type?.toLowerCase() === outerActiveTab
     );
     return currentTabOrders.filter((order) => order.notification_status === 0).length;
-  };
+  }, [groupedOrders, outerActiveTab]);
 
-
-
-  const getTimeDisplay = (order: Order) => {
+  const getTimeDisplay = useCallback((order: Order) => {
     const timeLeft = getQueueTimeLeft(order.order_number);
     if (timeLeft && order.status.toLowerCase() === 'processing') {
       return (
-        <div
-          className="flex items-center space-x-1 px-2 py-1 rounded-full border text-xs"
-          style={{
-            backgroundColor: timeLeft.isOverdue ? 'var(--error-light)' : timeLeft.isUrgent ? 'var(--warning-light)' : 'var(--primary-light)',
-            borderColor: timeLeft.isOverdue ? 'var(--error-border)' : timeLeft.isUrgent ? 'var(--warning-border)' : 'var(--primary-border)',
-            color: 'var(--text-color)',
-          }}
-        >
+          <div
+              className="flex items-center space-x-1 px-2 py-1 rounded-full border text-xs"
+              style={{
+                backgroundColor: timeLeft.isOverdue ? 'var(--error-light)' : timeLeft.isUrgent ? 'var(--warning-light)' : 'var(--primary-light)',
+                borderColor: timeLeft.isOverdue ? 'var(--error-border)' : timeLeft.isUrgent ? 'var(--warning-border)' : 'var(--primary-border)',
+                color: 'var(--text-color)',
+              }}
+          >
           <span className="font-medium" style={{ color: 'var(--text-color)' }}>
             {timeLeft.isOverdue ? '⏰ OVERDUE' : timeLeft.isUrgent ? '⚠️' : '⏰'} {timeLeft.formattedTime}
           </span>
-          <span className="text-xs opacity-75" style={{ color: 'var(--text-secondary)' }}>| {timeLeft.estimatedTime}</span>
-        </div>
+            <span className="text-xs opacity-75" style={{ color: 'var(--text-secondary)' }}>| {timeLeft.estimatedTime}</span>
+          </div>
       );
     }
     return null;
-  };
+  }, [queueCountdowns, orders]);
 
-  const getQueueTimeLeft = (orderNumber: string) => {
+  const getQueueTimeLeft = useCallback((orderNumber: string) => {
     if (!Array.isArray(queueData)) return null;
     const queueOrder = queueData.find((q: QueueOrder) => q.order_number === orderNumber);
     const countdown = queueCountdowns[orderNumber];
@@ -565,822 +822,890 @@ export default function OrderList({
       estimatedTime: queueOrder.estimated_time || 'N/A',
       formattedTime: isOverdue ? 'OVERDUE' : countdown >= 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}` : '',
     };
-  };
+  }, [queueData, queueCountdowns, orders]);
 
-  const renderOrderItemImage = (item: any) =>
-    item.product?.pictureUrl ? (
-      <img src={item.product.pictureUrl} alt={item.product.name} className="w-8 h-8 object-cover rounded-md" />
-    ) : (
-      <div className="w-8 h-8 rounded-md flex items-center justify-center" style={{ backgroundColor: 'var(--background-secondary)', color: 'var(--text-tertiary)' }}>
-        <FontAwesomeIcon icon={faShoppingBag} className="text-base" />
-      </div>
+  const renderOrderItemImage = useCallback((item: any) =>
+      item.product_id?.pictureUrl ? (
+          <img src={item.product_id.pictureUrl} alt={item.product_id.name} className="w-8 h-8 object-cover rounded-md" />
+      ) : (
+          <div className="w-8 h-8 rounded-md flex items-center justify-center" style={{ backgroundColor: 'var(--background-secondary)', color: 'var(--text-tertiary)' }}>
+            <FontAwesomeIcon icon={faShoppingBag} className="text-base" />
+          </div>
+      ), []);
 
-    );
-
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = useCallback((status: string) => {
     const [bgColor, textColor, borderColor] = ({
       pending: ['#ffe0b2', '#000', '#f57c00'],
       processing: ['#bbdefb', '#000', '#1976d2'],
       ready: ['#c8e6c9', '#000', '#388e3c'],
       served: ['#b3e5fc', '#000', '#0288d1'],
+      out_for_delivery: ['#b3e5fc', '#000', '#0288d1'],
       cancelled: ['#ef9a9a', '#000', '#d32f2f'],
       completed: ['#fff9c4', '#000', '#fdd835'],
     })[status.toLowerCase()] || ['var(--background-secondary)', 'var(--text-secondary)', 'var(--border-color)'];
     return { backgroundColor: bgColor, color: textColor, borderColor };
-  };
+  }, []);
 
-  const currentTab = (outerActiveTab === 'physical' ? physicalTabs : onlineTabs).find((tab) => tab.key === activeTab);
+  const currentTab = useMemo(
+      () => (outerActiveTab === 'physical' ? physicalTabs : onlineTabs).find((tab) => tab.key === activeTab),
+      [outerActiveTab, activeTab]
+  );
 
-  const getMessageStyles = (message: string) => {
+  const getMessageStyles = useCallback((message: string) => {
     const [borderColor, bgColor, textColor] =
-      message.includes('Failed') || message.includes('Please log in')
-        ? ['#dc2626', 'rgb(255,235,238)', '#d32f2f']
-        : message.includes('Order #') && (message.includes('ready') || message.includes('served') || message.includes('completed'))
-          ? ['#059669', 'rgb(232,245,233)', '#388e3c']
-          : message.includes('Overdue') || message.includes('needs to be ready')
-            ? ['#d97706', 'rgba(255,228,120,0.95)', '#ba7625']
-            : ['var(--border-color)', 'var(--background-secondary)', 'var(--text-secondary)'];
+        message.includes('Failed') || message.includes('Please log in')
+            ? ['#dc2626', 'rgb(255,235,238)', '#d32f2f']
+            : message.includes('Order #') && (message.includes('ready') || message.includes('served') || message.includes('completed') || message.includes('out for delivery'))
+                ? ['#059669', 'rgb(232,245,233)', '#388e3c']
+                : message.includes('Overdue') || message.includes('needs to be ready')
+                    ? ['#d97706', 'rgba(255,228,120,0.95)', '#ba7625']
+                    : ['var(--border-color)', 'var(--background-secondary)', 'var(--text-secondary)'];
     return { borderColor, backgroundColor: bgColor, color: textColor };
-  };
+  }, []);
 
-  const handleNotificationClick = (tabKey: string) => {
+  const handleNotificationClick = useCallback((tabKey: string) => {
     setSelectedNotificationTab(tabKey);
     setShowModal(true);
-  };
+  }, []);
 
   if (!userPermissions.some(perm => ['manage_prepared_orders', 'manage_ready_orders', 'manage_served_orders', 'manage_completed_orders', 'accept_onlineorders', 'manage_cancelled_orders'].includes(perm))) {
     return (
-      <div className="text-center py-12 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-        <div className="text-5xl mb-3" style={{ color: 'var(--text-tertiary)' }}>
-          <FontAwesomeIcon icon={faClipboardList} />
+        <div className="text-center py-12 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+          <div className="text-5xl mb-3" style={{ color: 'var(--text-tertiary)' }}>
+            <FontAwesomeIcon icon={faClipboardList} />
+          </div>
+          <h3 className="text-lg font-medium" style={{ color: 'var(--text-secondary)' }}>No Access</h3>
+          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>You do not have permission to view any orders.</p>
         </div>
-
-        <h3 className="text-lg font-medium" style={{ color: 'var(--text-secondary)' }}>No Access</h3>
-        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>You do not have permission to view any orders.</p>
-      </div>
     );
   }
 
   return (
-    <div className="space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
-      <div className="flex justify-between items-center">
-        <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Total Orders: {filteredOrders.length}</div>
-        {(activeTab === 'completed' || activeTab === 'cancelled') && (
-          <div
-            className="flex items-center px-4 py-2 rounded-lg border cursor-pointer transition-all duration-200"
-            onClick={() => document.getElementById('order-date-picker')?.showPicker()}
-            style={{
-              backgroundColor: 'var(--background-color)',
-              borderColor: 'var(--border-color)',
-              color: 'var(--text-color)',
-            }}
-          >
+      <div className="space-y-3 p-3 min-h-screen" style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-color)' }}>
+        <div className="flex justify-between items-center">
+          <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Total Orders: {filteredOrders.length}</div>
+          {(activeTab === 'completed' || activeTab === 'cancelled') && (
+              <div
+                  className="flex items-center px-4 py-2 rounded-lg border cursor-pointer transition-all duration-200"
+                  onClick={() => document.getElementById('order-date-picker')?.showPicker()}
+                  style={{
+                    backgroundColor: 'var(--background-color)',
+                    borderColor: 'var(--border-color)',
+                    color: 'var(--text-color)',
+                  }}
+              >
             <span className="text-sm mr-2" style={{ color: 'var(--text-secondary)' }}>
-  <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
-  Select Date:
-</span>
-
-            <input
-              id="order-date-picker"
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent text-sm border-0 focus:ring-0 cursor-pointer"
-              style={{
-                color: 'var(--text-color)',
-                backgroundColor: 'transparent',
-                border: 'none',
-                outline: 'none',
-                appearance: 'none',
-                WebkitAppearance: 'none',
-                MozAppearance: 'none',
-              }}
-            />
-          </div>
-        )}
-      </div>
-
-      {outerTabs.length > 0 && (
-        <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-          <div className="flex flex-wrap gap-2">
-            {outerTabs.map((tab, index) => {
-              const getOuterTabColors = (tabKey, tabIndex) => {
-                if (tabKey === 'physical' || tabIndex === 0) {
-                  return {
-                    active: '#4285f4',
-                    light: '#f0f7ff',
-                    text: '#1a73e8',
-                    gradient: 'linear-gradient(135deg, #4285f4 0%, #1976d2 100%)'
-                  };
-                } else {
-                  return {
-                    active: '#ffc107',
-                    light: '#fffbf0',
-                    text: '#ff8f00',
-                    gradient: 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)'
-                  };
-                }
-              };
-
-              const tabColors = getOuterTabColors(tab.key, index);
-
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => {
-                    setOuterActiveTab(tab.key);
-                    const tabs = tab.key === 'physical' ? physicalTabs : onlineTabs;
-                    setActiveTab(tabs[0]?.key || null);
-                    setPage(1);
-                  }}
-                  className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:shadow-lg hover:transform hover:scale-105 min-w-[140px] ${
-                    outerActiveTab === tab.key ? 'shadow-lg transform scale-105' : 'hover:scale-102'
-                  }`}
-                  style={{
-                    background: outerActiveTab === tab.key ? tabColors.gradient : tabColors.light,
-                    color: outerActiveTab === tab.key ? '#ffffff' : tabColors.text,
-                    border: outerActiveTab === tab.key ? 'none' : `2px solid ${tabColors.active}20`
-                  }}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      <div className="h-10">
-        {message && (
-          <div
-            className={`p-2 rounded-lg shadow-sm border-l-4 h-full flex items-center text-sm ${blink && activeTab === 'to_be_prepared' ? 'animate-pulse' : ''}`}
-            style={getMessageStyles(message)}
-          >
-            {message}
-          </div>
-        )}
-      </div>
-
-      {activeTab && (
-        <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-          <div className="flex flex-wrap gap-2">
-            {(outerActiveTab === 'physical' ? physicalTabs : onlineTabs).map((tab, index) => {
-              const ordersCount = groupedOrders[tab.key]?.length || 0;
-              const unreadCount = getTabUnreadCount(tab.key);
-              const tabsArray = outerActiveTab === 'physical' ? physicalTabs : onlineTabs;
-              const isSingleTab = tabsArray.length === 1;
-
-              const getTabColors = (tabKey) => {
-                const colorMap = {
-                  'pending': {
-                    active: '#ff6b35',
-                    light: '#fff5f2',
-                    text: '#cc4125',
-                    gradient: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)'
-                  },
-                  'confirmed': {
-                    active: '#4285f4',
-                    light: '#f0f7ff',
-                    text: '#1a73e8',
-                    gradient: 'linear-gradient(135deg, #4285f4 0%, #1976d2 100%)'
-                  },
-                  'preparing': {
-                    active: '#ff9800',
-                    light: '#fff8f0',
-                    text: '#e65100',
-                    gradient: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)'
-                  },
-                  'ready': {
-                    active: '#9c27b0',
-                    light: '#faf4ff',
-                    text: '#7b1fa2',
-                    gradient: 'linear-gradient(135deg, #9c27b0 0%, #8e24aa 100%)'
-                  },
-                  'completed': {
-                    active: '#4caf50',
-                    light: '#f1f8e9',
-                    text: '#388e3c',
-                    gradient: 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)'
-                  },
-                  'cancelled': {
-                    active: '#f44336',
-                    light: '#fff3f2',
-                    text: '#d32f2f',
-                    gradient: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)'
-                  },
-                  'shipped': {
-                    active: '#00bcd4',
-                    light: '#f0fdff',
-                    text: '#0097a7',
-                    gradient: 'linear-gradient(135deg, #00bcd4 0%, #0097a7 100%)'
-                  },
-                  'delivered': {
-                    active: '#8bc34a',
-                    light: '#f7fff0',
-                    text: '#689f38',
-                    gradient: 'linear-gradient(135deg, #8bc34a 0%, #689f38 100%)'
-                  },
-                  'default': {
-                    active: '#607d8b',
-                    light: '#f8f9fa',
-                    text: '#455a64',
-                    gradient: 'linear-gradient(135deg, #607d8b 0%, #455a64 100%)'
-                  }
-                };
-
-                return colorMap[tabKey] || colorMap['default'];
-              };
-
-              const tabColors = getTabColors(tab.key);
-
-              return (
-                <div
-                  key={tab.key}
-                  className={`relative ${isSingleTab ? 'flex-none mx-auto' : 'flex-1'}`}
-                  style={{
-                    minWidth: isSingleTab ? '400px' : '140px',
-                    maxWidth: isSingleTab ? '400px' : 'none'
-                  }}
-                >
-                  <button
-                    onClick={() => {
-                      setActiveTab(tab.key);
-                      setPage(1);
-                    }}
-                    className={`w-full px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-300 hover:shadow-lg hover:transform hover:scale-105 ${
-                      activeTab === tab.key ? 'shadow-lg transform scale-105' : 'hover:scale-102'
-                    }`}
+              <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
+              Select Date:
+            </span>
+                <input
+                    id="order-date-picker"
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="bg-transparent text-sm border-0 focus:ring-0 cursor-pointer"
                     style={{
-                      background: activeTab === tab.key ? tabColors.gradient : tabColors.light,
-                      color: activeTab === tab.key ? '#ffffff' : tabColors.text,
-                      paddingRight: '3rem',
-                      border: activeTab === tab.key ? 'none' : `2px solid ${tabColors.active}20`
+                      color: 'var(--text-color)',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      outline: 'none',
+                      appearance: 'none',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
                     }}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center">
-                        <span className="font-semibold">{tab.label}</span>
-                        <span
-                          className="ml-3 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-sm"
-                          style={{
-                            backgroundColor: activeTab === tab.key ? 'rgba(255,255,255,0.25)' : `${tabColors.active}15`,
-                            color: activeTab === tab.key ? '#ffffff' : tabColors.active,
-                            border: activeTab === tab.key ? '1px solid rgba(255,255,255,0.3)' : `1px solid ${tabColors.active}30`
-                          }}
-                        >
-                    {ordersCount}
-                  </span>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleNotificationClick(tab.key);
-                      }}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 hover:scale-110 transition-transform z-10"
-                      style={{
-                        color: activeTab === tab.key ? 'rgba(255,255,255,0.8)' : tabColors.text
-                      }}
-                    >
-                      <span className="text-lg">🔔</span>
-                      {unreadCount > 0 && (
-                        <span
-                          className="absolute -top-1 -right-1 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold animate-pulse"
-                          style={{
-                            backgroundColor: '#e74c3c',
-                            color: '#ffffff'
-                          }}
-                        >
-                    {unreadCount}
-                  </span>
-                      )}
-                    </button>
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {(activeTab === 'pending' && outerActiveTab === 'online') && (
-        <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-          <OrderSearch
-            orders={orders}
-            onOrderSelect={handlePreparationOrderSelect}
-            searchTerm={preparationSearchTerm}
-            setSearchTerm={setPreparationSearchTerm}
-            statusFilter="pending"
-            style={{ backgroundColor: 'var(--background-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-color)', borderRadius: '0.375rem', padding: '0.5rem' }}
-          />
-        </div>
-      )}
-
-      {(activeTab === 'ready' || activeTab === 'served') && (
-        <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-          <div className="text-lg font-semibold mb-2" style={{ color: 'var(--text-color)' }}>
-            {activeTab === 'ready' ? (
-              <>
-                <FontAwesomeIcon icon={faShoppingBag} className="mr-2" />
-                Ready for Pickup
-              </>
-            ) : (
-              <>
-                <FontAwesomeIcon icon={faClipboardCheck} className="mr-2" />
-                Process Payment
-              </>
-            )}
-          </div>
-          <div className="relative mb-2">
-            <input
-              type="text"
-              value={paymentSearchTerm}
-              onChange={(e) => setPaymentSearchTerm(e.target.value)}
-              placeholder="Search by customer name, order number, or ID..."
-              className="w-full p-2.5 border border-[var(--border-color)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-transparent bg-[var(--background-color)] text-[var(--text-color)]"
-            />
-            <svg
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1116.65 16.65z"
-              />
-            </svg>
-          </div>
-        </div>
-      )}
-
-      {showOrderModal && selectedOrder && (
-        <OrderModal
-          order={selectedOrder}
-          token={token}
-          logout={logout}
-          onClose={() => setShowOrderModal(false)}
-          setOrders={setOrders}
-          orders={orders}
-          setMessage={setMessage}
-          activeTab={activeTab}
-          currentCurrency={activeCurrency}
-        />
-      )}
-
-      {showModal && (
-        <OrderNotifications
-          orders={orders}
-          groupedOrders={groupedOrders}
-          activeTab={selectedNotificationTab}
-          tabs={outerActiveTab === 'physical' ? physicalTabs : onlineTabs}
-          setActiveTab={setActiveTab}
-          setPage={setPage}
-          setShowModal={setShowModal}
-          showModal={showModal}
-          showOrderModal={showOrderModal}
-          setShowOrderModal={setShowOrderModal}
-          selectedOrder={selectedOrder}
-          setSelectedOrder={setSelectedOrder}
-          setTimeLeft={setTimeLeft}
-          token={token}
-          logout={logout}
-          setOrders={setOrders}
-          setMessage={setMessage}
-        />
-      )}
-
-      {activeTab && (
-          <div className="space-y-2">
-            {paginatedOrders.length > 0 ? (
-                paginatedOrders.map((order) => (
-                    <div
-                        key={order._id}
-                        className={`rounded-lg shadow-sm border-l-4 transition-all duration-200 hover:shadow-md ${
-                            order.notification_status === 0 ? 'ring-2 ring-[var(--primary-light)]' : ''
-                        } p-3`}
-                        style={{ backgroundColor: 'var(--background-color)', borderColor: currentTab?.borderColor }}
-                    >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex flex-col">
-                      <div className="flex items-center space-x-2">
-                        <h3 className="font-bold text-lg" style={{ color: 'var(--text-color)' }}>#{order.order_number}</h3>
-                        {order.notification_status === 0 && (
-                          <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--error-color)' }}></span>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-2 mt-1 flex-wrap">
-                        <span className="text-sm font-medium">
-  <FontAwesomeIcon icon={faUser} className="mr-1" />
-                          {order.customer_name || 'Guest'}
-</span>
-
-                        {order.service_type && (
-                          <span className="px-2 py-0.5 rounded-full text-xs flex items-center gap-1" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--text-color)' }}>
-  <FontAwesomeIcon icon={order.service_type === 'dine_in' ? faUtensils : faShoppingBag} />
-                            {order.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}
-</span>
-
-                        )}
-                        {order.table_number && (
-                          <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--info-light)', color: 'var(--text-color)' }}>
-                            Table: {order.table_number}
-                          </span>
-                        )}
-                        {order.waiter_name && (
-                          <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--text-color)' }}>
-                            Waiter: {order.waiter_name}
-                          </span>
-                        )}
-                        {order.linked_orders?.length > 0 && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                              Linked Orders:
-                            </span>
-                            <div className="flex gap-1">
-                              {order.linked_orders.map((linkedOrder, index) => (
-                                <div key={index} className="flex items-center space-x-1">
-                                  <div
-                                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                                    style={{
-                                      backgroundColor: index % 4 === 0 ? 'var(--primary-color)' :
-                                        index % 4 === 1 ? 'var(--success-color)' :
-                                          index % 4 === 2 ? 'var(--warning-color)' : 'var(--info-color)'
-                                    }}
-                                  >
-                                    <FontAwesomeIcon icon={faHashtag} className="text-xs" />
-                                  </div>
-                                  <span
-                                    className="px-1 py-0.5 rounded text-xs font-medium"
-                                    style={{
-                                      backgroundColor: index % 4 === 0 ? 'var(--primary-light)' :
-                                        index % 4 === 1 ? 'var(--success-light)' :
-                                          index % 4 === 2 ? 'var(--warning-light)' : 'var(--info-light)',
-                                      color: 'var(--text-color)'
-                                    }}
-                                  >
-                                    #{linkedOrder}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex-1 flex justify-center">
-                    <div className="flex items-center space-x-2 max-w-md overflow-x-auto">
-                      {order.items?.length > 0 ? order.items.map((item, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center space-x-1 px-1 py-0.5 rounded-md border min-w-max"
-                          style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--background-secondary)' }}
-                        >
-                          {renderOrderItemImage(item)}
-                          <div className="flex flex-col">
-                            <span className="text-xs font-medium truncate max-w-20" style={{ color: 'var(--text-color)' }}>
-                              {item.product?.name || 'Unknown'}
-                            </span>
-                            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>x{item.quantity}</span>
-                          </div>
-                        </div>
-                      )) : <div className="text-sm" style={{ color: 'var(--text-tertiary)' }}>No items</div>}
-                    </div>
-                  </div>
-                  <div className="flex items-end space-x-3">
-                    {getTimeDisplay(order)}
-                    <span className="px-2 py-1 rounded-full text-xs font-medium border" style={getStatusBadge(order.status)}>
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                    </span>
-                    <span
-                      className="px-2 py-1 rounded-full text-xs font-medium border"
-                      style={{
-                        backgroundColor: order.payment_status === 'paid' ? 'var(--success-light)' : 'var(--background-secondary)',
-                        color: order.payment_status === 'paid' ? 'var(--text-success)' : 'var(--text-secondary)',
-                        borderColor: order.payment_status === 'paid' ? 'var(--success-border)' : 'var(--border-color)',
-                      }}
-                    >
-                      {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
-                    </span>
-                    {(activeTab === 'completed' || activeTab === 'cancelled') && (
-                      <div className="flex flex-col items-end">
-                        <div className="text-lg font-bold" style={{ color: 'var(--text-color)' }} key={`total-${order._id}-${activeCurrency}`}>
-                          {formatPrice(order.total_amount || 0, activeCurrency)}
-                        </div>
-                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{order.items?.length || 0} items</div>
-                      </div>
-                    )}
-                    <div className="flex flex-col space-y-2">
-                      {activeTab === 'pending' && outerActiveTab === 'online' && (
-                          <>
-                            {/* Accept / Confirm Order */}
-                            <button
-                                onClick={async () => {
-                                  if (!token) {
-                                    setMessage('Please log in to retry this action.');
-                                    return;
-                                  }
-                                  setIsLoading(true);
-                                  try {
-                                    const updatedOrder = await confirmOrder(token, logout, order.order_number);
-                                    setOrders((prevOrders) =>
-                                        prevOrders.map((o) =>
-                                            o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
-                                        )
-                                    );
-                                    setMessage(`✅ Order #${order.order_number} is now confirmed!`);
-                                  } catch (error) {
-                                    setMessage(`❌ ${error instanceof Error ? error.message : 'Failed to mark order as confirmed'}`);
-                                  } finally {
-                                    setIsLoading(false);
-                                  }
-                                }}
-                                className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md ${
-                                    isLoading ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : ''
-                                }`}
-                                style={{
-                                  backgroundColor: isLoading ? undefined : 'var(--primary-color)',
-                                  color: isLoading ? 'var(--disabled-text)' : 'var(--text-on-primary)',
-                                  '--tw-ring-color': 'var(--focus-ring)',
-                                }}
-                                disabled={isLoading}
-                            >
-                              Accept Order
-                            </button>
-
-                            {/* Cancel Order */}
-                            <button
-                                onClick={async () => {
-                                  if (!token) {
-                                    setMessage('Please log in to retry this action.');
-                                    return;
-                                  }
-                                  setIsLoading(true);
-                                  try {
-                                    const updatedOrder = await cancelOrder(token, logout, order.order_number);
-                                    setOrders((prevOrders) =>
-                                        prevOrders.map((o) =>
-                                            o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
-                                        )
-                                    );
-                                    setMessage(`✅ Order #${order.order_number} has been cancelled.`);
-                                  } catch (error) {
-                                    setMessage(`❌ ${error instanceof Error ? error.message : 'Failed to cancel order'}`);
-                                  } finally {
-                                    setIsLoading(false);
-                                  }
-                                }}
-                                className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md ${
-                                    isLoading ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : ''
-                                }`}
-                                style={{
-                                  backgroundColor: isLoading ? undefined : 'var(--error-color)',
-                                  color: isLoading ? 'var(--disabled-text)' : 'var(--text-on-primary)',
-                                  '--tw-ring-color': 'var(--focus-ring)',
-                                }}
-                                disabled={isLoading}
-                            >
-                              Cancel Order
-                            </button>
-                          </>
-                      )}
-
-                      {activeTab === 'to_be_prepared' && (
-                          <button
-                              onClick={async () => {
-                                if (!token) {
-                                  setMessage('Please log in to retry this action.');
-                                  return;
-                                }
-                                setIsLoading(true);
-                                try {
-                                  const updatedOrder = await markOrderAsReady(token, logout, order.order_number);
-                                  setOrders((prevOrders) =>
-                                      prevOrders.map((o) =>
-                                          o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
-                                      )
-                                  );
-                                  setMessage(`✅ Order #${order.order_number} is now ready!`);
-                                } catch (error) {
-                                  setMessage(`❌ ${error instanceof Error ? error.message : 'Failed to mark order as ready'}`);
-                                } finally {
-                                  setIsLoading(false);
-                                }
-                              }}
-                              className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md ${isLoading ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : ''}`}
-                              style={{
-                                backgroundColor: isLoading ? undefined : 'var(--primary-color)',
-                                color: isLoading ? 'var(--disabled-text)' : 'var(--text-on-primary)',
-                                '--tw-ring-color': 'var(--focus-ring)',
-                              }}
-                              disabled={isLoading}
-                          >
-                            Mark as Ready
-                          </button>
-                      )}
-                      {activeTab === 'ready' && (
-                          <button
-                              onClick={async () => {
-                                if (!token) {
-                                  setMessage('Please log in to retry this action.');
-                                  return;
-                                }
-                                setIsLoading(true);
-                                try {
-                                  const updatedOrder = await markOrderAsServed(token, logout, order.order_number);
-                                  setOrders((prevOrders) =>
-                                      prevOrders.map((o) =>
-                                          o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
-                                      )
-                                  );
-                                  setMessage(`✅ Order #${order.order_number} is now served!`);
-                                } catch (error) {
-                                  setMessage(`❌ ${error instanceof Error ? error.message : 'Failed to mark order as served'}`);
-                                } finally {
-                                  setIsLoading(false);
-                                }
-                              }}
-                              className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md ${
-                                  isLoading ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : ''
-                              }`}
-                              style={{
-                                backgroundColor: isLoading ? undefined : 'var(--primary-color)',
-                                color: isLoading ? 'var(--disabled-text)' : 'var(--text-on-primary)',
-                                '--tw-ring-color': 'var(--focus-ring)',
-                              }}
-                              disabled={isLoading}
-                          >
-                            Mark as Served
-                          </button>
-                      )}
-                      {activeTab === 'served' && (
-                        <>
-                          {order.payment_status === 'not_paid' && (
-                            <button
-                              onClick={() => handlePaymentOrderSelect(order)}
-                              className="px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md"
-                              style={{
-                                backgroundColor: 'var(--success-color)',
-                                color: 'var(--text-on-primary)',
-                              }}
-                            >
-                              Process Payment
-                            </button>
-                          )}
-                          {order.payment_status === 'paid' && (
-                              <button
-                                  onClick={async () => {
-                                    if (!token) {
-                                      setMessage('Please log in to retry this action.');
-                                      return;
-                                    }
-                                    setIsLoading(true);
-                                    try {
-                                      const updatedOrder = await markOrderAsCompleted(token, logout, order.order_number);
-                                      setOrders((prevOrders) =>
-                                          prevOrders.map((o) =>
-                                              o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
-                                          )
-                                      );
-                                      setMessage(`✅ Order #${order.order_number} is now completed!`);
-                                    } catch (error) {
-                                      setMessage(`❌ ${error instanceof Error ? error.message : 'Failed to mark order as completed'}`);
-                                    } finally {
-                                      setIsLoading(false);
-                                    }
-                                  }}
-                                  className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md ${isLoading ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : ''}`}
-                                  style={{
-                                    backgroundColor: isLoading ? undefined : 'var(--primary-color)',
-                                    color: isLoading ? 'var(--disabled-text)' : 'var(--text-on-primary)',
-                                    '--tw-ring-color': 'var(--focus-ring)',
-                                  }}
-                                  disabled={isLoading}
-                              >
-                                Mark as Completed
-                              </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                />
               </div>
-            ))
-          ) : (
-            <div className="text-center py-12 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-              <div className="text-5xl mb-3" style={{ color: 'var(--text-tertiary)' }}>
-                <FontAwesomeIcon icon={faClipboardList} />
-              </div>
-
-              <h3 className="text-lg font-medium" style={{ color: 'var(--text-secondary)' }}>No orders found</h3>
-              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                {preparationSearchTerm || paymentSearchTerm ? 'Try adjusting your search criteria.' : 'Orders will appear here when available.'}
-              </p>
-            </div>
           )}
         </div>
-      )}
 
-      {showPaymentModal && selectedPaymentOrder && (
-        <PaymentModal
-          order={selectedPaymentOrder}
-          token={token}
-          logout={logout}
-          onClose={() => {
-            setShowPaymentModal(false);
-            setSelectedPaymentOrder(null);
-          }}
-          setOrders={setOrders}
-          orders={orders}
-          setMessage={setMessage}
-          currentCurrency={activeCurrency}
-        />
-      )}
+        {outerTabs.length > 0 && (
+            <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+              <div className="flex flex-wrap gap-2">
+                {outerTabs.map((tab, index) => {
+                  const getOuterTabColors = (tabKey, tabIndex) => {
+                    if (tabKey === 'physical' || tabIndex === 0) {
+                      return {
+                        active: '#4285f4',
+                        light: '#f0f7ff',
+                        text: '#1a73e8',
+                        gradient: 'linear-gradient(135deg, #4285f4 0%, #1976d2 100%)'
+                      };
+                    } else {
+                      return {
+                        active: '#ffc107',
+                        light: '#fffbf0',
+                        text: '#ff8f00',
+                        gradient: 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)'
+                      };
+                    }
+                  };
 
-      {filteredOrders.length > 0 && (
-        <div className="mt-6 rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
-            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              Showing {Math.min((page - 1) * itemsPerPage + 1, filteredOrders.length)}-
-              {Math.min(page * itemsPerPage, filteredOrders.length)} of {filteredOrders.length} orders
-            </div>
-            <div className="flex items-center space-x-3">
-              <select
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setPage(1);
-                }}
-                className="p-2 text-sm rounded-lg border focus:ring-2 transition-all duration-200"
-                style={{
-                  backgroundColor: 'var(--background-color)',
-                  color: 'var(--text-color)',
-                  borderColor: 'var(--border-color)',
-                  outlineColor: 'var(--focus-ring)',
-                }}
-              >
-                <option value={10}>10 per page</option>
-                <option value={50}>50 per page</option>
-                <option value={80}>80 per page</option>
-              </select>
-              <div className="flex space-x-1">
-                <button
-                    onClick={() => setPage(Math.max(1, page - 1))}
-                    disabled={page === 1}
-                    className="px-3 py-2 text-sm rounded-lg border disabled:opacity-50 transition-all duration-200 hover:shadow-md"
-                    style={{
-                      backgroundColor: page === 1 ? 'var(--background-secondary)' : 'var(--primary-color)',
-                      color: page === 1 ? 'var(--text-secondary)' : 'var(--text-on-primary)',
-                      borderColor: 'var(--border-color)',
-                      '--tw-ring-color': 'var(--focus-ring)',
-                    }}
-                >
-                  Previous
-                </button>
-                {Array.from({ length: Math.min(5, Math.ceil(filteredOrders.length / itemsPerPage)) }, (_, i) => {
-                  const pageNumber = i + 1;
+                  const tabColors = getOuterTabColors(tab.key, index);
+
                   return (
-                    <button
-                      key={pageNumber}
-                      onClick={() => setPage(pageNumber)}
-                      className={`px-3 py-2 text-sm rounded-lg border transition-all duration-200 hover:shadow-md ${
-                        pageNumber === page ? 'shadow-md' : ''
-                      }`}
-                      style={{
-                        backgroundColor: pageNumber === page ? currentTab?.color : 'var(--background-color)',
-                        color: pageNumber === page ? 'var(--text-on-primary)' : 'var(--text-color)',
-                        borderColor: 'var(--border-color)',
-                      }}
-                    >
-                      {pageNumber}
-                    </button>
+                      <button
+                          key={tab.key}
+                          onClick={() => {
+                            setOuterActiveTab(tab.key);
+                            const tabs = tab.key === 'physical' ? physicalTabs : onlineTabs;
+                            setActiveTab(tabs[0]?.key || null);
+                            setPage(1);
+                          }}
+                          className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:shadow-lg hover:transform hover:scale-105 min-w-[140px] ${
+                              outerActiveTab === tab.key ? 'shadow-lg transform scale-105' : 'hover:scale-102'
+                          }`}
+                          style={{
+                            background: outerActiveTab === tab.key ? tabColors.gradient : tabColors.light,
+                            color: outerActiveTab === tab.key ? '#ffffff' : tabColors.text,
+                            border: outerActiveTab === tab.key ? 'none' : `2px solid ${tabColors.active}20`
+                          }}
+                      >
+                        {tab.label}
+                      </button>
                   );
                 })}
-                <button
-                    onClick={() => setPage(Math.min(Math.ceil(filteredOrders.length / itemsPerPage), page + 1))}
-                    disabled={page === Math.ceil(filteredOrders.length / itemsPerPage)}
-                    className="px-3 py-2 text-sm rounded-lg border disabled:opacity-50 transition-all duration-200 hover:shadow-md"
-                    style={{
-                      backgroundColor: page === Math.ceil(filteredOrders.length / itemsPerPage) ? 'var(--background-secondary)' : 'var(--primary-color)',
-                      color: page === Math.ceil(filteredOrders.length / itemsPerPage) ? 'var(--text-secondary)' : 'var(--text-on-primary)',
-                      borderColor: 'var(--border-color)',
-                      '--tw-ring-color': 'var(--focus-ring)',
-                    }}
-                >
-                  Next
-                </button>
               </div>
             </div>
-          </div>
+        )}
+
+        <div className="h-10">
+          {message && (
+              <div
+                  className={`p-2 rounded-lg shadow-sm border-l-4 h-full flex items-center text-sm ${blink && activeTab === 'to_be_prepared' ? 'animate-pulse' : ''}`}
+                  style={getMessageStyles(message)}
+              >
+                {message}
+              </div>
+          )}
         </div>
-      )}
-    </div>
+
+        {activeTab && (
+            <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+              <div className="flex flex-wrap gap-2">
+                {(outerActiveTab === 'physical' ? physicalTabs : onlineTabs).map((tab, index) => {
+                  const ordersCount = groupedOrders[tab.key]?.length || 0;
+                  const unreadCount = getTabUnreadCount(tab.key);
+                  const tabsArray = outerActiveTab === 'physical' ? physicalTabs : onlineTabs;
+                  const isSingleTab = tabsArray.length === 1;
+
+                  const getTabColors = (tabKey) => {
+                    const colorMap = {
+                      'pending': {
+                        active: '#ff6b35',
+                        light: '#fff5f2',
+                        text: '#cc4125',
+                        gradient: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)'
+                      },
+                      'confirmed': {
+                        active: '#4285f4',
+                        light: '#f0f7ff',
+                        text: '#1a73e8',
+                        gradient: 'linear-gradient(135deg, #4285f4 0%, #1976d2 100%)'
+                      },
+                      'preparing': {
+                        active: '#ff9800',
+                        light: '#fff8f0',
+                        text: '#e65100',
+                        gradient: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)'
+                      },
+                      'ready': {
+                        active: '#9c27b0',
+                        light: '#faf4ff',
+                        text: '#7b1fa2',
+                        gradient: 'linear-gradient(135deg, #9c27b0 0%, #8e24aa 100%)'
+                      },
+                      'completed': {
+                        active: '#4caf50',
+                        light: '#f1f8e9',
+                        text: '#388e3c',
+                        gradient: 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)'
+                      },
+                      'cancelled': {
+                        active: '#f44336',
+                        light: '#fff3f2',
+                        text: '#d32f2f',
+                        gradient: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)'
+                      },
+                      'out_for_delivery': {
+                        active: '#00bcd4',
+                        light: '#f0fdff',
+                        text: '#0097a7',
+                        gradient: 'linear-gradient(135deg, #00bcd4 0%, #0097a7 100%)'
+                      },
+                      'delivered': {
+                        active: '#8bc34a',
+                        light: '#f7fff0',
+                        text: '#689f38',
+                        gradient: 'linear-gradient(135deg, #8bc34a 0%, #689f38 100%)'
+                      },
+                      'default': {
+                        active: '#607d8b',
+                        light: '#f8f9fa',
+                        text: '#455a64',
+                        gradient: 'linear-gradient(135deg, #607d8b 0%, #455a64 100%)'
+                      }
+                    };
+
+                    return colorMap[tabKey] || colorMap['default'];
+                  };
+
+                  const tabColors = getTabColors(tab.key);
+
+                  return (
+                      <div
+                          key={tab.key}
+                          className={`relative ${isSingleTab ? 'flex-none mx-auto' : 'flex-1'}`}
+                          style={{
+                            minWidth: isSingleTab ? '400px' : '140px',
+                            maxWidth: isSingleTab ? '400px' : 'none'
+                          }}
+                      >
+                        <button
+                            onClick={() => {
+                              setActiveTab(tab.key);
+                              setPage(1);
+                            }}
+                            className={`w-full px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-300 hover:shadow-lg hover:transform hover:scale-105 ${
+                                activeTab === tab.key ? 'shadow-lg transform scale-105' : 'hover:scale-102'
+                            }`}
+                            style={{
+                              background: activeTab === tab.key ? tabColors.gradient : tabColors.light,
+                              color: activeTab === tab.key ? '#ffffff' : tabColors.text,
+                              paddingRight: '3rem',
+                              border: activeTab === tab.key ? 'none' : `2px solid ${tabColors.active}20`
+                            }}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center">
+                              <span className="font-semibold">{tab.label}</span>
+                              <span
+                                  className="ml-3 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-sm"
+                                  style={{
+                                    backgroundColor: activeTab === tab.key ? 'rgba(255,255,255,0.25)' : `${tabColors.active}15`,
+                                    color: activeTab === tab.key ? '#ffffff' : tabColors.active,
+                                    border: activeTab === tab.key ? '1px solid rgba(255,255,255,0.3)' : `1px solid ${tabColors.active}30`
+                                  }}
+                              >
+                          {ordersCount}
+                        </span>
+                            </div>
+                          </div>
+                          <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNotificationClick(tab.key);
+                              }}
+                              className="absolute right-2 top-1/2 transform -translate-y-1/2 hover:scale-110 transition-transform z-10"
+                              style={{
+                                color: activeTab === tab.key ? 'rgba(255,255,255,0.8)' : tabColors.text
+                              }}
+                          >
+                            <span className="text-lg">🔔</span>
+                            {unreadCount > 0 && (
+                                <span
+                                    className="absolute -top-1 -right-1 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold animate-pulse"
+                                    style={{
+                                      backgroundColor: '#e74c3c',
+                                      color: '#ffffff'
+                                    }}
+                                >
+                          {unreadCount}
+                        </span>
+                            )}
+                          </button>
+                        </button>
+                      </div>
+                  );
+                })}
+              </div>
+            </div>
+        )}
+
+        {(activeTab === 'pending' && outerActiveTab === 'online') && (
+            <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+              <OrderSearch
+                  orders={orders}
+                  onOrderSelect={handlePreparationOrderSelect}
+                  searchTerm={preparationSearchTerm}
+                  setSearchTerm={setPreparationSearchTerm}
+                  statusFilter="pending"
+                  style={{ backgroundColor: 'var(--background-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-color)', borderRadius: '0.375rem', padding: '0.5rem' }}
+              />
+            </div>
+        )}
+
+        {(activeTab === 'ready' || activeTab === 'out_for_delivery') && (
+            <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+              <div className="text-lg font-semibold mb-2" style={{ color: 'var(--text-color)' }}>
+                {activeTab === 'ready' ? (
+                    <>
+                      <FontAwesomeIcon icon={faShoppingBag} className="mr-2" />
+                      Ready for Pickup
+                    </>
+                ) : (
+                    <>
+                      <FontAwesomeIcon icon={faTruck} className="mr-2" />
+                      Out for Delivery
+                    </>
+                )}
+              </div>
+              <div className="relative mb-2">
+                <input
+                    type="text"
+                    value={paymentSearchTerm}
+                    onChange={(e) => setPaymentSearchTerm(e.target.value)}
+                    placeholder="Search by customer name, order number, or ID..."
+                    className="w-full p-2.5 border border-[var(--border-color)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--focus-ring)] focus:border-transparent bg-[var(--background-color)] text-[var(--text-color)]"
+                />
+                <svg
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                  <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1116.65 16.65z"
+                  />
+                </svg>
+              </div>
+            </div>
+        )}
+
+        {showOrderModal && selectedOrder && (
+            <OrderModal
+                order={selectedOrder}
+                token={token}
+                logout={logout}
+                onClose={() => setShowOrderModal(false)}
+                setOrders={setOrders}
+                orders={orders}
+                setMessage={setMessage}
+                activeTab={activeTab}
+                currentCurrency={activeCurrency}
+            />
+        )}
+
+        {showModal && (
+            <OrderNotifications
+                orders={orders}
+                groupedOrders={groupedOrders}
+                activeTab={selectedNotificationTab}
+                tabs={outerActiveTab === 'physical' ? physicalTabs : onlineTabs}
+                setActiveTab={setActiveTab}
+                setPage={setPage}
+                setShowModal={setShowModal}
+                showModal={showModal}
+                showOrderModal={showOrderModal}
+                setShowOrderModal={setShowOrderModal}
+                selectedOrder={selectedOrder}
+                setSelectedOrder={setSelectedOrder}
+                setTimeLeft={setTimeLeft}
+                token={token}
+                logout={logout}
+                setOrders={setOrders}
+                setMessage={setMessage}
+            />
+        )}
+
+        {showRiderModal && selectedRiderOrder && (
+            <RiderAssignmentModal
+                order={selectedRiderOrder}
+                token={token}
+                logout={logout}
+                onClose={() => {
+                  setShowRiderModal(false);
+                  setSelectedRiderOrder(null);
+                }}
+                setOrders={setOrders}
+                setMessage={setMessage}
+            />
+        )}
+
+        {activeTab && (
+            <div className="space-y-2">
+              {paginatedOrders.length > 0 ? (
+                  paginatedOrders.map((order) => (
+                      <div
+                          key={order._id}
+                          className={`rounded-lg shadow-sm border-l-4 transition-all duration-200 hover:shadow-md ${
+                              order.notification_status === 0 ? 'ring-2 ring-[var(--primary-light)]' : ''
+                          } p-3`}
+                          style={{ backgroundColor: 'var(--background-color)', borderColor: currentTab?.borderColor }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="flex flex-col">
+                              <div className="flex items-center space-x-2">
+                                <h3 className="font-bold text-lg" style={{ color: 'var(--text-color)' }}>#{order.order_number}</h3>
+                                {order.notification_status === 0 && (
+                                    <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--error-color)' }}></span>
+                                )}
+                              </div>
+                              <div className="flex items-center space-x-2 mt-1 flex-wrap">
+                    <span className="text-sm font-medium">
+                      <FontAwesomeIcon icon={faUser} className="mr-1" />
+                      {order.customer_name || 'Guest'}
+                    </span>
+                                {order.service_type && (
+                                    <span className="px-2 py-0.5 rounded-full text-xs flex items-center gap-1" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--text-color)' }}>
+                        <FontAwesomeIcon icon={order.service_type === 'dine_in' ? faUtensils : faShoppingBag} />
+                                      {order.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}
+                      </span>
+                                )}
+                                {order.table_id && (
+                                    <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--info-light)', color: 'var(--text-color)' }}>
+                        Table: {order.table_id}
+                      </span>
+                                )}
+                                {order.waiter && (
+                                    <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--text-color)' }}>
+                        Waiter: {order.waiter}
+                      </span>
+                                )}
+                                {order.rider?.name && (
+                                    <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--success-light)', color: 'var(--text-color)' }}>
+                        Rider: {order.rider.name}
+                      </span>
+                                )}
+                                {order.linked_orders?.length > 0 && (
+                                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                          Linked Orders:
+                        </span>
+                                      <div className="flex gap-1">
+                                        {order.linked_orders.map((linkedOrder, index) => (
+                                            <div key={index} className="flex items-center space-x-1">
+                                              <div
+                                                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                                                  style={{
+                                                    backgroundColor: index % 4 === 0 ? 'var(--primary-color)' :
+                                                        index % 4 === 1 ? 'var(--success-color)' :
+                                                            index % 4 === 2 ? 'var(--warning-color)' : 'var(--info-color)'
+                                                  }}
+                                              >
+                                                <FontAwesomeIcon icon={faHashtag} className="text-xs" />
+                                              </div>
+                                              <span
+                                                  className="px-1 py-0.5 rounded text-xs font-medium"
+                                                  style={{
+                                                    backgroundColor: index % 4 === 0 ? 'var(--primary-light)' :
+                                                        index % 4 === 1 ? 'var(--success-light)' :
+                                                            index % 4 === 2 ? 'var(--warning-light)' : 'var(--info-light)',
+                                                    color: 'var(--text-color)'
+                                                  }}
+                                              >
+                                #{linkedOrder}
+                              </span>
+                                            </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex-1 flex justify-center">
+                            <div className="flex items-center space-x-2 max-w-md overflow-x-auto">
+                              {order.items?.length > 0 ? order.items.map((item, index) => (
+                                  <div
+                                      key={index}
+                                      className="flex items-center space-x-1 px-1 py-0.5 rounded-md border min-w-max"
+                                      style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--background-secondary)' }}
+                                  >
+                                    {renderOrderItemImage(item)}
+                                    <div className="flex flex-col">
+                        <span className="text-xs font-medium truncate max-w-20" style={{ color: 'var(--text-color)' }}>
+                          {item.product_id?.name || 'Unknown'}
+                        </span>
+                                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          x{item.quantity} @ {formatPrice(item.product_id?.price || 0, activeCurrency)}
+                        </span>
+                                    </div>
+                                  </div>
+                              )) : <div className="text-sm" style={{ color: 'var(--text-tertiary)' }}>No items</div>}
+                            </div>
+                          </div>
+                          <div className="flex items-end space-x-3">
+                            {activeTab === 'to_be_prepared' && getTimeDisplay(order)}
+                            <span className="px-2 py-1 rounded-full text-xs font-medium border" style={getStatusBadge(order.status)}>
+                  {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                </span>
+                            <span
+                                className="px-2 py-1 rounded-full text-xs font-medium border"
+                                style={{
+                                  backgroundColor: order.payment_status === 'paid' ? 'var(--success-light)' : 'var(--background-secondary)',
+                                  color: order.payment_status === 'paid' ? 'var(--text-success)' : 'var(--text-secondary)',
+                                  borderColor: order.payment_status === 'paid' ? 'var(--success-border)' : 'var(--border-color)',
+                                }}
+                            >
+                  {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
+                </span>
+
+                            {(activeTab === 'completed' || activeTab === 'cancelled') && (
+                                <div className="flex flex-col items-end">
+                                  <div className="text-lg font-bold" style={{ color: 'var(--text-color)' }} key={`total-${order._id}-${activeCurrency}`}>
+                                    {formatPrice(order.total_amount || 0, activeCurrency)}
+                                  </div>
+                                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{order.items?.length || 0} items</div>
+                                </div>
+                            )}
+                            <div className="flex flex-col space-y-2">
+                              {activeTab === 'to_be_prepared' && (
+                                  <button
+                                      onClick={async () => {
+                                        if (!token) {
+                                          setMessage('Please log in to retry this action.');
+                                          return;
+                                        }
+                                        setIsLoading(true);
+                                        try {
+                                          const updatedOrder = await markOrderAsReady(token, logout, order.order_number);
+                                          setOrders((prevOrders) =>
+                                              prevOrders.map((o) =>
+                                                  o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
+                                              )
+                                          );
+                                          setMessage(`✅ Order #${order.order_number} is now ready!`);
+                                        } catch (error) {
+                                          setMessage(`❌ ${error instanceof Error ? error.message : 'Failed to mark order as ready'}`);
+                                        } finally {
+                                          setIsLoading(false);
+                                        }
+                                      }}
+                                      className="px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md disabled:opacity-50"
+                                      style={{
+                                        backgroundColor: 'var(--primary-color)',
+                                        color: 'var(--text-on-primary)',
+                                      }}
+                                      disabled={isLoading}
+                                  >
+                                    Mark as Ready
+                                  </button>
+                              )}
+                              {activeTab === 'pending' && (
+                                  <div className="flex flex-col space-y-2">
+                                    <button
+                                        onClick={async () => {
+                                          if (!token) {
+                                            setMessage('Please log in to retry this action.');
+                                            return;
+                                          }
+                                          setIsLoading(true);
+                                          try {
+                                            const updatedOrder = await confirmOrder(token, logout, order.order_number);
+                                            setOrders((prevOrders) =>
+                                                prevOrders.map((o) =>
+                                                    o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
+                                                )
+                                            );
+                                            setMessage(`✅ Order #${order.order_number} is now Confirmed!`);
+                                          } catch (error) {
+                                            setMessage(`❌ ${error instanceof Error ? error.message : 'Failed to confirm order'}`);
+                                          } finally {
+                                            setIsLoading(false);
+                                          }
+                                        }}
+                                        className="px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md disabled:opacity-50"
+                                        style={{
+                                          backgroundColor: 'var(--success-color)',
+                                          color: 'var(--text-on-primary)',
+                                        }}
+                                        disabled={isLoading}
+                                    >
+                                      Confirm Order
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                          if (!token) {
+                                            setMessage('Please log in to retry this action.');
+                                            return;
+                                          }
+                                          setIsLoading(true);
+                                          try {
+                                            const updatedOrder = await cancelOrder(token, logout, order.order_number);
+                                            setOrders((prevOrders) =>
+                                                prevOrders.map((o) =>
+                                                    o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
+                                                )
+                                            );
+                                            setMessage(`✅ Order #${order.order_number} is Cancelled!`);
+                                          } catch (error) {
+                                            setMessage(`❌ ${error instanceof Error ? error.message : 'Failed to cancel order'}`);
+                                          } finally {
+                                            setIsLoading(false);
+                                          }
+                                        }}
+                                        className="px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md disabled:opacity-50"
+                                        style={{
+                                          backgroundColor: '#dc2626',
+                                          color: 'var(--text-on-primary)',
+                                        }}
+                                        disabled={isLoading}
+                                    >
+                                      Cancel Order
+                                    </button>
+                                  </div>
+                              )}
+                              {activeTab === 'ready' && order.order_type === 'online' && (
+                                  <>
+                                    <button
+                                        onClick={() => handleRiderAssignment(order)}
+                                        className="px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md"
+                                        style={{
+                                          backgroundColor: 'var(--info-color)',
+                                          color: 'var(--text-on-primary)',
+                                        }}
+                                    >
+                                      Assign Rider
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                          if (!token) {
+                                            setMessage('Please log in to retry this action.');
+                                            return;
+                                          }
+                                          if (!order.rider?.id) {
+                                            setMessage('Please assign a rider first.');
+                                            return;
+                                          }
+                                          setIsLoading(true);
+                                          try {
+                                            const updatedOrder = await markOrderOutForDelivery(token, logout, order.order_number, order.rider.id);
+                                            updatedOrder.status = updatedOrder.status?.toLowerCase();
+
+                                            setOrders(prev =>
+                                                prev.map(o =>
+                                                    o.order_number === updatedOrder.order_number
+                                                        ? { ...updatedOrder, items: o.items, notification_status: 1 }
+                                                        : o
+                                                )
+                                            );
+
+                                            setMessage(`✅ Order #${order.order_number} is now out for delivery!`);
+
+                                          } catch (error) {
+                                            setMessage(`❌ ${error instanceof Error ? error.message : 'Failed to mark order as out for delivery'}`);
+                                          } finally {
+                                            setIsLoading(false);
+                                          }
+                                        }}
+                                        className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md ${
+                                            isLoading || !order.rider?.id ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : ''
+                                        }`}
+                                        style={{
+                                          backgroundColor: isLoading || !order.rider?.id ? undefined : 'var(--primary-color)',
+                                          color: isLoading || !order.rider?.id ? 'var(--disabled-text)' : 'var(--text-on-primary)',
+                                          '--tw-ring-color': 'var(--focus-ring)',
+                                        }}
+                                        disabled={isLoading || !order.rider?.id}
+                                    >
+                                      Mark as Out for Delivery
+                                    </button>
+                                  </>
+                              )}
+                              {activeTab === 'ready' && order.order_type === 'physical' && (
+                                  <button
+                                      onClick={async () => {
+                                        if (!token) {
+                                          setMessage('Please log in');
+                                          return;
+                                        }
+                                        setIsLoading(true);
+                                        try {
+                                          const updatedOrder = await markOrderAsServed(token, logout, order.order_number);
+                                          updatedOrder.status = updatedOrder.status?.toLowerCase();
+
+                                          setOrders(prev =>
+                                              prev.map(o =>
+                                                  o.order_number === updatedOrder.order_number
+                                                      ? { ...updatedOrder, items: o.items, notification_status: 1 }
+                                                      : o
+                                              )
+                                          );
+
+                                          setMessage(`✅ Order #${order.order_number} is now served!`);
+                                        } catch (err) {
+                                          setMessage('❌ Failed to mark order as served');
+                                        } finally {
+                                          setIsLoading(false);
+                                        }
+                                      }}
+                                      className="px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md"
+                                      style={{
+                                        backgroundColor: 'var(--success-color)',
+                                        color: 'var(--text-on-primary)',
+                                      }}
+                                  >
+                                    Mark as Served
+                                  </button>
+                              )}
+
+                              {(activeTab === 'served' || activeTab === 'out_for_delivery') && (
+                                  <>
+                                    {order.payment_status === 'not_paid' && (
+                                        <button
+                                            onClick={() => handlePaymentOrderSelect(order)}
+                                            className="px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md"
+                                            style={{
+                                              backgroundColor: 'var(--success-color)',
+                                              color: 'var(--text-on-primary)',
+                                            }}
+                                        >
+                                          Process Payment
+                                        </button>
+                                    )}
+                                    {order.payment_status === 'paid' && (
+                                        <button
+                                            onClick={async () => {
+                                              if (!token) {
+                                                setMessage('Please log in to retry this action.');
+                                                return;
+                                              }
+                                              setIsLoading(true);
+                                              try {
+                                                const updatedOrder = await markOrderAsCompleted(token, logout, order.order_number);
+                                                setOrders((prevOrders) =>
+                                                    prevOrders.map((o) =>
+                                                        o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
+                                                    )
+                                                );
+                                                setMessage(`✅ Order #${order.order_number} is now completed!`);
+                                              } catch (error) {
+                                                setMessage(`❌ ${error instanceof Error ? error.message : 'Failed to mark order as completed'}`);
+                                              } finally {
+                                                setIsLoading(false);
+                                              }
+                                            }}
+                                            className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md ${isLoading ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : ''}`}
+                                            style={{
+                                              backgroundColor: isLoading ? undefined : 'var(--primary-color)',
+                                              color: isLoading ? 'var(--disabled-text)' : 'var(--text-on-primary)',
+                                              '--tw-ring-color': 'var(--focus-ring)',
+                                            }}
+                                            disabled={isLoading}
+                                        >
+                                          Mark as Completed
+                                        </button>
+                                    )}
+                                  </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                  ))
+              ) : (
+                  <div className="text-center py-12 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+                    <div className="text-5xl mb-3" style={{ color: 'var(--text-tertiary)' }}>
+                      <FontAwesomeIcon icon={faClipboardList} />
+                    </div>
+                    <h3 className="text-lg font-medium" style={{ color: 'var(--text-secondary)' }}>No orders found</h3>
+                    <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                      {preparationSearchTerm || paymentSearchTerm ? 'Try adjusting your search criteria.' : 'Orders will appear here when available.'}
+                    </p>
+                  </div>
+              )}
+            </div>
+        )}
+
+
+        {showPaymentModal && selectedPaymentOrder && (
+            <PaymentModal
+                order={selectedPaymentOrder}
+                token={token}
+                logout={logout}
+                onClose={() => {
+                  setShowPaymentModal(false);
+                  setSelectedPaymentOrder(null);
+                }}
+                setOrders={setOrders}
+                orders={orders}
+                setMessage={setMessage}
+                currentCurrency={activeCurrency}
+            />
+        )}
+
+        {filteredOrders.length > 0 && (
+            <div className="mt-6 rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Showing {Math.min((page - 1) * itemsPerPage + 1, filteredOrders.length)}-
+                  {Math.min(page * itemsPerPage, filteredOrders.length)} of {filteredOrders.length} orders
+                </div>
+                <div className="flex items-center space-x-3">
+                  <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        setItemsPerPage(Number(e.target.value));
+                        setPage(1);
+                      }}
+                      className="p-2 text-sm rounded-lg border focus:ring-2 transition-all duration-200"
+                      style={{
+                        backgroundColor: 'var(--background-color)',
+                        color: 'var(--text-color)',
+                        borderColor: 'var(--border-color)',
+                        outlineColor: 'var(--focus-ring)',
+                      }}
+                  >
+                    <option value={10}>10 per page</option>
+                    <option value={50}>50 per page</option>
+                    <option value={80}>80 per page</option>
+                  </select>
+                  <div className="flex space-x-1">
+                    <button
+                        onClick={() => setPage(Math.max(1, page - 1))}
+                        disabled={page === 1}
+                        className="px-3 py-2 text-sm rounded-lg border disabled:opacity-50 transition-all duration-200 hover:shadow-md"
+                        style={{
+                          backgroundColor: page === 1 ? 'var(--background-secondary)' : 'var(--primary-color)',
+                          color: page === 1 ? 'var(--text-secondary)' : 'var(--text-on-primary)',
+                          borderColor: 'var(--border-color)',
+                          '--tw-ring-color': 'var(--focus-ring)',
+                        }}
+                    >
+                      Previous
+                    </button>
+                    {Array.from({ length: Math.min(5, Math.ceil(filteredOrders.length / itemsPerPage)) }, (_, i) => {
+                      const pageNumber = i + 1;
+                      return (
+                          <button
+                              key={pageNumber}
+                              onClick={() => setPage(pageNumber)}
+                              className={`px-3 py-2 text-sm rounded-lg border transition-all duration-200 hover:shadow-md ${
+                                  pageNumber === page ? 'shadow-md' : ''
+                              }`}
+                              style={{
+                                backgroundColor: pageNumber === page ? currentTab?.color : 'var(--background-color)',
+                                color: pageNumber === page ? 'var(--text-on-primary)' : 'var(--text-color)',
+                                borderColor: 'var(--border-color)',
+                              }}
+                          >
+                            {pageNumber}
+                          </button>
+                      );
+                    })}
+                    <button
+                        onClick={() => setPage(Math.min(Math.ceil(filteredOrders.length / itemsPerPage), page + 1))}
+                        disabled={page === Math.ceil(filteredOrders.length / itemsPerPage)}
+                        className="px-3 py-2 text-sm rounded-lg border disabled:opacity-50 transition-all duration-200 hover:shadow-md"
+                        style={{
+                          backgroundColor: page === Math.ceil(filteredOrders.length / itemsPerPage) ? 'var(--background-secondary)' : 'var(--primary-color)',
+                          color: page === Math.ceil(filteredOrders.length / itemsPerPage) ? 'var(--text-secondary)' : 'var(--text-on-primary)',
+                          borderColor: 'var(--border-color)',
+                          '--tw-ring-color': 'var(--focus-ring)',
+                        }}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+        )}
+      </div>
   );
 }
 

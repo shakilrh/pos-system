@@ -11,6 +11,8 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [riderNote, setRiderNote] = useState('');
     const [showCheckout, setShowCheckout] = useState(false);
+    const [useLoyaltyPoints, setUseLoyaltyPoints] = useState(false);
+    const [loyaltyPoints, setLoyaltyPoints] = useState(0);
     const { user, token } = useAuth();
 
     useEffect(() => {
@@ -41,15 +43,47 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
             }
 
             if (data.success) {
-                const customerData = data.data?.data || data.data;
-                setDeliveryAddress(customerData.addresses?.[0] || '');
-                setPhoneNumber(customerData.phone_number || '');
+                // Handle nested data structure - check both levels
+                let customerData = null;
+
+                if (data.data?.data?.data) {
+                    // Triple nested structure
+                    customerData = data.data.data.data;
+                } else if (data.data?.data) {
+                    // Double nested structure
+                    customerData = data.data.data;
+                } else if (data.data) {
+                    // Single nested structure
+                    customerData = data.data;
+                }
+
+                if (customerData) {
+                    // Set delivery address - use first address if available
+                    if (customerData.addresses && customerData.addresses.length > 0) {
+                        setDeliveryAddress(customerData.addresses[0]);
+                    }
+
+                    // Set phone number
+                    if (customerData.phone_number) {
+                        setPhoneNumber(customerData.phone_number);
+                    }
+
+                    // Set loyalty points
+                    if (customerData.loyalty_points !== undefined && customerData.loyalty_points !== null) {
+                        setLoyaltyPoints(customerData.loyalty_points);
+                    }
+
+                    console.log('Customer data loaded successfully:', customerData);
+                } else {
+                    console.warn('Customer data structure not recognized:', data);
+                }
             } else {
-                throw new Error(data.message || 'Failed to fetch customer details');
+                throw new Error(data.message || 'Failed to retrieve customer data');
             }
         } catch (error) {
             console.error('Error fetching customer details:', error);
-            alert(error.message || 'Failed to load customer details');
+            // Don't show alert for API errors, just log them
+            console.warn('Could not load customer details, using defaults');
         } finally {
             setLoading(false);
         }
@@ -97,8 +131,30 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
         saveCart([]);
     };
 
-    const getTotalAmount = () => {
+    const getSubtotal = () => {
         return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    };
+
+    const getLoyaltyDiscount = () => {
+        if (!useLoyaltyPoints || loyaltyPoints === 0) return 0;
+        const subtotal = getSubtotal();
+        // 100 loyalty points = 1 currency unit
+        const maxDiscount = loyaltyPoints / 100;
+        return Math.min(maxDiscount, subtotal);
+    };
+
+    const getTotalAmount = () => {
+        const subtotal = getSubtotal();
+        const discount = getLoyaltyDiscount();
+        return Math.max(0, subtotal - discount);
+    };
+
+    const getPointsToUse = () => {
+        if (!useLoyaltyPoints) return 0;
+        const subtotal = getSubtotal();
+        const maxDiscount = loyaltyPoints / 100;
+        const actualDiscount = Math.min(maxDiscount, subtotal);
+        return Math.floor(actualDiscount * 100);
     };
 
     const getTotalItems = () => {
@@ -134,9 +190,18 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                 })),
                 delivery_address: deliveryAddress.trim(),
                 phone_number: phoneNumber.trim(),
-                rider_note: riderNote.trim(),
                 payment_method: 'cash'
             };
+
+            // Add redeem_points only if loyalty points are being used
+            if (useLoyaltyPoints && getPointsToUse() > 0) {
+                orderData.redeem_points = getPointsToUse();
+            }
+
+            // Only add rider_note if it's not empty
+            if (riderNote.trim()) {
+                orderData.rider_note = riderNote.trim();
+            }
 
             const response = await fetch(`${API_BASE_URL}/orders/api/v1/online-create`, {
                 method: 'POST',
@@ -152,8 +217,10 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
             if (result.success) {
                 clearCart();
                 setShowCheckout(false);
-                onClose(); // Close cart modal after order success
-                onOrderSuccess(result.data.data); // Trigger success modal on parent
+                setUseLoyaltyPoints(false);
+                setRiderNote('');
+                onClose();
+                onOrderSuccess(result.data.data);
             } else {
                 throw new Error(result.message || 'Failed to place order');
             }
@@ -270,6 +337,20 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                                                 {getCurrencySymbol()}{getTotalAmount().toFixed(2)}
                                             </span>
                                         </div>
+
+                                        {/* Loyalty Points Notification */}
+                                        {loyaltyPoints > 0 && (
+                                            <div className="mb-4 p-4 bg-blue-900 bg-opacity-50 rounded-lg border border-blue-400">
+                                                <div className="flex items-center space-x-2 mb-2">
+                                                    <i className="fas fa-star text-yellow-400"></i>
+                                                    <span className="text-sm font-medium">You have {loyaltyPoints} loyalty points!</span>
+                                                </div>
+                                                <p className="text-xs text-blue-200">
+                                                    Use them at checkout to get discounts (100 points = {getCurrencySymbol()}1 off)
+                                                </p>
+                                            </div>
+                                        )}
+
                                         <div className="flex space-x-3">
                                             <button
                                                 onClick={clearCart}
@@ -313,12 +394,62 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                                                     </span>
                                                 </div>
                                             ))}
-                                            <div className="flex justify-between items-center pt-4 mt-4 border-t-2 border-yellow-400">
-                                                <span className="text-xl font-bold">Total:</span>
-                                                <span className="text-xl font-bold text-yellow-600">
-                                                    {getCurrencySymbol()}{getTotalAmount().toFixed(2)}
-                                                </span>
+
+                                            {/* Pricing breakdown */}
+                                            <div className="pt-4 mt-4 border-t border-gray-300 space-y-2">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-gray-600">Subtotal:</span>
+                                                    <span className="font-medium">
+                                                        {getCurrencySymbol()}{getSubtotal().toFixed(2)}
+                                                    </span>
+                                                </div>
+
+                                                {useLoyaltyPoints && getLoyaltyDiscount() > 0 && (
+                                                    <div className="flex justify-between items-center text-green-600">
+                                                        <span>Loyalty Discount ({getPointsToUse()} points):</span>
+                                                        <span>-{getCurrencySymbol()}{getLoyaltyDiscount().toFixed(2)}</span>
+                                                    </div>
+                                                )}
+
+                                                <div className="flex justify-between items-center pt-2 border-t-2 border-yellow-400">
+                                                    <span className="text-xl font-bold">Total:</span>
+                                                    <span className="text-xl font-bold text-yellow-600">
+                                                        {getCurrencySymbol()}{getTotalAmount().toFixed(2)}
+                                                    </span>
+                                                </div>
                                             </div>
+
+                                            {/* Loyalty Points Section */}
+                                            {loyaltyPoints > 0 && (
+                                                <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <div className="flex items-center space-x-2">
+                                                            <i className="fas fa-star text-yellow-500"></i>
+                                                            <span className="font-medium text-gray-700">
+                                                                Use Loyalty Points
+                                                            </span>
+                                                        </div>
+                                                        <label className="relative inline-flex items-center cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={useLoyaltyPoints}
+                                                                onChange={(e) => setUseLoyaltyPoints(e.target.checked)}
+                                                                className="sr-only peer"
+                                                            />
+                                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        </label>
+                                                    </div>
+                                                    <div className="text-sm text-gray-600">
+                                                        <p>Available: <span className="font-medium text-blue-600">{loyaltyPoints} points</span></p>
+                                                        <p>Conversion: <span className="font-medium">100 points = {getCurrencySymbol()}1 discount</span></p>
+                                                        {useLoyaltyPoints && (
+                                                            <p className="mt-2 text-green-600 font-medium">
+                                                                Using {getPointsToUse()} points for {getCurrencySymbol()}{getLoyaltyDiscount().toFixed(2)} discount
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     <div>
@@ -359,7 +490,7 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                                                 <textarea
                                                     value={riderNote}
                                                     onChange={(e) => setRiderNote(e.target.value)}
-                                                    placeholder="Any special instructions for the delivery rider"
+                                                    placeholder="Any special instructions for the delivery rider (optional)"
                                                     rows={2}
                                                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors"
                                                 />
@@ -395,7 +526,7 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                                         </>
                                     ) : (
                                         <>
-                                            <i className="fas fa-check mr-2"></i>Place Order
+                                            <i className="fas fa-check mr-2"></i>Place Order ({getCurrencySymbol()}{getTotalAmount().toFixed(2)})
                                         </>
                                     )}
                                 </button>

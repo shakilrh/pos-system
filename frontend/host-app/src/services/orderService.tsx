@@ -35,30 +35,47 @@ interface OrderItemResponse {
 
 interface Order {
   _id: string;
-  user_id: string | null;
+  order_number: string;
+  user_id: string;
+  waiter: string | null;
+  waiter_status: number;
+  rider: { id: string; name: string; email: string } | null;
+  rider_status: number;
   order_date: string;
   created_by: string;
   total_amount: number;
   status: string;
-  delivery_address: string | null;
+  delivery_address?: string;
   order_type: string;
-  payment_method: string | null;
+  payment_method: string;
+  table_id: string | null;
   payment_status: string;
-  received_amount: number;
-  order_number: string;
+  received_amount?: number;
+  customer_name: string;
+  notification: string;
+  rider_note?: string;
+  notification_status: number;
+  parent_order_id: string | null;
   createdAt: string;
   updatedAt: string;
-  service_type: 'dine_in' | 'take_away';
-  items: OrderItemResponse[];
-  customer_name: string;
-  table_id?: string;
-  __v: number;
-  notification?: 'pending' | 'confirmed' | 'ready' | 'served' | 'completed' | 'cancel';
-  notification_status?: 0 | 1;
-  waiter?: Waiter | null; // Changed from worker to waiter
-  waiter_status?: string | null; // Changed from worker_status
+  items: Array<{
+    _id: string;
+    order_id: string;
+    product_id: {
+      _id: string;
+      name: string;
+      price: number;
+      pictureUrl: string;
+    };
+    quantity: number;
+    sub_total: number;
+    created_by: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
   estimated_completion?: string;
 }
+
 
 interface Worker {
   id: string;
@@ -83,6 +100,21 @@ interface Waiter {
   };
 }
 
+interface Rider {
+  _id: string;
+  name: string;
+  email: string;
+  user_type: 'rider';
+  role: string | null;
+  created_by: {
+    id: string;
+    name: string;
+    email: string;
+    store_name: string;
+    logoUrl: string;
+    store_logo: string;
+  };
+}
 interface AssignWorkerRequest {
   order_number: string;
   waiter_id?: string;
@@ -285,6 +317,64 @@ export const markOrderAsReady = async (
     return 'data' in data.data ? data.data.data : data.data;
   } catch (err) {
     throw new Error(err instanceof Error ? err.message : 'Failed to mark order as ready');
+  }
+};
+
+
+export const markOrderOutForDelivery = async (
+    token: string,
+    logout: () => void,
+    order_number: string,
+    rider_id: string
+): Promise<Order> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/api/v1/out-for-delivery`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ order_number, rider_id }),
+    });
+
+    const data: ApiResponse<Order> = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || handleApiError(data, logout));
+    }
+
+    return 'data' in data.data ? data.data.data : data.data;
+  } catch (err) {
+    throw new Error(err instanceof Error ? err.message : 'Failed to mark order as out for delivery');
+  }
+};
+
+export const fetchFreeRiders = async (token: string, logout: () => void): Promise<Rider[]> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/api/v1/all-riders`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data: ApiResponse<{ data: any[] }> = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || handleApiError(data, logout));
+    }
+    const riders = data.data?.data || [];
+    return riders.map(rider => ({
+      _id: rider._id,
+      name: rider.name,
+      email: rider.email,
+      user_type: rider.user_type,
+      role: rider.role,
+      created_by: {
+        id: rider.created_by.id,
+        name: rider.created_by.name,
+        email: rider.created_by.email,
+        store_name: rider.created_by.store_name,
+        logoUrl: rider.created_by.logoUrl,
+        store_logo: rider.created_by.store_logo,
+      },
+    }));
+  } catch (err) {
+    throw new Error(err instanceof Error ? err.message : 'Failed to fetch riders');
   }
 };
 
