@@ -1193,6 +1193,7 @@ export default function OrderList({
                 orders={orders}
                 groupedOrders={groupedOrders}
                 activeTab={selectedNotificationTab}
+                outerActiveTab={outerActiveTab}
                 tabs={outerActiveTab === 'physical' ? physicalTabs : onlineTabs}
                 setActiveTab={setActiveTab}
                 setPage={setPage}

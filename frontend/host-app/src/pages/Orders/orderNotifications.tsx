@@ -10,6 +10,7 @@ interface OrderNotificationsProps {
   activeTab: string;
   tabs: { key: string; label: string; color: string; lightColor: string; textColor: string; borderColor: string }[];
   setActiveTab: (tab: string) => void;
+  outerActiveTab: string;
   setPage: (page: number) => void;
   setShowModal: (show: boolean) => void;
   showModal: boolean;
@@ -164,6 +165,7 @@ export default function OrderNotifications({
                                              orders,
                                              groupedOrders,
                                              activeTab,
+                                             outerActiveTab,
                                              tabs,
                                              setActiveTab,
                                              setPage,
@@ -241,9 +243,11 @@ export default function OrderNotifications({
             timestamp,
             isRead: localReadStates.has(notificationId),
             status: currentStatus,
+            orderType: order.order_type, // save order type too
             tab: mapStatusToTab(currentStatus),
             localRead: localReadStates.has(notificationId)
           });
+
         }
       });
     });
@@ -395,7 +399,10 @@ export default function OrderNotifications({
     }
 
     try {
-      const currentTabNotifications = notifications.filter(n => n.tab === activeTab);
+      const currentTabNotifications = notifications.filter(
+          n => n.tab === activeTab && n.orderType === outerActiveTab
+      );
+
 
       if (currentTabNotifications.length === 0) {
         setMessage('No notifications to clear.');
@@ -442,7 +449,10 @@ export default function OrderNotifications({
     }
   };
 
-  const currentTabNotifications = notifications.filter(n => n.tab === activeTab);
+  const currentTabNotifications = notifications.filter(
+      n => n.tab === activeTab && n.orderType === outerActiveTab
+  );
+
   const unreadCount = currentTabNotifications.filter(n => !localReadStates.has(n.id)).length;
 
   return (
