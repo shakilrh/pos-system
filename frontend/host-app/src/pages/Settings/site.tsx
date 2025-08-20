@@ -58,12 +58,22 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
 
             const data = await response.json();
             if (data.success) {
-                setAboutUs(data.data?.data?.aboutUs || '');
-                setImages(data.data?.data?.images || []);
+                // Updated to handle new API structure: data.data.store
+                const storeData = data.data?.data?.store;
+                if (storeData) {
+                    setAboutUs(storeData.aboutUs || '');
+                    setImages(storeData.images || []);
+                } else {
+                    console.warn('Store data not found in expected structure:', data);
+                    // Fallback to old structure just in case
+                    setAboutUs(data.data?.data?.aboutUs || '');
+                    setImages(data.data?.data?.images || []);
+                }
             } else {
                 throw new Error(data.message || 'Failed to fetch store details');
             }
         } catch (error) {
+            console.error('Error loading store details:', error);
             setError(error instanceof Error ? error.message : 'Failed to load store details');
         }
     };
@@ -112,9 +122,13 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
 
             const data = await response.json();
             if (data.success) {
-                // Update images from response
-                if (data.data?.data?.store_details?.images) {
-                    setImages(data.data.data.store_details.images);
+                // Update images from response - handle new structure
+                const updatedStore = data.data?.data?.store_details || data.data?.data?.store;
+                if (updatedStore?.images) {
+                    setImages(updatedStore.images);
+                } else {
+                    // Fallback: reload store details to get updated images
+                    await loadStoreDetails();
                 }
                 setSuccess('Image uploaded successfully');
                 setTimeout(() => setSuccess(null), 3000);
@@ -122,6 +136,7 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
                 throw new Error(data.message || 'Failed to upload image');
             }
         } catch (error) {
+            console.error('Error uploading image:', error);
             setError(error instanceof Error ? error.message : 'Failed to upload image');
         } finally {
             setIsUpdating(false);
@@ -163,6 +178,7 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
                 throw new Error(data.message || 'Failed to remove image');
             }
         } catch (error) {
+            console.error('Error removing image:', error);
             setError(error instanceof Error ? error.message : 'Failed to remove image');
         } finally {
             setIsUpdating(false);
@@ -204,6 +220,7 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
                 throw new Error(data.message || 'Failed to update store details');
             }
         } catch (error) {
+            console.error('Error saving store details:', error);
             setError(error instanceof Error ? error.message : 'Failed to update store details');
         } finally {
             setIsUpdating(false);
@@ -315,6 +332,12 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
                                     </div>
                                 ))}
                             </div>
+                            {images.length === 0 && (
+                                <div className="text-center py-8 text-[var(--text-secondary)]">
+                                    <FontAwesomeIcon icon={faImage} className="text-4xl mb-2 opacity-50" />
+                                    <p>No carousel images uploaded yet</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
