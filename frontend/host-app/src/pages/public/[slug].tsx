@@ -1,3 +1,4 @@
+
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import AuthModal from './AuthModal';
@@ -78,7 +79,6 @@ export default function PublicHome() {
         }
     };
 
-
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -97,11 +97,18 @@ export default function PublicHome() {
             setProducts(productsData.data?.data || []);
             setCategories(categoriesData.data?.data || []);
 
-            // Set store with slug for cart storage
-            const storeWithSlug = {
-                ...(storeData.data?.data || null),
-                slug: slug
-            };
+            // Updated to handle new API structure: data.data.store
+            const storeInfo = storeData.data?.data?.store || null;
+
+            // Set store with slug for cart storage and map new field names
+            const storeWithSlug = storeInfo ? {
+                ...storeInfo,
+                slug: slug,
+                // Map new field names to old ones for backward compatibility
+                store_name: storeInfo.name,
+                store_logo: storeInfo.logo
+            } : null;
+
             setStore(storeWithSlug);
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -215,7 +222,7 @@ export default function PublicHome() {
 
     const getCurrencySymbol = () => {
         if (store?.currency === 'dollar') return '$';
-        if (store?.currency === 'euro') return 'â‚¬';
+        if (store?.currency === 'euro') return '€';
         return 'PKR ';
     };
 
@@ -286,11 +293,11 @@ export default function PublicHome() {
                                 <i className="fas fa-bars"></i>
                             </button>
 
-                            {store?.store_logo && (
+                            {store?.logo && (
                                 <div className="h-14 w-auto flex-shrink-0">
                                     <img
-                                        src={store.store_logo}
-                                        alt={store.store_name}
+                                        src={store.logo}
+                                        alt={store.name || store.store_name}
                                         className="h-full w-auto object-contain"
                                     />
                                 </div>
@@ -298,7 +305,7 @@ export default function PublicHome() {
 
                             <div>
                                 <h1 className="text-3xl font-bold text-[#4c2c19]">
-                                    {store?.store_name || slug}
+                                    {store?.name || store?.store_name || slug}
                                 </h1>
                                 <p className="text-yellow-500 font-medium">Quality Food, Fast Delivery</p>
                             </div>
@@ -363,7 +370,6 @@ export default function PublicHome() {
                 </div>
             </header>
 
-
             {/* Image Carousel Section */}
             {store?.images && store.images.length > 0 && (
                 <section className="bg-white shadow-md">
@@ -377,7 +383,7 @@ export default function PublicHome() {
                                 <div key={index} className="w-full flex-shrink-0 h-full">
                                     <img
                                         src={image}
-                                        alt={`${store.store_name} showcase ${index + 1}`}
+                                        alt={`${store.name || store.store_name} showcase ${index + 1}`}
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
@@ -421,6 +427,7 @@ export default function PublicHome() {
                     </div>
                 </section>
             )}
+
             {/* About Us Section */}
             {store?.aboutUs && (
                 <section className="py-12 bg-gray-100 relative overflow-hidden">
@@ -458,7 +465,6 @@ export default function PublicHome() {
                     </div>
                 </section>
             )}
-
             <div className="container mx-auto px-4 py-8">
                 {/* Categories Section */}
                 <section className="mb-12">
