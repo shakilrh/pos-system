@@ -703,10 +703,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       <tbody>
         ${currentOrder.items.map(item => `
           <tr>
-            <td class="item-name">${item.product?.name || 'Unknown Item'}</td>
+            <td class="item-name">${item.product_id?.name || 'Unknown Item'}</td>
             <td class="item-center">${item.quantity}</td>
-            <td class="item-right">${formatPrice(item.product?.price || 0, activeCurrency)}</td>
-            <td class="item-right">${formatPrice(item.sub_total || 0, activeCurrency)}</td>
+            <td class="item-right">${formatPrice(item.product_id?.price || 0, activeCurrency)}</td>
+             <td class="item-right">${formatPrice(item.sub_total || 0, activeCurrency)}</td>
+
           </tr>
         `).join('')}
       </tbody>
@@ -821,13 +822,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                                   className="flex items-center justify-between p-2 bg-[var(--background-secondary)] rounded text-sm"
                               >
                                 <div className="flex-1 min-w-0">
-                                  <span className="font-medium truncate block">{item.product?.name || 'Unknown'}</span>
+                                  <span className="font-medium truncate block">{item.product_id?.name || 'Unknown'}</span>
                                 </div>
                                 <div className="text-right ml-2">
                                   <div className="font-medium">x{item.quantity || 0}</div>
                                   <div className="text-[var(--text-secondary)] text-xs">
                                     {formatPrice(
-                                        item.sub_total || (item.product?.price || 0) * (item.quantity || 0),
+                                        item.sub_total || (item.product_id?.price || 0) * (item.quantity || 0),
                                         activeCurrency
                                     )}
                                   </div>

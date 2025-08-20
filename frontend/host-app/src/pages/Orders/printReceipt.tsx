@@ -351,10 +351,11 @@ export const printReceipt = ({
       <tbody>
         ${createdOrder.items.map(item => `
           <tr>
-            <td class="item-name">${item.product?.name || 'Unknown Item'}</td>
-            <td class="item-center">${item.quantity}</td>
-            <td class="item-right">${formatPrice(item.product?.price || 0, activeCurrency)}</td>
-            <td class="item-right">${formatPrice(item.sub_total || 0, activeCurrency)}</td>
+            <td class="item-name">${item.product_id?.name || 'Unknown Item'}</td>
+              <td class="item-center">${item.quantity}</td>
+              <td class="item-right">${formatPrice(item.product_id?.price || 0, activeCurrency)}</td>
+              <td class="item-right">${formatPrice(item.sub_total || 0, activeCurrency)}</td>
+
           </tr>
         `).join('')}
       </tbody>

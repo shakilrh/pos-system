@@ -161,7 +161,7 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
           <div className="space-y-2 mb-4">
             {order.items?.map((item, index) => (
                 <div key={index} className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: 'var(--background-secondary)' }}>
-                  <span className="text-sm font-medium" style={{ color: 'var(--text-color)' }}>{item.product?.name || 'Unknown'}</span>
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-color)' }}>{item.product_id?.name || 'Unknown'}</span>
                   <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>x{item.quantity}</span>
                 </div>
             )) || <div className="text-sm" style={{ color: 'var(--text-tertiary)' }}>No items</div>}
@@ -649,30 +649,55 @@ export default function OrderList({
     const interval = setInterval(() => {
       setQueueCountdowns((prev) => {
         const updated = { ...prev };
-        const overdueOrders: string[] = [];
+        const physicalOverdueOrders: string[] = [];
+        const onlineOverdueOrders: string[] = [];
+
         Object.keys(updated).forEach((orderNumber) => {
           const order = orders.find((o) => o.order_number === orderNumber);
           if (updated[orderNumber] > 0) {
             updated[orderNumber] -= 1;
-            if (updated[orderNumber] === 60 && order?.status.toLowerCase() === 'processing') {
+            // Check for 1 minute warning for both physical processing and online confirmed orders
+            const isInToBePrepared = (order?.status.toLowerCase() === 'processing' && order?.order_type?.toLowerCase() === 'physical') ||
+                (order?.status.toLowerCase() === 'confirmed' && order?.order_type?.toLowerCase() === 'online');
+
+            if (updated[orderNumber] === 60 && isInToBePrepared) {
               setMessage(`⚠️ Order #${orderNumber} needs to be ready in 1 minute!`);
             }
-          } else if (updated[orderNumber] <= 0 && order?.status.toLowerCase() === 'processing') {
-            overdueOrders.push(orderNumber);
-            updated[orderNumber] = -1;
+          } else if (updated[orderNumber] <= 0) {
+            // Check if order is overdue and in the right status
+            const isPhysicalOverdue = order?.status.toLowerCase() === 'processing' && order?.order_type?.toLowerCase() === 'physical';
+            const isOnlineOverdue = order?.status.toLowerCase() === 'confirmed' && order?.order_type?.toLowerCase() === 'online';
+
+            if (isPhysicalOverdue) {
+              physicalOverdueOrders.push(orderNumber);
+              updated[orderNumber] = -1;
+            } else if (isOnlineOverdue) {
+              onlineOverdueOrders.push(orderNumber);
+              updated[orderNumber] = -1;
+            }
           }
         });
-        if (overdueOrders.length > 0 && activeTab === 'to_be_prepared') {
-          setMessage(`⏰ Overdue Orders: #${overdueOrders.join(', #')}!`);
-          setBlink(true);
-          setTimeout(() => setBlink(false), 500);
-          setTimeout(() => setBlink(true), 1000);
+
+        // Show overdue notifications only for the current active tab type
+        if (activeTab === 'to_be_prepared') {
+          if (outerActiveTab === 'physical' && physicalOverdueOrders.length > 0) {
+            setMessage(`⏰ Physical Overdue Orders: #${physicalOverdueOrders.join(', #')}!`);
+            setBlink(true);
+            setTimeout(() => setBlink(false), 500);
+            setTimeout(() => setBlink(true), 1000);
+          } else if (outerActiveTab === 'online' && onlineOverdueOrders.length > 0) {
+            setMessage(`⏰ Online Overdue Orders: #${onlineOverdueOrders.join(', #')}!`);
+            setBlink(true);
+            setTimeout(() => setBlink(false), 500);
+            setTimeout(() => setBlink(true), 1000);
+          }
         }
+
         return updated;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [orders, activeTab, setMessage]);
+  }, [orders, activeTab, outerActiveTab, setMessage]);
 
   useEffect(() => {
     if (message) {
@@ -727,7 +752,7 @@ export default function OrderList({
         groups.pending.push(order);
       } else if (status === 'pending' && type === 'physical' && outerActiveTab === 'physical') {
         groups.pending.push(order);
-      } else if (status === 'processing' || (status === 'confirmed' && type === 'online' && outerActiveTab === 'online')) {
+      } else if ((status === 'processing' && type === 'physical') || (status === 'confirmed' && type === 'online')) {
         groups.to_be_prepared.push(order);
       } else if (status === 'ready') {
         groups.ready.push(order);
@@ -784,7 +809,11 @@ export default function OrderList({
 
   const getTimeDisplay = useCallback((order: Order) => {
     const timeLeft = getQueueTimeLeft(order.order_number);
-    if (timeLeft && order.status.toLowerCase() === 'processing') {
+    // Check if order is in to_be_prepared status (either processing for physical or confirmed for online)
+    const isInToBePrepared = (order.status.toLowerCase() === 'processing' && order.order_type?.toLowerCase() === 'physical') ||
+        (order.status.toLowerCase() === 'confirmed' && order.order_type?.toLowerCase() === 'online');
+
+    if (timeLeft && isInToBePrepared) {
       return (
           <div
               className="flex items-center space-x-1 px-2 py-1 rounded-full border text-xs"
@@ -794,9 +823,9 @@ export default function OrderList({
                 color: 'var(--text-color)',
               }}
           >
-          <span className="font-medium" style={{ color: 'var(--text-color)' }}>
-            {timeLeft.isOverdue ? '⏰ OVERDUE' : timeLeft.isUrgent ? '⚠️' : '⏰'} {timeLeft.formattedTime}
-          </span>
+        <span className="font-medium" style={{ color: 'var(--text-color)' }}>
+          {timeLeft.isOverdue ? '⏰ OVERDUE' : timeLeft.isUrgent ? '⚠️' : '⏰'} {timeLeft.formattedTime}
+        </span>
             <span className="text-xs opacity-75" style={{ color: 'var(--text-secondary)' }}>| {timeLeft.estimatedTime}</span>
           </div>
       );
@@ -810,10 +839,17 @@ export default function OrderList({
     const countdown = queueCountdowns[orderNumber];
     const order = orders.find((o) => o.order_number === orderNumber);
     if (!queueOrder || countdown === undefined) return null;
+
     const minutes = Math.floor(countdown / 60);
     const seconds = countdown % 60;
-    const isOverdue = countdown < 0 && order?.status.toLowerCase() === 'processing';
+
+    // Check if order is in to_be_prepared status (either processing for physical or confirmed for online)
+    const isInToBePrepared = (order?.status.toLowerCase() === 'processing' && order?.order_type?.toLowerCase() === 'physical') ||
+        (order?.status.toLowerCase() === 'confirmed' && order?.order_type?.toLowerCase() === 'online');
+
+    const isOverdue = countdown < 0 && isInToBePrepared;
     const isUrgent = countdown > 0 && countdown <= 60;
+
     return {
       minutes,
       seconds,
