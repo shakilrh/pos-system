@@ -628,10 +628,10 @@ export default function PublicHome() {
                         <div className="container mx-auto px-4">
                             <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 md:p-8 text-center max-w-3xl mx-auto">
                                 <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3 flex items-center justify-center">
-                                    <i className="fas fa-store text-yellow-500 mr-2"></i>
+                                    <i className="fas fa-store text-yellow-400 mr-2"></i>
                                     About Us
                                 </h2>
-                                <div className="w-16 h-1 bg-yellow-500 mx-auto mb-4 rounded-full"></div>
+                                <div className="w-16 h-1 bg-yellow-400 mx-auto mb-4 rounded-full"></div>
                                 <p className="text-gray-600 text-sm md:text-base leading-relaxed">
                                     {store.aboutUs}
                                 </p>
@@ -641,13 +641,9 @@ export default function PublicHome() {
                     </section>
                 )}
                 <div className="container mx-auto px-4 py-8">
+
                     <section className="mb-12">
-                        <div className="text-center mb-6">
-                            <h2 className="text-3xl font-bold text-[#F4B400] bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-                                <i className="fas fa-utensils text-[#F4B400] mr-2"></i>
-                                Our Food Categories
-                            </h2>
-                        </div>
+
 
                         {/* Enhanced Sticky Category Navigation */}
                         <div className="sticky top-28 z-40 bg-white/90 backdrop-blur-md border-b border-gray-200/50 shadow-xl py-4 mb-8">
@@ -655,8 +651,7 @@ export default function PublicHome() {
                                 {/* Left Scroll Button */}
                                 <button
                                     onClick={() => scrollCategories("left")}
-                                    className="absolute -left-9 z-30 bg-gradient-to-r from-yellow-400 to-orange-500
-                         hover:from-yellow-500 hover:to-orange-600 text-white rounded-full p-3
+                                    className="absolute -left-9 z-30 bg-yellow-400 hover:bg-yellow-500 text-white rounded-full p-3
                          shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none
                          focus:ring-4 focus:ring-yellow-200"
                                 >
@@ -685,11 +680,11 @@ export default function PublicHome() {
                                             className={`flex-shrink-0 px-6 py-3 rounded-full font-semibold text-sm 
                                   transition-all duration-300 whitespace-nowrap 
                                   focus:outline-none focus:ring-2 focus:ring-yellow-400
-                                  transform hover:scale-105 active:scale-95 border-2
+                                  transform hover:scale-105 active:scale-95
                                   ${
                                                 selectedCategory === category._id
-                                                    ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg border-transparent scale-105"
-                                                    : "bg-white text-gray-700 border-gray-200 hover:border-yellow-300 hover:bg-yellow-50 hover:shadow-md hover:text-gray-800"
+                                                    ? "bg-yellow-400 text-white shadow-lg scale-105 ring-2 ring-yellow-300"
+                                                    : "bg-white text-gray-600 border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50 hover:shadow-md hover:text-gray-800 shadow-sm"
                                             }`}
                                         >
                                             <i className="fas fa-tag mr-2"></i>
@@ -701,8 +696,7 @@ export default function PublicHome() {
                                 {/* Right Scroll Button */}
                                 <button
                                     onClick={() => scrollCategories("right")}
-                                    className="absolute -right-11 z-30 bg-gradient-to-r from-yellow-400 to-orange-500
-                         hover:from-yellow-500 hover:to-orange-600 text-white rounded-full p-3
+                                    className="absolute -right-11 z-30 bg-yellow-500 hover:bg-yellow-500 text-white rounded-full p-3
                          shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none
                          focus:ring-4 focus:ring-yellow-200"
                                 >
@@ -730,10 +724,10 @@ export default function PublicHome() {
                         </div>
 
                         <style jsx>{`
-                            .scrollbar-hide::-webkit-scrollbar {
-                                display: none;
-                            }
-                        `}</style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+    `}</style>
                     </section>
                 </div>
                 <section className="bg-[#1E1E1E] py-12 relative">
