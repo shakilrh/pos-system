@@ -13,7 +13,27 @@ export default function OrderSuccessModal({ isOpen, onClose, orderData }) {
     if (!isOpen || !orderData) return null;
 
     const getCurrencySymbol = () => 'PKR ';
-    const formatTime = (timeString) => (timeString ? new Date(timeString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'TBD');
+
+    // Fixed formatTime function - since API returns "7:32 PM" format, use it directly
+    const formatTime = (timeString) => {
+        if (!timeString) return 'TBD';
+
+        // If it's already in "7:32 PM" format, return as is
+        if (timeString.includes('AM') || timeString.includes('PM')) {
+            return timeString;
+        }
+
+        // Fallback for other formats
+        try {
+            return new Date(timeString).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        } catch (error) {
+            return timeString || 'TBD';
+        }
+    };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
@@ -76,7 +96,7 @@ export default function OrderSuccessModal({ isOpen, onClose, orderData }) {
                             <h4 className="font-semibold text-gray-800 border-b border-gray-200 pb-1">Items</h4>
                             {orderData.items?.map((item, index) => (
                                 <div key={index} className="flex justify-between">
-                                    <span className="capitalize">{item.product?.name} x{item.quantity}</span>
+                                    <span className="capitalize">{item.product_id?.name} x{item.quantity}</span>
                                     <span className="text-green-600">{getCurrencySymbol()}{item.sub_total}</span>
                                 </div>
                             ))}

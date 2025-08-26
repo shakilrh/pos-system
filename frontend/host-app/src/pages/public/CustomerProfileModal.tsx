@@ -65,9 +65,15 @@ export default function CustomerProfileModal({
             if (data.success) {
                 // Fix: Handle the nested data structure properly
                 // Try multiple levels of nesting to find the actual customer data
-                const customerData = data.data?.data?.data || data.data?.data || data.data;
-                console.log('Customer Data:', customerData);
+                // Handle triple nested API response
+                // Handle triple nested API response
+                const customerData = data?.data?.data?.data || null;
+                console.log('Final Customer Data:', customerData);
 
+
+                if (!customerData) {
+                    throw new Error('No customer data found in API response');
+                }
                 setCustomerDetails(customerData);
 
                 // Set form data with fetched customer details

@@ -10,6 +10,9 @@ import {
     faSpinner,
     faExclamationTriangle,
     faUpload,
+    faHeart,
+    faToggleOn,
+    faToggleOff,
 } from '@fortawesome/free-solid-svg-icons';
 
 interface SiteSettingsProps {
@@ -20,7 +23,9 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
     const { isAuthenticated, isLoading, token, logout, user } = useAuth();
     const [aboutUs, setAboutUs] = useState('');
     const [images, setImages] = useState<string[]>([]);
+    const [loyaltyEnabled, setLoyaltyEnabled] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isTogglingLoyalty, setIsTogglingLoyalty] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
@@ -28,6 +33,7 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
     const PUBLIC_STORE_ENDPOINT = '/users/api/v1/public/store';
     // Fixed endpoint - this is the correct one from your message
     const STORE_UPDATE_ENDPOINT = '/users/api/v1/store-details';
+    const LOYALTY_TOGGLE_ENDPOINT = '/orders/api/v1/loyalty/toggle';
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
@@ -36,6 +42,7 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
         }
         if (isAuthenticated && user?.user_type === 'isadmin' && restaurantSlug) {
             loadStoreDetails();
+            loadLoyaltyStatus();
         }
     }, [isAuthenticated, isLoading, user, restaurantSlug]);
 
@@ -75,6 +82,63 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
         } catch (error) {
             console.error('Error loading store details:', error);
             setError(error instanceof Error ? error.message : 'Failed to load store details');
+        }
+    };
+
+    const loadLoyaltyStatus = async () => {
+        if (!token) return;
+
+        try {
+            // Since the status endpoint doesn't exist, we'll skip loading the initial status
+            // You can either create a GET endpoint or set a default value
+            // For now, defaulting to false (disabled)
+            console.log('Loyalty status endpoint not available, defaulting to disabled');
+        } catch (error) {
+            console.error('Error loading loyalty status:', error);
+            // Don't show error for this, as the endpoint might not exist yet
+        }
+    };
+
+    const toggleLoyaltyProgram = async () => {
+        if (!token || user?.user_type !== 'isadmin') return;
+
+        setIsTogglingLoyalty(true);
+        setError(null);
+
+        try {
+            const newStatus = loyaltyEnabled ? 'disable' : 'enable';
+
+            const response = await fetch(`${API_BASE_URL}${LOYALTY_TOGGLE_ENDPOINT}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ status: newStatus }),
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    logout();
+                    window.location.href = '/pos-system/login';
+                    return;
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                setLoyaltyEnabled(!loyaltyEnabled);
+                setSuccess(`Loyalty program ${newStatus}d successfully`);
+                setTimeout(() => setSuccess(null), 3000);
+            } else {
+                throw new Error(data.message || 'Failed to toggle loyalty program');
+            }
+        } catch (error) {
+            console.error('Error toggling loyalty program:', error);
+            setError(error instanceof Error ? error.message : 'Failed to toggle loyalty program');
+        } finally {
+            setIsTogglingLoyalty(false);
         }
     };
 
@@ -251,7 +315,7 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
                         <FontAwesomeIcon icon={faStore} className="mr-3 text-[var(--primary-color)]" />
                         Site Settings
                     </h1>
-                    <p className="text-[var(--text-secondary)]">Manage store details and carousel images</p>
+                    <p className="text-[var(--text-secondary)]">Manage store details, carousel images, and loyalty program</p>
                     {error && (
                         <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                             <p className="text-red-600 dark:text-red-400 text-sm">
@@ -271,6 +335,43 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
                 </div>
 
                 <div className="space-y-6">
+                    {/* Loyalty Program Toggle Section */}
+                    <div className="bg-[var(--background-secondary)] rounded-xl shadow-sm border border-[var(--border-color)] p-6 transition-all duration-200 hover:shadow-md">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-semibold text-[var(--text-color)] flex items-center">
+                                    <FontAwesomeIcon icon={faHeart} className="mr-2 text-[var(--primary-color)]" />
+                                    Loyalty Program
+                                </h3>
+                                <p className="text-sm text-[var(--text-secondary)]">
+                                    {loyaltyEnabled ? 'Loyalty program is currently active' : 'Loyalty program is currently inactive'}
+                                </p>
+                            </div>
+                            <button
+                                onClick={toggleLoyaltyProgram}
+                                disabled={isTogglingLoyalty}
+                                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                                    loyaltyEnabled
+                                        ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/30'
+                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                } ${isTogglingLoyalty ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                            >
+                                {isTogglingLoyalty ? (
+                                    <>
+                                        <FontAwesomeIcon icon={faSpinner} spin />
+                                        <span>Updating...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FontAwesomeIcon icon={loyaltyEnabled ? faToggleOn : faToggleOff} />
+                                        <span>{loyaltyEnabled ? 'Enabled' : 'Disabled'}</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* About Us Section */}
                     <div className="bg-[var(--background-secondary)] rounded-xl shadow-sm border border-[var(--border-color)] p-6 transition-all duration-200 hover:shadow-md">
                         <div className="flex items-center justify-between mb-4">
                             <div>
@@ -290,6 +391,7 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
                         />
                     </div>
 
+                    {/* Carousel Images Section */}
                     <div className="bg-[var(--background-secondary)] rounded-xl shadow-sm border border-[var(--border-color)] p-6 transition-all duration-200 hover:shadow-md">
                         <div className="flex items-center justify-between mb-4">
                             <div>
