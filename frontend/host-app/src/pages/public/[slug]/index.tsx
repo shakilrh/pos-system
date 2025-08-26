@@ -650,7 +650,7 @@ export default function PublicHome() {
                         </div>
 
                         {/* Enhanced Sticky Category Navigation */}
-                        <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200/50 shadow-xl py-4 mb-8">
+                        <div className="sticky top-28 z-40 bg-white/90 backdrop-blur-md border-b border-gray-200/50 shadow-xl py-4 mb-8">
                             <div className="relative flex items-center max-w-6xl mx-auto">
                                 {/* Left Scroll Button */}
                                 <button
@@ -701,7 +701,7 @@ export default function PublicHome() {
                                 {/* Right Scroll Button */}
                                 <button
                                     onClick={() => scrollCategories("right")}
-                                    className="absolute -right-10 z-30 bg-gradient-to-r from-yellow-400 to-orange-500
+                                    className="absolute -right-11 z-30 bg-gradient-to-r from-yellow-400 to-orange-500
                          hover:from-yellow-500 hover:to-orange-600 text-white rounded-full p-3
                          shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none
                          focus:ring-4 focus:ring-yellow-200"
@@ -711,11 +711,11 @@ export default function PublicHome() {
                             </div>
                         </div>
 
-
+                        {/* Your existing product sections */}
                         <div className="container mx-auto px-4 py-8">
                             <div className="space-y-12">
                                 {groupedProducts.map(group => (
-                                    <section id={`category-${group.category._id}`} key={group.category._id} className="scroll-mt-32">
+                                    <section id={`category-${group.category._id}`} key={group.category._id} className="scroll-mt-44">
                                         <h3 className="text-2xl font-bold text-[#F4B400] mb-4">
                                             <i className="fas fa-tag mr-2"></i>{group.category.name}
                                         </h3>
@@ -728,11 +728,12 @@ export default function PublicHome() {
                                 ))}
                             </div>
                         </div>
+
                         <style jsx>{`
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-    `}</style>
+                            .scrollbar-hide::-webkit-scrollbar {
+                                display: none;
+                            }
+                        `}</style>
                     </section>
                 </div>
                 <section className="bg-[#1E1E1E] py-12 relative">

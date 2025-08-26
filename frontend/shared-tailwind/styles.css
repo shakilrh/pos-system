@@ -251,3 +251,30 @@ input[type="date"]::-moz-calendar-picker-indicator {
   flex-direction: column;
   min-height: 100vh;
 }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+#category-scroll {
+  position: sticky !important;
+  top: 74px !important; /* Match header height */
+  overflow-x: hidden !important; /* Remove scrollbar */
+  white-space: nowrap; /* Keep items in line */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+
+}
+
+#category-scroll::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Webkit browsers */
+}
+
+#category-scroll {
+  -ms-overflow-style: none; /* Hide scrollbar for IE and Edge */
+  scrollbar-width: none; /* Hide scrollbar for Firefox */
+}
