@@ -42,8 +42,10 @@ interface ApiResponse {
 
 export default function OrderSummary() {
     const router = useRouter();
+    const { slug } = router.query;
     const { isAuthenticated, user, token } = useAuth();
     const [customerDetails, setCustomerDetails] = useState<CustomerDetails | null>(null);
+    const [store, setStore] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -54,6 +56,31 @@ export default function OrderSummary() {
     useEffect(() => {
         setIsClient(true);
     }, []);
+
+    const fetchStoreInfo = async () => {
+        try {
+            if (!slug) return;
+
+            const response = await fetch(`http://192.168.18.107:3000/users/api/v1/public/store/${slug}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch store info: ${response.status}`);
+            }
+
+            const storeData = await response.json();
+            const storeInfo = storeData.data?.data?.store || null;
+
+            const storeWithSlug = storeInfo ? {
+                ...storeInfo,
+                slug: slug,
+                store_name: storeInfo.name,
+                store_logo: storeInfo.logo
+            } : null;
+
+            setStore(storeWithSlug);
+        } catch (error) {
+            console.error('Error fetching store info:', error);
+        }
+    };
 
     const fetchCustomerDetails = async () => {
         try {
@@ -116,10 +143,17 @@ export default function OrderSummary() {
             return;
         }
 
-        if (token) {
+        if (token && slug) {
+            fetchStoreInfo();
             fetchCustomerDetails();
         }
-    }, [isAuthenticated, user, router, token, isClient]);
+    }, [isAuthenticated, user, router, token, isClient, slug]);
+
+    const getCurrencySymbol = () => {
+        if (store?.currency === 'dollar') return '$';
+        if (store?.currency === 'euro') return '€';
+        return 'PKR ';
+    };
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
@@ -173,7 +207,7 @@ export default function OrderSummary() {
     };
 
     const formatCurrency = (amount: number) => {
-        return `PKR ${amount.toFixed(2)}`;
+        return `${getCurrencySymbol()}${amount.toFixed(2)}`;
     };
 
     const getProductDisplayName = (item: OrderItem, index: number) => {
@@ -225,7 +259,10 @@ export default function OrderSummary() {
                     <h2 className="text-xl font-semibold text-gray-800 mb-2">Unable to Load Orders</h2>
                     <p className="text-gray-600 mb-6">{error}</p>
                     <button
-                        onClick={fetchCustomerDetails}
+                        onClick={() => {
+                            fetchStoreInfo();
+                            fetchCustomerDetails();
+                        }}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                     >
                         Try Again
