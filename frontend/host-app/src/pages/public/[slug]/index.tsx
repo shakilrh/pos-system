@@ -683,7 +683,7 @@ export default function PublicHome() {
                                   transform hover:scale-105 active:scale-95
                                   ${
                                                 selectedCategory === category._id
-                                                    ? "bg-yellow-400 text-white shadow-lg scale-105 ring-2 ring-yellow-300"
+                                                    ? "bg-yellow-400 text-black shadow-lg scale-105 ring-2 ring-yellow-300"
                                                     : "bg-white text-gray-600 border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50 hover:shadow-md hover:text-gray-800 shadow-sm"
                                             }`}
                                         >
@@ -696,7 +696,7 @@ export default function PublicHome() {
                                 {/* Right Scroll Button */}
                                 <button
                                     onClick={() => scrollCategories("right")}
-                                    className="absolute -right-11 z-30 bg-yellow-500 hover:bg-yellow-500 text-white rounded-full p-3
+                                    className="absolute -right-11 z-30 bg-yellow-500 hover:bg-yellow-500 text-black rounded-full p-3
                          shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none
                          focus:ring-4 focus:ring-yellow-200"
                                 >
