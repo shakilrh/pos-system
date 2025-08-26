@@ -41,8 +41,8 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
             return;
         }
         if (isAuthenticated && user?.user_type === 'isadmin' && restaurantSlug) {
-            loadStoreDetails();
-            loadLoyaltyStatus();
+            loadStoreDetails(); // Only call this, it will load loyalty status too
+            // loadLoyaltyStatus(); // Remove this line
         }
     }, [isAuthenticated, isLoading, user, restaurantSlug]);
 
@@ -65,16 +65,15 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
 
             const data = await response.json();
             if (data.success) {
-                // Updated to handle new API structure: data.data.store
-                const storeData = data.data?.data?.store;
+                // Updated to handle new API structure: data.data.data (the store data)
+                const storeData = data.data?.data;
                 if (storeData) {
                     setAboutUs(storeData.aboutUs || '');
                     setImages(storeData.images || []);
+                    // Add this line to set loyalty program status
+                    setLoyaltyEnabled(storeData.loyaltyprogram === 'enable');
                 } else {
                     console.warn('Store data not found in expected structure:', data);
-                    // Fallback to old structure just in case
-                    setAboutUs(data.data?.data?.aboutUs || '');
-                    setImages(data.data?.data?.images || []);
                 }
             } else {
                 throw new Error(data.message || 'Failed to fetch store details');
