@@ -23,6 +23,7 @@ export default function PublicHome() {
     const [cartCount, setCartCount] = useState(0);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [orderData, setOrderData] = useState(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const {
         isAuthenticated,
@@ -155,6 +156,50 @@ export default function PublicHome() {
         }
     };
 
+    useEffect(() => {
+        const handleScroll = () => {
+            const categorySections = document.querySelectorAll('section[id^="category-"]');
+            let currentCategory = null;
+            categorySections.forEach(section => {
+                const rect = section.getBoundingClientRect();
+                if (rect.top >= 0 && rect.top < window.innerHeight / 2) {
+                    currentCategory = section.id.replace('category-', '');
+                }
+            });
+            if (currentCategory && currentCategory !== selectedCategory) {
+                setSelectedCategory(currentCategory);
+            }
+
+            // Sticky behavior for category bar
+            const categoryBar = document.getElementById('category-scroll');
+            const header = document.querySelector('header');
+            if (categoryBar && header) {
+                const headerHeight = header.offsetHeight;
+                if (window.scrollY >= headerHeight) {
+                    categoryBar.classList.add('sticky', 'top-0');
+                    categoryBar.classList.remove('relative');
+                } else {
+                    categoryBar.classList.remove('sticky', 'top-0');
+                    categoryBar.classList.add('relative');
+                }
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [selectedCategory]);
+
+    const scrollCategories = (direction) => {
+        const container = document.getElementById('category-scroll');
+        if (container) {
+            const scrollAmount = 300; // adjust width
+            container.scrollBy({
+                left: direction === 'left' ? -scrollAmount : scrollAmount,
+                behavior: 'smooth'
+            });
+        }
+    };
+
     const handleProfileUpdated = () => {
         refreshUserProfile();
         setIsProfileModalOpen(false);
@@ -219,6 +264,13 @@ export default function PublicHome() {
         setIsCartModalOpen(true);
     };
 
+    const selectedCategoryProducts = products.filter(
+        (p) => selectedCategory && p.category_id?._id === selectedCategory
+    );
+    const otherProducts = products.filter(
+        (p) => !selectedCategory || p.category_id?._id !== selectedCategory
+    );
+
     const handleOrderSuccess = (orderData) => {
         setIsCartModalOpen(false);
         setOrderData(orderData);
@@ -226,9 +278,15 @@ export default function PublicHome() {
         setCartCount(0);
     };
 
-    const filteredProducts = selectedCategory
-        ? products.filter(product => product.category_id?._id === selectedCategory)
-        : products;
+    const sortedProducts = [...products].sort((a, b) => {
+        if (selectedCategory && a.category_id?._id === selectedCategory && b.category_id?._id !== selectedCategory) {
+            return -1;
+        }
+        if (selectedCategory && b.category_id?._id === selectedCategory && a.category_id?._id !== selectedCategory) {
+            return 1;
+        }
+        return 0;
+    });
 
     const getCurrencySymbol = () => {
         if (store?.currency === 'dollar') return '$';
@@ -259,6 +317,11 @@ export default function PublicHome() {
         }
         return user?.email ? user.email.split('@')[0] : 'User';
     };
+
+    const groupedProducts = categories.map(cat => ({
+        category: cat,
+        products: products.filter(p => p.category_id?._id === cat._id)
+    }));
 
     const getFullDisplayName = () => {
         if (!isAuthenticated) return 'User';
@@ -293,6 +356,49 @@ export default function PublicHome() {
         );
     }
 
+    // Product Card component
+    const ProductCard = ({ product }) => (
+        <div className="group bg-[#FAFAFA] rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-[#CCCCCC] overflow-hidden transform hover:scale-105">
+            <div className="relative h-48 overflow-hidden">
+                {product.pictureUrl ? (
+                    <img
+                        src={product.pictureUrl}
+                        alt={product.name}
+                        className="w-full h-full object-contain hover:scale-110 transition-transform duration-300 p-2"
+                    />
+                ) : (
+                    <div className="w-full h-full bg-white flex items-center justify-center">
+                        <i className="fas fa-utensils text-4xl text-[#F4B400]"></i>
+                    </div>
+                )}
+                <div className="absolute top-3 right-3 bg-[#F4B400] text-[#1E1E1E] px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                    <i className="fas fa-fire mr-1 animate-pulse"></i>Hot
+                </div>
+            </div>
+            <div className="p-5">
+                <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-bold text-[#333333] capitalize leading-tight group-hover:text-[#F4B400] transition-colors duration-200">
+                        {product.name}
+                    </h3>
+                    <span className="text-xl font-bold text-[#F4B400] ml-2">
+                        {getCurrencySymbol()}{product.price}
+                    </span>
+                </div>
+                {product.description && (
+                    <p className="text-[#333333] text-sm mb-4 line-clamp-2">{product.description}</p>
+                )}
+                <button
+                    onClick={() => handleAddToCart(product)} // Updated to use handleAddToCart
+                    data-product-id={product._id}
+                    className="w-full bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg"
+                >
+                    <i className="fas fa-shopping-cart mr-2"></i>
+                    Order Now
+                </button>
+            </div>
+        </div>
+    );
+
     return (
         <>
             <div id="main-content" className="min-h-screen bg-gray-50">
@@ -300,10 +406,12 @@ export default function PublicHome() {
                     <div className="container mx-auto px-4 py-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4">
-                                <button className="text-red-500 text-2xl focus:outline-none">
+                                <button
+                                    className="text-red-500 text-2xl focus:outline-none"
+                                    onClick={() => setIsSidebarOpen(true)}
+                                >
                                     <i className="fas fa-bars"></i>
                                 </button>
-
                                 {store?.logo && (
                                     <div className="h-14 w-auto flex-shrink-0">
                                         <img
@@ -313,7 +421,6 @@ export default function PublicHome() {
                                         />
                                     </div>
                                 )}
-
                                 <div>
                                     <h1 className="text-3xl font-bold text-[#4c2c19]">
                                         {store?.name || store?.store_name || slug}
@@ -321,7 +428,6 @@ export default function PublicHome() {
                                     <p className="text-yellow-500 font-medium">Quality Food, Fast Delivery</p>
                                 </div>
                             </div>
-
                             <div className="flex items-center space-x-4">
                                 <div className="relative">
                                     <button
@@ -333,11 +439,10 @@ export default function PublicHome() {
                                     </button>
                                     {cartCount > 0 && (
                                         <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold h-6 w-6 rounded-full flex items-center justify-center animate-pulse">
-                            {cartCount}
-                        </span>
+                                            {cartCount}
+                                        </span>
                                     )}
                                 </div>
-
                                 {isAuthenticated ? (
                                     <div className="relative group">
                                         <button className="bg-[#FFD700] hover:bg-yellow-400 text-black font-semibold py-2 px-4 rounded-lg shadow-md flex items-center space-x-2">
@@ -345,7 +450,6 @@ export default function PublicHome() {
                                             <span className="hidden sm:inline">{getDisplayName()}</span>
                                             <i className="fas fa-chevron-down text-xs"></i>
                                         </button>
-
                                         <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                                             <div className="p-3 border-b border-gray-100">
                                                 <span className="text-gray-800 font-medium">{getFullDisplayName()}</span>
@@ -387,7 +491,87 @@ export default function PublicHome() {
                         </div>
                     </div>
                 </header>
-
+                {isSidebarOpen && (
+                    <>
+                        <div
+                            onClick={() => setIsSidebarOpen(false)}
+                            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+                        ></div>
+                        <div className="fixed top-0 left-0 w-72 h-full bg-white shadow-lg z-50 flex flex-col">
+                            <div className="flex items-center justify-between p-4 border-b">
+                                {store?.store_logo && (
+                                    <img
+                                        src={store.store_logo}
+                                        alt="Logo"
+                                        className="h-10 w-auto"
+                                    />
+                                )}
+                                <button
+                                    onClick={() => setIsSidebarOpen(false)}
+                                    className="text-gray-600 hover:text-gray-800 text-2xl"
+                                >
+                                    <i className="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div className="p-4 flex-1 flex flex-col space-y-4">
+                                {isAuthenticated ? (
+                                    <>
+                                        <div className="text-gray-700 font-semibold">
+                                            {getFullDisplayName()}
+                                        </div>
+                                        <div className="text-sm text-gray-500">{user?.phone_number}</div>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-semibold"
+                                        >
+                                            Logout
+                                        </button>
+                                        <hr />
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            setIsAuthModalOpen(true);
+                                            setIsSidebarOpen(false);
+                                        }}
+                                        className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 px-4 rounded-lg"
+                                    >
+                                        Login
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setIsSidebarOpen(false)}
+                                    className="flex items-center space-x-3 text-gray-700 hover:text-yellow-500"
+                                >
+                                    <i className="fas fa-utensils"></i>
+                                    <span>Explore Menu</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        handleOrderHistoryClick();
+                                        setIsSidebarOpen(false);
+                                    }}
+                                    className="flex items-center space-x-3 text-gray-700 hover:text-yellow-500"
+                                >
+                                    <i className="fas fa-receipt"></i>
+                                    <span>Order History</span>
+                                </button>
+                                <button className="flex items-center space-x-3 text-gray-700 hover:text-yellow-500">
+                                    <i className="fas fa-map-marker-alt"></i>
+                                    <span>Branch Locator</span>
+                                </button>
+                                <button className="flex items-center space-x-3 text-gray-700 hover:text-yellow-500">
+                                    <i className="fas fa-blog"></i>
+                                    <span>Blog</span>
+                                </button>
+                                <button className="flex items-center space-x-3 text-gray-700 hover:text-yellow-500">
+                                    <i className="fas fa-shield-alt"></i>
+                                    <span>Privacy Policy</span>
+                                </button>
+                            </div>
+                        </div>
+                    </>
+                )}
                 {store?.images && store.images.length > 0 && (
                     <section className="bg-white shadow-md">
                         <div className="relative h-72 md:h-96 lg:h-[550px] overflow-hidden">
@@ -405,7 +589,6 @@ export default function PublicHome() {
                                     </div>
                                 ))}
                             </div>
-
                             {store.images.length > 1 && (
                                 <>
                                     <button
@@ -422,7 +605,6 @@ export default function PublicHome() {
                                     </button>
                                 </>
                             )}
-
                             {store.images.length > 1 && (
                                 <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-3">
                                     {store.images.map((_, index) => (
@@ -441,150 +623,118 @@ export default function PublicHome() {
                         </div>
                     </section>
                 )}
-
                 {store?.aboutUs && (
-                    <section className="py-12 bg-gray-100 relative overflow-hidden">
-                        <div className="relative container mx-auto px-4">
-                            <div className="max-w-4xl mx-auto text-center">
-                                <div className="mb-8">
-                                    <h2 className="text-4xl font-bold text-gray-800 mb-4">
-                                        <i className="fas fa-store text-gray-700 mr-3"></i>
-                                        About Us
-                                    </h2>
-                                    <div className="w-32 h-1 bg-gray-700 mx-auto rounded-full"></div>
-                                </div>
-                                <div className="bg-white rounded-3xl p-8 md:p-12 shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-300">
-                                    <p className="text-gray-700 text-lg leading-relaxed font-medium">
-                                        {store.aboutUs}
-                                    </p>
-                                    <div className="flex justify-center items-center mt-8 space-x-8">
-                                        <div className="flex items-center text-gray-700 hover:scale-110 transition-transform duration-300">
-                                            <i className="fas fa-star text-2xl mr-2"></i>
-                                            <span className="font-bold">Quality</span>
-                                        </div>
-                                        <div className="w-px h-8 bg-gray-300"></div>
-                                        <div className="flex items-center text-yellow-500 hover:scale-110 transition-transform duration-300">
-                                            <i className="fas fa-heart text-2xl mr-2"></i>
-                                            <span className="font-bold">Passion</span>
-                                        </div>
-                                        <div className="w-px h-8 bg-gray-300"></div>
-                                        <div className="flex items-center text-gray-800 hover:scale-110 transition-transform duration-300">
-                                            <i className="fas fa-rocket text-2xl mr-2"></i>
-                                            <span className="font-bold">Service</span>
-                                        </div>
-                                    </div>
-                                </div>
+                    <section className="py-8 bg-gray-100">
+                        <div className="container mx-auto px-4">
+                            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 md:p-8 text-center max-w-3xl mx-auto">
+                                <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3 flex items-center justify-center">
+                                    <i className="fas fa-store text-yellow-500 mr-2"></i>
+                                    About Us
+                                </h2>
+                                <div className="w-16 h-1 bg-yellow-500 mx-auto mb-4 rounded-full"></div>
+                                <p className="text-gray-600 text-sm md:text-base leading-relaxed">
+                                    {store.aboutUs}
+                                </p>
+                                <div className="flex justify-center mt-6 space-x-6 text-gray-700"></div>
                             </div>
                         </div>
                     </section>
                 )}
                 <div className="container mx-auto px-4 py-8">
                     <section className="mb-12">
-                        <div className="text-center mb-10">
-                            <h2 className="text-4xl font-bold text-[#F4B400] mb-4">
-                                <i className="fas fa-utensils text-[#F4B400] mr-3"></i>
+                        <div className="text-center mb-6">
+                            <h2 className="text-3xl font-bold text-[#F4B400] bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                                <i className="fas fa-utensils text-[#F4B400] mr-2"></i>
                                 Our Food Categories
                             </h2>
-                            <div className="w-32 h-1 bg-[#F4B400] mx-auto rounded-full"></div>
                         </div>
-                        <div className="flex flex-wrap justify-center gap-4 mb-8">
-                            <button
-                                onClick={() => setSelectedCategory(null)}
-                                className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
-                                    selectedCategory === null
-                                        ? 'bg-[#F4B400] text-[#1E1E1E] shadow-lg'
-                                        : 'bg-[#FAFAFA] text-[#333333] border-2 border-[#CCCCCC] hover:border-[#F4B400] hover:shadow-md'
-                                }`}
-                            >
-                                <i className="fas fa-th-large mr-2"></i>All Items
-                            </button>
-                            {categories.map((category) => (
-                                <button
-                                    key={category._id}
-                                    onClick={() => setSelectedCategory(category._id)}
-                                    className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
-                                        selectedCategory === category._id
-                                            ? 'bg-[#F4B400] text-[#1E1E1E] shadow-lg'
-                                            : 'bg-[#FAFAFA] text-[#333333] border-2 border-[#CCCCCC] hover:border-[#F4B400] hover:shadow-md'
-                                    }`}
-                                >
-                                    <i className="fas fa-tag mr-2"></i>{category.name}
-                                </button>
-                            ))}
-                        </div>
-                    </section>
 
-                    <section>
-                        <div className="text-center mb-10">
-                            <h2 className="text-4xl font-bold text-[#F4B400] mb-4">
-                                <i className="fas fa-pizza-slice text-[#F4B400] mr-3" style={{animationDuration: '3s'}}></i>
-                                Our Delicious Menu
-                            </h2>
-                            <div className="w-32 h-1 bg-[#F4B400] mx-auto rounded-full"></div>
-                            <p className="text-[#333333] mt-4 font-medium">
-                                {selectedCategory ? `${filteredProducts.length} items available` : `${products.length} delicious items to choose from`}
-                            </p>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {filteredProducts.map((product) => (
-                                <div key={product._id} className="group bg-[#FAFAFA] rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-[#CCCCCC] overflow-hidden transform hover:scale-105">
-                                    <div className="relative h-48 overflow-hidden">
-                                        {product.pictureUrl ? (
-                                            <img
-                                                src={product.pictureUrl}
-                                                alt={product.name}
-                                                className="w-full h-full object-contain hover:scale-110 transition-transform duration-300 p-2"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full bg-white flex items-center justify-center">
-                                                <i className="fas fa-utensils text-4xl text-[#F4B400]"></i>
-                                            </div>
-                                        )}
-                                        <div className="absolute top-3 right-3 bg-[#F4B400] text-[#1E1E1E] px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                                            <i className="fas fa-fire mr-1 animate-pulse"></i>Hot
-                                        </div>
-                                    </div>
-                                    <div className="p-5">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <h3 className="text-lg font-bold text-[#333333] capitalize leading-tight group-hover:text-[#F4B400] transition-colors duration-200">
-                                                {product.name}
-                                            </h3>
-                                            <span className="text-xl font-bold text-[#F4B400] ml-2">
-                                                {getCurrencySymbol()}{product.price}
-                                            </span>
-                                        </div>
-                                        {product.description && (
-                                            <p className="text-[#333333] text-sm mb-4 line-clamp-2">{product.description}</p>
-                                        )}
-                                        <div className="flex items-center justify-between mb-4">
-                                            {product.category_id?.name && (
-                                                <span className="bg-[#FAFAFA] text-[#F4B400] px-3 py-1 rounded-full text-xs font-medium capitalize">
-                                                    <i className="fas fa-tag mr-1"></i>{product.category_id.name}
-                                                </span>
-                                            )}
-                                        </div>
+                        {/* Enhanced Sticky Category Navigation */}
+                        <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200/50 shadow-xl py-4 mb-8">
+                            <div className="relative flex items-center max-w-6xl mx-auto">
+                                {/* Left Scroll Button */}
+                                <button
+                                    onClick={() => scrollCategories("left")}
+                                    className="absolute -left-9 z-30 bg-gradient-to-r from-yellow-400 to-orange-500
+                         hover:from-yellow-500 hover:to-orange-600 text-white rounded-full p-3
+                         shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none
+                         focus:ring-4 focus:ring-yellow-200"
+                                >
+                                    <i className="fas fa-chevron-left"></i>
+                                </button>
+
+                                {/* Categories Container */}
+                                <div
+                                    id="category-scroll"
+                                    className="flex overflow-x-auto scrollbar-hide space-x-3 px-20 mx-auto
+                         scrollbar-hide"
+                                    style={{
+                                        scrollbarWidth: 'none',
+                                        msOverflowStyle: 'none'
+                                    }}
+                                >
+                                    {categories.map((category) => (
                                         <button
-                                            onClick={() => handleAddToCart(product)}
-                                            data-product-id={product._id}
-                                            className="w-full bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg"
+                                            key={category._id}
+                                            onClick={() => {
+                                                setSelectedCategory(category._id);
+                                                document
+                                                    .getElementById(`category-${category._id}`)
+                                                    .scrollIntoView({ behavior: "smooth", block: "start" });
+                                            }}
+                                            className={`flex-shrink-0 px-6 py-3 rounded-full font-semibold text-sm 
+                                  transition-all duration-300 whitespace-nowrap 
+                                  focus:outline-none focus:ring-2 focus:ring-yellow-400
+                                  transform hover:scale-105 active:scale-95 border-2
+                                  ${
+                                                selectedCategory === category._id
+                                                    ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg border-transparent scale-105"
+                                                    : "bg-white text-gray-700 border-gray-200 hover:border-yellow-300 hover:bg-yellow-50 hover:shadow-md hover:text-gray-800"
+                                            }`}
                                         >
-                                            <i className="fas fa-shopping-cart mr-2"></i>
-                                            Order Now
+                                            <i className="fas fa-tag mr-2"></i>
+                                            {category.name}
                                         </button>
-                                    </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                        {filteredProducts.length === 0 && (
-                            <div className="text-center py-12">
-                                <i className="fas fa-search text-4xl text-[#E0E0E0] mb-4"></i>
-                                <h3 className="text-lg font-semibold text-[#333333] mb-2">No items found</h3>
-                                <p className="text-[#333333]">Try selecting a different category</p>
+
+                                {/* Right Scroll Button */}
+                                <button
+                                    onClick={() => scrollCategories("right")}
+                                    className="absolute -right-10 z-30 bg-gradient-to-r from-yellow-400 to-orange-500
+                         hover:from-yellow-500 hover:to-orange-600 text-white rounded-full p-3
+                         shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none
+                         focus:ring-4 focus:ring-yellow-200"
+                                >
+                                    <i className="fas fa-chevron-right"></i>
+                                </button>
                             </div>
-                        )}
+                        </div>
+
+
+                        <div className="container mx-auto px-4 py-8">
+                            <div className="space-y-12">
+                                {groupedProducts.map(group => (
+                                    <section id={`category-${group.category._id}`} key={group.category._id} className="scroll-mt-32">
+                                        <h3 className="text-2xl font-bold text-[#F4B400] mb-4">
+                                            <i className="fas fa-tag mr-2"></i>{group.category.name}
+                                        </h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                            {group.products.map(product => (
+                                                <ProductCard key={product._id} product={product} />
+                                            ))}
+                                        </div>
+                                    </section>
+                                ))}
+                            </div>
+                        </div>
+                        <style jsx>{`
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+    `}</style>
                     </section>
                 </div>
-
                 <section className="bg-[#1E1E1E] py-12 relative">
                     <div className="absolute inset-0 bg-[#1E1E1E]/10"></div>
                     <div className="relative container mx-auto px-4 text-center text-[#E0E0E0]">
@@ -595,11 +745,9 @@ export default function PublicHome() {
                         <p className="text-xl mb-8 max-w-2xl mx-auto font-medium">
                             Join thousands of satisfied customers who trust us for delicious food!
                         </p>
-                        <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                        </div>
+                        <div className="flex flex-col sm:flex-row gap-6 justify-center"></div>
                     </div>
                 </section>
-
                 <footer className="bg-[#1E1E1E] text-[#E0E0E0] py-8">
                     <div className="container mx-auto px-4">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
@@ -643,7 +791,6 @@ export default function PublicHome() {
                                     <li><a href="#" className="text-gray-400 hover:text-white transition-colors"><i className="fas fa-phone mr-2"></i>Contact</a></li>
                                 </ul>
                             </div>
-
                             <div>
                                 <h4 className="font-semibold mb-4 text-gray-300">Contact</h4>
                                 <ul className="space-y-2 text-sm text-gray-400">
@@ -654,7 +801,6 @@ export default function PublicHome() {
                                 </ul>
                             </div>
                         </div>
-
                         <div className="border-t border-gray-700 pt-4 text-center">
                             <p className="text-gray-400 text-sm">
                                 © 2025 {store?.store_name || slug}. All rights reserved.
@@ -663,14 +809,12 @@ export default function PublicHome() {
                     </div>
                 </footer>
             </div>
-
             <AuthModal
                 isOpen={isAuthModalOpen}
                 onClose={() => setIsAuthModalOpen(false)}
                 store={store}
                 onLoginSuccess={handleLoginSuccess}
             />
-
             <AddressConfirmationModal
                 isOpen={isAddressConfirmationModalOpen}
                 onClose={() => setIsAddressConfirmationModalOpen(false)}
@@ -678,20 +822,17 @@ export default function PublicHome() {
                 title="Confirm Delivery Address"
                 subtitle="Please confirm your delivery address to continue ordering"
             />
-
             <CustomerProfileModal
                 isOpen={isProfileModalOpen}
                 onClose={() => setIsProfileModalOpen(false)}
                 onProfileUpdated={handleProfileUpdated}
             />
-
             <CartModal
                 isOpen={isCartModalOpen}
                 onClose={() => setIsCartModalOpen(false)}
                 store={store}
                 onOrderSuccess={handleOrderSuccess}
             />
-
             <OrderSuccessModal
                 isOpen={showSuccessModal}
                 onClose={() => {
@@ -699,9 +840,8 @@ export default function PublicHome() {
                     setOrderData(null);
                 }}
                 orderData={orderData}
-                currency={store?.currency} // Add this prop
+                currency={store?.currency}
             />
-
             <link
                 rel="stylesheet"
                 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
