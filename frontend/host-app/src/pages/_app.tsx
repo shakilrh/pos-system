@@ -162,6 +162,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     console.log('Currency applied successfully:', { selectedCurrency, currencySymbol });
   };
 
+
   const loadUserSettings = async () => {
     if (!token) {
       const savedTheme = localStorage.getItem('appTheme') || 'default';
@@ -227,9 +228,28 @@ function AppContent({ Component, pageProps }: AppProps) {
       lastKnownCurrencyRef.current = userCurrency;
       setThemeLoaded(true);
 
+      // FIXED: Only redirect if the current path doesn't already have the correct slug
       if (isAuthenticated && actualPathname && !actualPathname.startsWith('/public/') && !publicRoutes.includes(actualPathname)) {
-        const newPath = `/${slug}${actualPathname === '/' ? '/Dashboard/dashboard' : actualPathname}`;
-        if (actualPathname !== newPath) router.replace(newPath);
+        // Check if the current path already starts with the correct slug
+        const expectedSlugPrefix = `/${slug}`;
+
+        // If we're on root path, redirect to dashboard with slug
+        if (actualPathname === '/') {
+          const newPath = `/${slug}/Dashboard/dashboard`;
+          router.replace(newPath);
+        }
+        // If the path doesn't start with the correct slug, fix it
+        else if (!actualPathname.startsWith(expectedSlugPrefix)) {
+          // Remove any existing incorrect slug and add the correct one
+          const pathWithoutAnySlug = actualPathname.replace(/^\/[^\/]+/, '') || '/Dashboard/dashboard';
+          const newPath = `/${slug}${pathWithoutAnySlug}`;
+          console.log('Redirecting from', actualPathname, 'to', newPath);
+          router.replace(newPath);
+        }
+        // If the path already has the correct slug, don't redirect
+        else {
+          console.log('Path already has correct slug, no redirect needed:', actualPathname);
+        }
       }
 
       setTimeout(() => {

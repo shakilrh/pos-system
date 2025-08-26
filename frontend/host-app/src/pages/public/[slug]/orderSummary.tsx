@@ -42,74 +42,84 @@ interface ApiResponse {
 
 export default function OrderSummary() {
     const router = useRouter();
-    const { isAuthenticated, user } = useAuth();
+    const { isAuthenticated, user, token } = useAuth();
     const [customerDetails, setCustomerDetails] = useState<CustomerDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [isClient, setIsClient] = useState(false);
+
+    // Ensure we're on the client side before doing anything
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    const fetchCustomerDetails = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            const response = await fetch(
+                'http://192.168.18.107:3000/orders/api/v1/customer/details',
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: Failed to fetch customer details`);
+            }
+
+            const raw = await response.json();
+            console.log('Full API Response:', raw);
+
+            // Normalize like AuthModal does
+            let customerData = null;
+
+            if (raw?.data?.data?.data) {
+                customerData = raw.data.data.data;
+            } else if (raw?.data?.data) {
+                customerData = raw.data.data;
+            } else if (raw?.data) {
+                customerData = raw.data;
+            }
+
+            console.log('Normalized Customer Data:', customerData);
+
+            if (!customerData) {
+                throw new Error('No customer data found in API response');
+            }
+
+            setCustomerDetails(customerData);
+        } catch (error: any) {
+            console.error('Error fetching customer details:', error);
+            setError(error.message || 'Failed to load customer details');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
+        // Only run on client side after hydration
+        if (!isClient) return;
+
         if (!isAuthenticated || user?.user_type !== 'customer') {
             router.push('/');
             return;
         }
 
-        const fetchCustomerDetails = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                const token = localStorage.getItem('authToken');
-
-                if (!token) {
-                    throw new Error('No authentication token found');
-                }
-
-                const response = await fetch(
-                    'http://192.168.18.107:3000/orders/api/v1/customer/details',
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
-                        },
-                    }
-                );
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: Failed to fetch customer details`);
-                }
-
-                const raw = await response.json();
-                console.log('Full API Response:', raw);
-
-                // --- Normalize like AuthModal does ---
-                let customerData = null;
-
-                if (raw?.data?.data?.data) {
-                    customerData = raw.data.data.data;
-                } else if (raw?.data?.data) {
-                    customerData = raw.data.data;
-                } else if (raw?.data) {
-                    customerData = raw.data;
-                }
-
-                console.log('Normalized Customer Data:', customerData);
-
-                if (!customerData) {
-                    throw new Error('No customer data found in API response');
-                }
-
-                setCustomerDetails(customerData);
-            } catch (error: any) {
-                console.error('Error fetching customer details:', error);
-                setError(error.message || 'Failed to load customer details');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchCustomerDetails(); // Call the function
-    }, [isAuthenticated, user, router]); // Add dependencies to useEffect
+        if (token) {
+            fetchCustomerDetails();
+        }
+    }, [isAuthenticated, user, router, token, isClient]);
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
@@ -183,6 +193,18 @@ export default function OrderSummary() {
     }) || [];
 
     const statusOptions = ['all', 'pending', 'confirmed', 'ready', 'shipped', 'out_for_delivery', 'completed', 'cancelled'];
+
+    // Show loading state during hydration
+    if (!isClient) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="bg-white p-8 rounded-lg shadow-lg text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600 font-medium">Loading...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (loading) {
         return (
