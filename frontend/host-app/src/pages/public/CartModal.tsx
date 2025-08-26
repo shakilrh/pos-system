@@ -273,7 +273,8 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                     {!showCheckout ? (
                         <div>
                             {/* Loyalty Info at Cart View */}
-                            {loyaltyProgramEnabled && (
+                            {loyaltyProgramEnabled && loyaltyPoints > 0 && (
+
                                 <div className="mb-3 md:mb-4 p-3 md:p-4 bg-blue-50 rounded-lg border border-blue-400">
                                     <div className="flex items-center space-x-2 mb-1 md:mb-2">
                                         <i className="fas fa-star text-yellow-400 text-sm md:text-base"></i>
@@ -446,7 +447,7 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                                                     </div>
                                                 </div>
 
-                                                {loyaltyProgramEnabled && (
+                                                {loyaltyProgramEnabled && loyaltyPoints > 0 && (
                                                     <div className="mt-3 md:mt-4 p-3 md:p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
                                                         <div className="flex items-center justify-between mb-2 md:mb-3">
                                                             <div className="flex items-center space-x-2">
@@ -470,7 +471,7 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                                                         </div>
                                                         <div className="text-xs md:text-sm text-gray-600">
                                                             <p>Available: <span className="font-medium text-blue-600">{loyaltyPoints} points</span></p>
-                                                            <p>Conversion: <span className="font-medium">100 points = {getCurrencySymbol()}1 discount</span></p>
+                                                            <p> <span className="font-medium">100 points = {getCurrencySymbol()}1 discount</span></p>
                                                             {useLoyaltyPoints && loyaltyPoints > 0 && (
                                                                 <p className="mt-1 md:mt-2 text-green-600 font-medium">
                                                                     Using {getPointsToUse()} points for {getCurrencySymbol()}{getLoyaltyDiscount().toFixed(2)} discount
