@@ -262,8 +262,22 @@ const RiderAssignmentModal = ({
       }
 
       const resData = await response.json();
-      const updatedOrder = resData.data || resData; // normalize API response
-      updatedOrder.status = updatedOrder.status?.toLowerCase(); // normalize status
+      const updatedOrder = resData.data || resData;
+
+      // Ensure the status is properly updated to move the order to out_for_delivery tab
+      updatedOrder.status = 'out_for_delivery';
+
+      // Find the selected rider's details
+      const selectedRiderDetails = riders.find(r => r._id === selectedRider);
+
+      // Update the order with rider information
+      if (selectedRiderDetails) {
+        updatedOrder.rider = {
+          id: selectedRiderDetails._id,
+          name: selectedRiderDetails.name
+        };
+        updatedOrder.rider_name = selectedRiderDetails.name;
+      }
 
       setOrders(prev =>
           prev.map(o =>
@@ -1487,61 +1501,16 @@ export default function OrderList({
                                   </div>
                               )}
                               {activeTab === 'ready' && order.order_type === 'online' && (
-                                  <>
-                                    <button
-                                        onClick={() => handleRiderAssignment(order)}
-                                        className="px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md"
-                                        style={{
-                                          backgroundColor: 'var(--info-color)',
-                                          color: 'var(--text-on-primary)',
-                                        }}
-                                    >
-                                      Assign Rider
-                                    </button>
-                                    <button
-                                        onClick={async () => {
-                                          if (!token) {
-                                            setMessage('Please log in to retry this action.');
-                                            return;
-                                          }
-                                          if (!order.rider?.id) {
-                                            setMessage('Please assign a rider first.');
-                                            return;
-                                          }
-                                          setIsLoading(true);
-                                          try {
-                                            const updatedOrder = await markOrderOutForDelivery(token, logout, order.order_number, order.rider.id);
-                                            updatedOrder.status = updatedOrder.status?.toLowerCase();
-
-                                            setOrders(prev =>
-                                                prev.map(o =>
-                                                    o.order_number === updatedOrder.order_number
-                                                        ? { ...updatedOrder, items: o.items, notification_status: 1 }
-                                                        : o
-                                                )
-                                            );
-
-                                            setMessage(`✅ Order #${order.order_number} is now out for delivery!`);
-
-                                          } catch (error) {
-                                            setMessage(`❌ ${error instanceof Error ? error.message : 'Failed to mark order as out for delivery'}`);
-                                          } finally {
-                                            setIsLoading(false);
-                                          }
-                                        }}
-                                        className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md ${
-                                            isLoading || !order.rider?.id ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : ''
-                                        }`}
-                                        style={{
-                                          backgroundColor: isLoading || !order.rider?.id ? undefined : 'var(--primary-color)',
-                                          color: isLoading || !order.rider?.id ? 'var(--disabled-text)' : 'var(--text-on-primary)',
-                                          '--tw-ring-color': 'var(--focus-ring)',
-                                        }}
-                                        disabled={isLoading || !order.rider?.id}
-                                    >
-                                      Mark as Out for Delivery
-                                    </button>
-                                  </>
+                                  <button
+                                      onClick={() => handleRiderAssignment(order)}
+                                      className="px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md"
+                                      style={{
+                                        backgroundColor: 'var(--info-color)',
+                                        color: 'var(--text-on-primary)',
+                                      }}
+                                  >
+                                    Assign Rider & Send Out
+                                  </button>
                               )}
                               {activeTab === 'ready' && order.order_type === 'physical' && (
                                   <button
