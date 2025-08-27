@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faCog,
@@ -33,7 +34,8 @@ export default function Settings() {
   const [isUpdatingCurrency, setIsUpdatingCurrency] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>('');
-
+  const router = useRouter();
+  const { restaurantSlug } = useAuth();
   const [showThemeConfirmation, setShowThemeConfirmation] = useState(false);
   const [showCurrencyConfirmation, setShowCurrencyConfirmation] = useState(false);
   const [pendingTheme, setPendingTheme] = useState<string | null>(null);
@@ -600,7 +602,11 @@ export default function Settings() {
                     </div>
                   </div>
                   <button
-                      onClick={() => window.location.href = '/Settings/site'}
+                      onClick={() => {
+                        const slug = restaurantSlug || localStorage.getItem('restaurantSlug') || '';
+                        const path = slug ? `/${slug}/Settings/site` : '/Settings/site';
+                        router.push(path);
+                      }}
                       className="w-full px-4 py-2 bg-[var(--primary-color)] text-white rounded-lg hover:bg-[var(--primary-color)]/90 transition-colors duration-200 flex items-center justify-center"
                   >
                     <FontAwesomeIcon icon={faStore} className="mr-2" />
