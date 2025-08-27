@@ -240,8 +240,11 @@ function AppContent({ Component, pageProps }: AppProps) {
         }
         // If the path doesn't start with the correct slug, fix it
         else if (!actualPathname.startsWith(expectedSlugPrefix)) {
-          // Remove any existing incorrect slug and add the correct one
-          const pathWithoutAnySlug = actualPathname.replace(/^\/[^\/]+/, '') || '/Dashboard/dashboard';
+          let pathWithoutAnySlug = actualPathname.replace(/^\/[^\/]+/, '');
+          if (!pathWithoutAnySlug || pathWithoutAnySlug.toLowerCase() === '/dashboard') {
+            pathWithoutAnySlug = '/Dashboard/dashboard';
+          }
+
           const newPath = `/${slug}${pathWithoutAnySlug}`;
           console.log('Redirecting from', actualPathname, 'to', newPath);
           router.replace(newPath);
@@ -484,9 +487,10 @@ function AppContent({ Component, pageProps }: AppProps) {
     }
 
     // For authenticated routes, load user settings
-    if (!themeLoaded && isAuthenticated && !isCurrentRoutePublic) {
+    if (isAuthenticated && !isCurrentRoutePublic) {
       loadUserSettings();
     }
+
 
     window.addEventListener('settingsChanged', handleSettingsChange);
 

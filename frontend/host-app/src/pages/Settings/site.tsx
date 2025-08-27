@@ -45,14 +45,18 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
             // loadLoyaltyStatus(); // Remove this line
         }
     }, [isAuthenticated, isLoading, user, restaurantSlug]);
-
     const loadStoreDetails = async () => {
-        if (!token || !restaurantSlug) return;
+        if (!restaurantSlug) {
+            console.error('Missing restaurantSlug');
+            return;
+        }
 
         try {
-            const response = await fetch(`${API_BASE_URL}${PUBLIC_STORE_ENDPOINT}/${restaurantSlug}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const url = `${API_BASE_URL}${PUBLIC_STORE_ENDPOINT}/${restaurantSlug}`;
+            console.log('Fetching store details from:', url);
+
+            // 🔸 Remove token for public endpoint
+            const response = await fetch(url);
 
             if (!response.ok) {
                 if (response.status === 401) {
@@ -64,16 +68,25 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
             }
 
             const data = await response.json();
+            console.log('API response:', data);
+
             if (data.success) {
-                // Updated to handle new API structure: data.data.data (the store data)
-                const storeData = data.data?.data;
+                // 🔸 Handle multiple possible shapes of store data
+                const storeData =
+                    data.data?.store ||
+                    data.data?.store_details ||
+                    data.data?.data?.store ||
+                    data.data?.data?.store_details ||
+                    data.store ||
+                    data.store_details;
+
                 if (storeData) {
                     setAboutUs(storeData.aboutUs || '');
                     setImages(storeData.images || []);
-                    // Add this line to set loyalty program status
                     setLoyaltyEnabled(storeData.loyaltyprogram === 'enable');
                 } else {
                     console.warn('Store data not found in expected structure:', data);
+                    setError('Store data not found');
                 }
             } else {
                 throw new Error(data.message || 'Failed to fetch store details');

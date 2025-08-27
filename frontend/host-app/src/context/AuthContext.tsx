@@ -15,6 +15,7 @@ interface User {
   phone?: string; // Added for customer
   phone_number?: string;
   addresses?: string[];
+  address?: string;
   verified?: boolean; // Added for customer
 }
 
@@ -90,6 +91,24 @@ const fetchMainPages = async (token: string, logout: () => void): Promise<MainPa
   }
 };
 
+const normalizeUser = (apiUser: any, email?: string): User => {
+  return {
+    _id: apiUser._id || apiUser.id || '',
+    name: apiUser.name || 'User',
+    email: apiUser.email || email || '',
+    user_type: apiUser.user_type || 'customer',
+    role_id: apiUser.role_id || null,
+    logoUrl: apiUser.logoUrl || '',
+    store_name: apiUser.store_name || '',
+    store_logo: apiUser.store_logo || '',
+    phone: apiUser.phone || apiUser.phone_number || '',
+    phone_number: apiUser.phone_number || apiUser.phone || '',
+    addresses: apiUser.addresses || [],
+    address: apiUser.address || (apiUser.addresses && apiUser.addresses[0]) || '',
+    verified: apiUser.verified || false,
+  };
+};
+
 const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -143,13 +162,18 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
     try {
       const updatedUser = await withTimeout(fetchUserProfile(currentToken, logout), TIMEOUT_MS);
-      localStorage.setItem('authUser', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-      const slug = updatedUser.store_name ? createSlug(updatedUser.store_name) : '';
-      setStoreName(updatedUser.store_name || '');
+      const normalizedUser = normalizeUser(updatedUser);
+
+      localStorage.setItem('authUser', JSON.stringify(normalizedUser));
+      setUser(normalizedUser);
+
+      const slug = normalizedUser.store_name ? createSlug(normalizedUser.store_name) : '';
+      setStoreName(normalizedUser.store_name || '');
       setRestaurantSlug(slug);
-      localStorage.setItem('storeName', updatedUser.store_name || '');
+      localStorage.setItem('storeName', normalizedUser.store_name || '');
       localStorage.setItem('restaurantSlug', slug);
+
+      console.log('User profile refreshed successfully:', normalizedUser);
     } catch (error: any) {
       console.error('Error refreshing user profile:', error);
       if (error.message !== 'Request timed out' && MAX_RETRIES > 0) {
@@ -157,21 +181,9 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         return refreshUserProfile(currentToken);
       }
       setProfileError(error.message || 'Failed to load user profile');
+      // Preserve existing user data if available
       if (user) {
-        setUser((prev) => ({
-          ...prev,
-          _id: prev?._id || '',
-          name: prev?.name || 'User',
-          email: prev?.email || '',
-          user_type: prev?.user_type || 'customer',
-          role_id: prev?.role_id || null,
-          logoUrl: prev?.logoUrl || '',
-          store_name: prev?.store_name || '',
-          store_logo: prev?.store_logo || '',
-          phone: prev?.phone || '',
-          address: prev?.address || '',
-          verified: prev?.verified || false,
-        }));
+        setUser((prev) => prev ? normalizeUser(prev) : null);
       }
     } finally {
       fetchInProgress.current = false;
@@ -189,30 +201,21 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       if (storedToken && storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser);
-          const normalizedUser: User = {
-            _id: parsedUser._id || parsedUser.id || '',
-            name: parsedUser.name || 'User',
-            email: parsedUser.email || '',
-            user_type: parsedUser.user_type || 'customer',
-            role_id: parsedUser.role_id || null,
-            logoUrl: parsedUser.logoUrl || '',
-            store_name: parsedUser.store_name || '',
-            store_logo: parsedUser.store_logo || '',
-            phone: parsedUser.phone || '',
-            address: parsedUser.address || '',
-            verified: parsedUser.verified || false,
-          };
+          const normalizedUser = normalizeUser(parsedUser);
+
           setToken(storedToken);
           setUser(normalizedUser);
           setStoreName(storedStoreName);
           setRestaurantSlug(storedSlug);
           setIsAuthenticated(true);
 
+          // Only fetch permissions for non-customers
           if (normalizedUser.user_type !== 'customer') {
             try {
               const mainPages = await fetchMainPages(storedToken, logout);
               const permissions = mainPages.flatMap((page) => page.permissions.map((perm) => perm.key));
               setAllPermissions(permissions);
+
               const decodedToken = decodeToken(storedToken);
               if (decodedToken) {
                 const userPerms = decodedToken.user_type === 'isadmin'
@@ -236,6 +239,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             setPermissionsLoaded(true);
           }
 
+          // Always refresh user profile after initialization
           await refreshUserProfile(storedToken);
         } catch (error) {
           console.error('Error initializing auth:', error);
@@ -265,40 +269,34 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
       const responseData = await response.json();
       // Handle different response structures
-      const data = responseData.data?.data || responseData.data || {}; // Fallback to data or empty object
-      const { token, ...apiUser } = data; // Destructure token and rest as apiUser
+      const data = responseData.data?.data || responseData.data || {};
+      const { token, ...apiUser } = data;
 
       if (!token) {
         throw new Error('No token received');
       }
 
-      const normalizedUser: User = {
-        _id: apiUser._id || apiUser.id || '', // Fallback to id or empty string
-        name: apiUser.name || 'User',
-        email: apiUser.email || email,
+      const normalizedUser = normalizeUser({
+        ...apiUser,
         user_type: isCustomer ? 'customer' : apiUser.user_type || 'worker',
         role_id: isCustomer ? null : apiUser.role_id || null,
-        logoUrl: apiUser.logoUrl || '',
-        store_name: apiUser.store_name || '',
-        store_logo: apiUser.store_logo || '',
-        phone: apiUser.phone || apiUser.phone_number || '',
-        address: apiUser.address || (apiUser.addresses && apiUser.addresses[0]) || '',
-        verified: apiUser.verified || false,
-        phone_number: apiUser.phone_number || apiUser.phone || '',
-        addresses: apiUser.addresses || [],
-      };
+      }, email);
 
+      // Handle permissions based on user type
       if (isCustomer) {
         setUserPermissions([]);
         setPermissionsLoaded(true);
+        setAllPermissions([]);
       } else {
         const mainPages = await fetchMainPages(token, logout);
         const permissions = mainPages.flatMap((page) => page.permissions.map((perm) => perm.key));
         setAllPermissions(permissions);
+
         const decodedToken = decodeToken(token);
         if (!decodedToken) {
           throw new Error('Failed to decode token');
         }
+
         const userPerms = decodedToken.user_type === 'isadmin'
             ? permissions
             : Array.isArray(decodedToken.permissions)
@@ -311,13 +309,21 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       const slug = normalizedUser.store_name ? createSlug(normalizedUser.store_name) : '';
       setStoreName(normalizedUser.store_name || '');
       setRestaurantSlug(slug);
+
+      // Store data
       localStorage.setItem('authToken', token);
       localStorage.setItem('authUser', JSON.stringify(normalizedUser));
       localStorage.setItem('storeName', normalizedUser.store_name || '');
       localStorage.setItem('restaurantSlug', slug);
+
+      // Set state
       setToken(token);
       setUser(normalizedUser);
       setIsAuthenticated(true);
+
+      // Immediately refresh user profile after login
+      await refreshUserProfile(token);
+      window.dispatchEvent(new Event('settingsChanged'));
 
       return normalizedUser;
     } catch (error) {
