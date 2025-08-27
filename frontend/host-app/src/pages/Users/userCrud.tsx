@@ -160,7 +160,7 @@ const UserCrud: React.FC<UserCrudProps> = ({
   const validateUserType = (userType: string): string[] => {
     const errors: string[] = [];
     if (!userType.trim()) errors.push('User type is required');
-    else if (!['worker', 'waiter'].includes(userType.toLowerCase())) {
+    else if (!['worker', 'waiter','rider'].includes(userType.toLowerCase())) {
       errors.push('User type must be either Worker or Waiter');
     }
     return errors;
@@ -465,21 +465,22 @@ const UserCrud: React.FC<UserCrudProps> = ({
                   User Type *
                 </label>
                 <select
-                  value={data?.user_type || 'worker'}
-                  onChange={(e) => handleInputChange('user_type', e.target.value, isEdit)}
-                  onFocus={() => handleFocus('user_type', isEdit)}
-                  onBlur={() => handleBlur('user_type', isEdit)}
-                  className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${formErrors.user_type && formErrors.user_type.length > 0 ? 'ring-1' : ''}`}
-                  style={{
-                    borderColor: formErrors.user_type && formErrors.user_type.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
-                    backgroundColor: 'var(--background-color)',
-                    color: 'var(--text-color)',
-                    outlineColor: 'var(--focus-ring)',
-                  }}
-                  required
+                    value={data?.user_type || 'worker'}
+                    onChange={(e) => handleInputChange('user_type', e.target.value, isEdit)}
+                    onFocus={() => handleFocus('user_type', isEdit)}
+                    onBlur={() => handleBlur('user_type', isEdit)}
+                    className={`w-full p-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors duration-200 ${formErrors.user_type && formErrors.user_type.length > 0 ? 'ring-1' : ''}`}
+                    style={{
+                      borderColor: formErrors.user_type && formErrors.user_type.length > 0 ? 'var(--error-color)' : 'var(--border-color)',
+                      backgroundColor: 'var(--background-color)',
+                      color: 'var(--text-color)',
+                      outlineColor: 'var(--focus-ring)',
+                    }}
+                    required
                 >
                   <option value="worker">Worker</option>
                   <option value="waiter">Waiter</option>
+                  <option value="rider">Rider</option>
                 </select>
                 {renderFieldErrors('user_type')}
               </div>
