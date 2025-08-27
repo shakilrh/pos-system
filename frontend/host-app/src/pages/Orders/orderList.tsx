@@ -119,28 +119,6 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
     }
   };
 
-  const handleMarkOutForDelivery = async () => {
-    if (!token) {
-      setMessage('Please log in.');
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const updatedOrder = await markOrderOutForDelivery(token, logout, order.order_number, order.rider_id);
-      setOrders((prevOrders) =>
-          prevOrders.map((o) =>
-              o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
-          )
-      );
-      setMessage(`Order #${order.order_number} is now out for delivery!`);
-      onClose();
-    } catch (error) {
-      setMessage(`Failed to mark order as out for delivery`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="rounded-lg p-6 max-w-sm w-full mx-4" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
@@ -264,13 +242,11 @@ const RiderAssignmentModal = ({
       const resData = await response.json();
       const updatedOrder = resData.data || resData;
 
-      // Ensure the status is properly updated to move the order to out_for_delivery tab
+      // ✅ Ensure the status is updated to move to Out for Delivery
       updatedOrder.status = 'out_for_delivery';
 
-      // Find the selected rider's details
+      // ✅ Attach rider details for UI
       const selectedRiderDetails = riders.find(r => r._id === selectedRider);
-
-      // Update the order with rider information
       if (selectedRiderDetails) {
         updatedOrder.rider = {
           id: selectedRiderDetails._id,
@@ -279,13 +255,24 @@ const RiderAssignmentModal = ({
         updatedOrder.rider_name = selectedRiderDetails.name;
       }
 
+      const updatedOrderWithStatus = {
+        ...updatedOrder,
+        status: 'out_for_delivery',
+        rider: {
+          id: selectedRiderDetails?._id || '',
+          name: selectedRiderDetails?.name || ''
+        },
+        notification_status: 1
+      };
+
       setOrders(prev =>
           prev.map(o =>
-              o.order_number === updatedOrder.order_number
-                  ? { ...updatedOrder, items: o.items, notification_status: 1 }
+              o.order_number === updatedOrderWithStatus.order_number
+                  ? { ...updatedOrderWithStatus, items: o.items }
                   : o
           )
       );
+
 
       setMessage(`✅ Order #${order.order_number} is now out for delivery!`);
       onClose();
@@ -295,6 +282,7 @@ const RiderAssignmentModal = ({
       setIsLoading(false);
     }
   };
+
 
 
   return (
@@ -611,7 +599,7 @@ export default function OrderList({
       textColor: 'var(--text-color)',
       borderColor: 'var(--success-border)'
     }] : []),
-    ...(userPermissions.includes('manage_ready_orders') ? [{
+    ...(userPermissions.includes('Manage_order_delivery') ? [{
       key: 'out_for_delivery',
       label: 'Out for Delivery',
       color: 'var(--info-color)',
@@ -644,10 +632,11 @@ export default function OrderList({
 
   useEffect(() => {
     const tabs = outerActiveTab === 'physical' ? physicalTabs : onlineTabs;
-    if (tabs.length > 0 && !activeTab) {
-      setActiveTab(tabs[0].key);
+    if (tabs.length > 0) {
+      setActiveTab(prev => prev || tabs[0].key);
     }
-  }, [userPermissions, outerActiveTab]);
+  }, [userPermissions, outerActiveTab, physicalTabs, onlineTabs]);
+
 
   useEffect(() => {
     if (Array.isArray(queueData)) {

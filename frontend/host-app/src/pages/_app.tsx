@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AppProps } from 'next/app';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthProvider, useAuth } from '../context/AuthContext';
@@ -12,7 +12,7 @@ const FallbackFooter = () => <div>Footer failed to load</div>;
 const Header = dynamic(
     () => import('remoteApp/Header').catch((err) => {
       console.error('Header load error:', err);
-      return () => FallbackHeader;
+      return FallbackHeader;
     }),
     { ssr: false }
 );
@@ -22,14 +22,13 @@ import Sidebar from '../components/Sidebar';
 const Footer = dynamic(
     () => import('remoteApp/Footer').catch((err) => {
       console.error('Footer load error:', err);
-      return () => FallbackFooter;
+      return FallbackFooter;
     }),
     { ssr: false }
 );
 
 const publicRoutes = ['/Registration/login', '/Registration/forgotPassword', '/Registration/registerAdmin', '/public/[slug]', '/NoAccess'];
 
-// Helper function to create slug from store name
 const createSlug = (storeName: string): string => {
   return storeName
       .toLowerCase()
@@ -39,27 +38,21 @@ const createSlug = (storeName: string): string => {
       .trim();
 };
 
-// Helper function to check if a route is public
 const isPublicRoute = (pathname: string | null): boolean => {
   if (!pathname) return false;
-
   if (pathname.startsWith('/public/')) return true;
-
   return publicRoutes.some(route => {
     if (route === '/public/[slug]') return pathname.startsWith('/public/');
     return pathname === route || pathname.startsWith(route);
   });
 };
 
-// Helper function to extract slug from pathname
 const extractSlugFromPath = (pathname: string | null): string | null => {
   if (!pathname) return null;
   const segments = pathname.split('/').filter(Boolean);
-  // If the route is public, return the slug from /public/[slug]
   if (pathname.startsWith('/public/') && segments.length >= 2) {
-    return segments[1]; // Return the slug (e.g., 'cheezious')
+    return segments[1];
   }
-  // For non-public routes, apply existing logic
   if (segments.length > 0 && !isPublicRoute(pathname)) {
     const firstSegment = segments[0];
     const directRoutes = ['Dashboard', 'Orders', 'MenuManagement', 'RoleAndUserManagement', 'Tables', 'Settings'];
@@ -70,10 +63,9 @@ const extractSlugFromPath = (pathname: string | null): string | null => {
   return null;
 };
 
-// Helper function to get path without slug
 const getPathWithoutSlug = (pathname: string | null, slug: string | null): string => {
   if (!pathname) return '/';
-  if (pathname.startsWith('/public/')) return pathname; // Preserve /public/[slug]
+  if (pathname.startsWith('/public/')) return pathname;
   if (!slug) return pathname;
   return pathname.replace(`/${slug}`, '') || '/';
 };
@@ -92,14 +84,13 @@ function AppContent({ Component, pageProps }: AppProps) {
   const lastKnownThemeRef = useRef<string>('default');
   const lastKnownCurrencyRef = useRef<string>('pkr');
 
-  const { isAuthenticated, isLoading, logout, token, user, allPermissions, userPermissions, permissionsLoaded } = useAuth();
+  const { isAuthenticated, isLoading, logout, token, user, userPermissions } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   const API_BASE_URL = 'http://192.168.18.107:3000';
   const USER_DETAILS_ENDPOINT = '/users/api/v1/details';
 
-  // Use window.location.pathname as fallback when pathname is null (hydration issue)
   const actualPathname = pathname || (typeof window !== 'undefined' ? window.location.pathname : null);
 
   console.log('AppContent:', {
@@ -113,23 +104,7 @@ function AppContent({ Component, pageProps }: AppProps) {
 
   const extractedSlug = extractSlugFromPath(actualPathname);
   const pathWithoutSlug = getPathWithoutSlug(actualPathname, extractedSlug);
-
-  // Check if current route is public using actual pathname
   const isCurrentRoutePublic = isPublicRoute(actualPathname);
-
-  const routePermissions = useMemo(() => {
-    const mapping: { [key: string]: string } = {};
-    if (allPermissions.includes('can_view_dashboard')) mapping['/Dashboard/dashboard'] = 'can_view_dashboard';
-    if (allPermissions.includes('can_view_menu')) mapping['/MenuManagement'] = 'can_view_menu';
-    if (allPermissions.includes('can_view_orders')) mapping['/Orders/orders'] = 'can_view_orders';
-    if (allPermissions.includes('create_orders')) mapping['/Orders/createOrder'] = 'create_orders';
-    if (allPermissions.includes('can_view_rolemanagement')) mapping['/RoleAndUserManagement'] = 'can_view_rolemanagement';
-    if (allPermissions.includes('can_view_tablemanagement')) mapping['/Tables/FloorTableManagement'] = 'can_view_tablemanagement';
-    if (allPermissions.includes('can_view_storesettings')) mapping['/Settings/settings'] = 'can_view_storesettings';
-    if (allPermissions.includes('can_view_storesettings')) mapping['/Settings/profile'] = 'can_view_storesettings';
-    if (allPermissions.includes('can_view_storesettings')) mapping['/Settings/site'] = 'can_view_storesettings';
-    return mapping;
-  }, [allPermissions]);
 
   const applyThemeToDOM = (selectedTheme: string) => {
     console.log('Applying theme to DOM:', selectedTheme);
@@ -161,7 +136,6 @@ function AppContent({ Component, pageProps }: AppProps) {
     document.documentElement.style.setProperty('--current-currency-symbol', currencySymbol);
     console.log('Currency applied successfully:', { selectedCurrency, currencySymbol });
   };
-
 
   const loadUserSettings = async () => {
     if (!token) {
@@ -206,12 +180,14 @@ function AppContent({ Component, pageProps }: AppProps) {
       const userCurrency = data.data?.data?.user?.currency || 'pkr';
       const userStoreName = data.data?.data?.user?.store_name || '';
       const slug = data.data?.data?.user?.slug || '';
+      const userType = data.data?.data?.user?.user_type || '';
 
       console.log('Loaded user settings from API:', {
         theme: userTheme,
         currency: userCurrency,
         storeName: userStoreName,
-        slug
+        slug,
+        userType
       });
 
       setCurrentTheme(userTheme);
@@ -228,36 +204,38 @@ function AppContent({ Component, pageProps }: AppProps) {
       lastKnownCurrencyRef.current = userCurrency;
       setThemeLoaded(true);
 
-      // FIXED: Only redirect if the current path doesn't already have the correct slug
       if (isAuthenticated && actualPathname && !actualPathname.startsWith('/public/') && !publicRoutes.includes(actualPathname)) {
-        // Check if the current path already starts with the correct slug
         const expectedSlugPrefix = `/${slug}`;
-
-        // If we're on root path, redirect to dashboard with slug
-        if (actualPathname === '/') {
-          const newPath = `/${slug}/Dashboard/dashboard`;
-          router.replace(newPath);
-        }
-        // If the path doesn't start with the correct slug, fix it
-        else if (!actualPathname.startsWith(expectedSlugPrefix)) {
-          let pathWithoutAnySlug = actualPathname.replace(/^\/[^\/]+/, '');
-          if (!pathWithoutAnySlug || pathWithoutAnySlug.toLowerCase() === '/dashboard') {
-            pathWithoutAnySlug = '/Dashboard/dashboard';
+        if (userType === 'rider') {
+          if (actualPathname === '/' || actualPathname.includes('/Dashboard')) {
+            const ordersPath = `/${slug}/Orders/orders`;
+            router.replace(ordersPath);
+            return;
           }
-
-          const newPath = `/${slug}${pathWithoutAnySlug}`;
-          console.log('Redirecting from', actualPathname, 'to', newPath);
-          router.replace(newPath);
-        }
-        // If the path already has the correct slug, don't redirect
-        else {
-          console.log('Path already has correct slug, no redirect needed:', actualPathname);
+          if (!actualPathname.includes('/Orders')) {
+            const ordersPath = `/${slug}/Orders/orders`;
+            router.replace(ordersPath);
+            return;
+          }
+        } else {
+          if (actualPathname === '/') {
+            const newPath = `/${slug}/Dashboard/dashboard`;
+            router.replace(newPath);
+          } else if (!actualPathname.startsWith(expectedSlugPrefix)) {
+            let pathWithoutAnySlug = actualPathname.replace(/^\/[^\/]+/, '');
+            if (!pathWithoutAnySlug || pathWithoutAnySlug.toLowerCase() === '/dashboard') {
+              pathWithoutAnySlug = '/Dashboard/dashboard';
+            }
+            const newPath = `/${slug}${pathWithoutAnySlug}`;
+            console.log('Redirecting from', actualPathname, 'to', newPath);
+            router.replace(newPath);
+          }
         }
       }
 
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('settingsLoaded', {
-          detail: { theme: userTheme, currency: userCurrency, slug, storeName: userStoreName }
+          detail: { theme: userTheme, currency: userCurrency, slug, storeName: userStoreName, userType }
         }));
       }, 100);
     } catch (error) {
@@ -309,26 +287,26 @@ function AppContent({ Component, pageProps }: AppProps) {
               </svg>
             </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-white/90 mb-1">Theme Updated</div>
-            <div className="text-lg font-bold text-white capitalize">${themeName} Theme Active</div>
-            <div className="text-xs text-white/70 mt-1">Changes synced across devices</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-white/90 mb-1">Theme Updated</div>
+            <div class="text-lg font-bold text-white capitalize">${themeName} Theme Active</div>
+            <div class="text-xs text-white/70 mt-1">Changes synced across devices</div>
           </div>
-          <div className="flex-shrink-0">
-            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
               </svg>
             </div>
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
-          <div className="progress-bar h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-[4000ms] ease-linear" style="width: 100%"></div>
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
+          <div class="progress-bar h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-[4000ms] ease-linear" style="width: 100%"></div>
         </div>
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="particle absolute w-2 h-2 bg-white/30 rounded-full animate-ping" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
-          <div className="particle absolute w-1 h-1 bg-white/40 rounded-full animate-ping" style="top: 60%; right: 15%; animation-delay: 0.5s;"></div>
-          <div className="particle absolute w-1.5 h-1.5 bg-white/25 rounded-full animate-ping" style="bottom: 30%; left: 20%; animation-delay: 1s;"></div>
+        <div class="absolute inset-0 pointer-events-none overflow-hidden">
+          <div class="particle absolute w-2 h-2 bg-white/30 rounded-full animate-ping" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
+          <div class="particle absolute w-1 h-1 bg-white/40 rounded-full animate-ping" style="top: 60%; right: 15%; animation-delay: 0.5s;"></div>
+          <div class="particle absolute w-1.5 h-1.5 bg-white/25 rounded-full animate-ping" style="bottom: 30%; left: 20%; animation-delay: 1s;"></div>
         </div>
       </div>
     `;
@@ -357,7 +335,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     setTimeout(() => {
       notification.classList.add('animate-pulse');
       setTimeout(() => {
-        notification.style.transform = 'translateX(full) scale(0.8)';
+        notification.style.transform = 'translateX(100%) scale(0.8)';
         notification.style.opacity = '0';
         setTimeout(() => {
           if (document.body.contains(notification)) {
@@ -368,7 +346,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     }, 4000);
 
     notification.addEventListener('click', () => {
-      notification.style.transform = 'translateX(full) scale(0.8)';
+      notification.style.transform = 'translateX(100%) scale(0.8)';
       notification.style.opacity = '0';
       setTimeout(() => {
         if (document.body.contains(notification)) {
@@ -396,26 +374,26 @@ function AppContent({ Component, pageProps }: AppProps) {
               </svg>
             </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-white/90 mb-1">Currency Updated</div>
-            <div className="text-lg font-bold text-white capitalize">${currencyName} Currency Active</div>
-            <div className="text-xs text-white/70 mt-1">Changes synced across devices</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-white/90 mb-1">Currency Updated</div>
+            <div class="text-lg font-bold text-white capitalize">${currencyName} Currency Active</div>
+            <div class="text-xs text-white/70 mt-1">Changes synced across devices</div>
           </div>
-          <div className="flex-shrink-0">
-            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
               </svg>
             </div>
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
-          <div className="progress-bar h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-[4000ms] ease-linear" style="width: 100%"></div>
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
+          <div class="progress-bar h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-[4000ms] ease-linear" style="width: 100%"></div>
         </div>
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="particle absolute w-2 h-2 bg-white/30 rounded-full animate-ping" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
-          <div className="particle absolute w-1 h-1 bg-white/40 rounded-full animate-ping" style="top: 60%; right: 15%; animation-delay: 0.5s;"></div>
-          <div className="particle absolute w-1.5 h-1.5 bg-white/25 rounded-full animate-ping" style="bottom: 30%; left: 20%; animation-delay: 1s;"></div>
+        <div class="absolute inset-0 pointer-events-none overflow-hidden">
+          <div class="particle absolute w-2 h-2 bg-white/30 rounded-full animate-ping" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
+          <div class="particle absolute w-1 h-1 bg-white/40 rounded-full animate-ping" style="top: 60%; right: 15%; animation-delay: 0.5s;"></div>
+          <div class="particle absolute w-1.5 h-1.5 bg-white/25 rounded-full animate-ping" style="bottom: 30%; left: 20%; animation-delay: 1s;"></div>
         </div>
       </div>
     `;
@@ -444,7 +422,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     setTimeout(() => {
       notification.classList.add('animate-pulse');
       setTimeout(() => {
-        notification.style.transform = 'translateX(full) scale(0.8)';
+        notification.style.transform = 'translateX(100%) scale(0.8)';
         notification.style.opacity = '0';
         setTimeout(() => {
           if (document.body.contains(notification)) {
@@ -455,7 +433,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     }, 4000);
 
     notification.addEventListener('click', () => {
-      notification.style.transform = 'translateX(full) scale(0.8)';
+      notification.style.transform = 'translateX(100%) scale(0.8)';
       notification.style.opacity = '0';
       setTimeout(() => {
         if (document.body.contains(notification)) {
@@ -465,7 +443,6 @@ function AppContent({ Component, pageProps }: AppProps) {
     });
   };
 
-  // Load settings for public routes without requiring authentication
   useEffect(() => {
     console.log('Settings loading useEffect triggered', {
       isAuthenticated,
@@ -475,7 +452,6 @@ function AppContent({ Component, pageProps }: AppProps) {
       isCurrentRoutePublic,
     });
 
-    // For public routes, load basic settings without requiring authentication
     if (isCurrentRoutePublic && !themeLoaded) {
       const savedTheme = localStorage.getItem('appTheme') || 'default';
       const savedCurrency = localStorage.getItem('appCurrency') || 'pkr';
@@ -486,11 +462,9 @@ function AppContent({ Component, pageProps }: AppProps) {
       setThemeLoaded(true);
     }
 
-    // For authenticated routes, load user settings
     if (isAuthenticated && !isCurrentRoutePublic) {
       loadUserSettings();
     }
-
 
     window.addEventListener('settingsChanged', handleSettingsChange);
 
@@ -524,14 +498,12 @@ function AppContent({ Component, pageProps }: AppProps) {
       pathWithoutSlug,
       extractedSlug,
       currentSlug,
-      permissionsLoaded,
-      userPermissions,
       isLoading,
       initialLoad,
       isCurrentRoutePublic,
+      userType: user?.user_type
     });
 
-    // Skip authentication for public routes entirely
     if (isCurrentRoutePublic) {
       console.log('Public route detected, skipping all authentication checks');
       return;
@@ -549,30 +521,22 @@ function AppContent({ Component, pageProps }: AppProps) {
     }
 
     if (isAuthenticated && pathWithoutSlug === '/Registration/login' && !initialLoad) {
-      console.log('Redirecting to dashboard: User authenticated on login page');
+      console.log('Redirecting based on user type: User authenticated on login page');
       const slug = currentSlug || localStorage.getItem('restaurantSlug') || '';
-      const dashboardPath = slug ? `/${slug}/Dashboard/dashboard` : '/Dashboard/dashboard';
-      router.replace(dashboardPath);
+      if (user?.user_type === 'rider') {
+        const ordersPath = slug ? `/${slug}/Orders/orders` : '/Orders/orders';
+        router.replace(ordersPath);
+      } else {
+        const dashboardPath = slug ? `/${slug}/Dashboard/dashboard` : '/Dashboard/dashboard';
+        router.replace(dashboardPath);
+      }
       return;
     }
 
     if (isAuthenticated && pathWithoutSlug === '/Registration/registerAdmin') {
       return;
     }
-
-    if (isAuthenticated && !isCurrentRoutePublic && permissionsLoaded) {
-      const requiredPermission = routePermissions[pathWithoutSlug];
-      if (requiredPermission && !userPermissions.includes(requiredPermission)) {
-        console.log(`Access denied to ${pathWithoutSlug}: Missing permission ${requiredPermission}`);
-        console.log('User permissions:', userPermissions);
-        const slug = currentSlug || extractedSlug || '';
-        const noAccessPath = slug ? `/${slug}/NoAccess` : '/NoAccess';
-        router.replace(noAccessPath);
-      } else {
-        console.log(`Access granted to ${pathWithoutSlug}`);
-      }
-    }
-  }, [isAuthenticated, pathname, actualPathname, pathWithoutSlug, router, userPermissions, permissionsLoaded, routePermissions, isLoading, initialLoad, currentSlug, extractedSlug, isCurrentRoutePublic]);
+  }, [isAuthenticated, isLoading, initialLoad, pathWithoutSlug, currentSlug, user, router, actualPathname, isCurrentRoutePublic]);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -581,16 +545,11 @@ function AppContent({ Component, pageProps }: AppProps) {
       timeoutId = setTimeout(() => setIsPageLoading(false), 500);
     };
 
-    const prevPathname = pathname;
-    const checkPathChange = () => {
-      if (prevPathname !== pathname) {
-        handleRouteChange();
-      }
-    };
+    if (pathname) {
+      handleRouteChange();
+    }
 
-    const interval = setInterval(checkPathChange, 100);
     return () => {
-      clearInterval(interval);
       clearTimeout(timeoutId);
     };
   }, [pathname]);
@@ -635,7 +594,6 @@ function AppContent({ Component, pageProps }: AppProps) {
       document.head.appendChild(faviconLink);
     }
 
-    // Fetch store logo for public routes
     const updateFaviconForPublicRoute = async () => {
       if (pathname && pathname.startsWith('/public/') && extractedSlug) {
         try {
@@ -650,18 +608,15 @@ function AppContent({ Component, pageProps }: AppProps) {
           console.error('Error fetching store logo for favicon:', error);
         }
       } else if (user?.store_logo && faviconLink && (!pathname || !pathname.startsWith('/public/'))) {
-        // Use logged-in user's store logo for non-public routes
         faviconLink.href = user.store_logo;
         faviconLink.type = 'image/jpeg';
       } else if (faviconLink) {
-        // Default favicon if no store logo
-        faviconLink.href = '/default-favicon.ico'; // Add a default favicon in public folder if needed
+        faviconLink.href = '/default-favicon.ico';
       }
     };
 
     updateFaviconForPublicRoute();
 
-    // Title logic
     let title = '';
     if (pathname && pathname.startsWith('/public/')) {
       title = extractedSlug ? extractedSlug.charAt(0).toUpperCase() + extractedSlug.slice(1) : 'Restaurant';
@@ -677,7 +632,6 @@ function AppContent({ Component, pageProps }: AppProps) {
     document.title = title;
   }, [user, storeName, pathWithoutSlug, pathname, extractedSlug]);
 
-  // Show loading only for authenticated routes or when authentication is still being determined
   if ((isLoading || initialLoad) && !isCurrentRoutePublic) {
     return (
         <div className="flex items-center justify-center min-h-screen">
@@ -692,20 +646,17 @@ function AppContent({ Component, pageProps }: AppProps) {
     );
   }
 
-  // Render public routes immediately without any authentication checks
   if (isCurrentRoutePublic) {
     console.log('Rendering public route directly');
     return <Component {...pageProps} key={pathname} currentCurrency={currentCurrency} restaurantSlug={extractedSlug} storeName={storeName} />;
   }
 
-  // Redirect unauthenticated users to login for non-public routes
   if (!isAuthenticated) {
     console.log('Redirecting to login: User not authenticated');
     router.replace('/Registration/login');
     return null;
   }
 
-  // Redirect authenticated users from login page to dashboard
   if (isAuthenticated && pathWithoutSlug === '/Registration/login') {
     console.log('Redirecting to dashboard: User authenticated on login page');
     const slug = currentSlug || localStorage.getItem('restaurantSlug') || '';
@@ -714,21 +665,8 @@ function AppContent({ Component, pageProps }: AppProps) {
     return null;
   }
 
-  // Render Component for registerAdmin page without layout
   if (isAuthenticated && pathWithoutSlug === '/Registration/registerAdmin') {
     return <Component {...pageProps} key={pathname} currentCurrency={currentCurrency} restaurantSlug={extractedSlug} storeName={storeName} />;
-  }
-
-  // Check permissions for authenticated users on non-public routes
-  if (isAuthenticated && permissionsLoaded) {
-    const requiredPermission = routePermissions[pathWithoutSlug];
-    if (requiredPermission && !userPermissions.includes(requiredPermission)) {
-      console.log(`Access denied to ${pathWithoutSlug}: Missing permission ${requiredPermission}`);
-      const slug = currentSlug || extractedSlug || '';
-      const noAccessPath = slug ? `/${slug}/NoAccess` : '/NoAccess';
-      router.replace(noAccessPath);
-      return null;
-    }
   }
 
   if (!Sidebar) {
@@ -740,7 +678,6 @@ function AppContent({ Component, pageProps }: AppProps) {
   const contentMargin = sidebarOpen ? 'ml-80' : 'ml-28';
   const headerHeight = 'h-16';
 
-  // Render full layout for authenticated users on admin routes
   return (
       <div className="flex flex-col min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
         <Header
