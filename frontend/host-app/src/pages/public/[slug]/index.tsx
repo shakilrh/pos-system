@@ -333,13 +333,10 @@ export default function PublicHome() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="relative">
-                        <div className="w-16 h-16 border-4 border-gray-300 rounded-full animate-spin"></div>
-                        <div className="absolute top-1 left-1 w-14 h-14 border-4 border-gray-700 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                    <p className="mt-4 text-lg font-medium text-gray-800">Loading...</p>
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 border-t-4 border-b-4 border-orange-500 rounded-full animate-spin"></div>
+                    <p className="mt-4 text-lg font-semibold text-gray-700">Loading...</p>
                 </div>
             </div>
         );
