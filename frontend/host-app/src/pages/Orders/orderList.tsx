@@ -451,6 +451,7 @@ export default function OrderList({
                                     queueData,
                                     currentCurrency = 'pkr',
                                   }: OrderListProps) {
+  const { user_type  } = useAuth();
   const { userPermissions } = useAuth();
   const [outerActiveTab, setOuterActiveTab] = useState('physical');
   const [activeTab, setActiveTab] = useState<string | null>(null);
@@ -565,6 +566,7 @@ export default function OrderList({
       borderColor: 'var(--info-border)'
     }] : []),
     ...(userPermissions.includes('manage_completed_orders') ? [{
+
       key: 'completed',
       label: 'Completed',
       color: 'var(--warning-color)',
@@ -607,7 +609,8 @@ export default function OrderList({
       textColor: 'var(--text-color)',
       borderColor: 'var(--info-border)'
     }] : []),
-    ...(userPermissions.includes('manage_completed_orders') ? [{
+    ...(userPermissions.includes('Manage_order_delivery') ? [{
+
       key: 'completed',
       label: 'Completed',
       color: 'var(--warning-color)',
@@ -626,16 +629,49 @@ export default function OrderList({
   ];
 
   const outerTabs = [
-    ...(physicalTabs.length > 0 ? [{ key: 'physical', label: 'Physical Orders', color: 'var(--primary-color)', lightColor: 'var(--primary-light)', textColor: 'var(--text-color)' }] : []),
-    ...(onlineTabs.length > 0 ? [{ key: 'online', label: 'Online Orders', color: 'var(--success-color)', lightColor: 'var(--success-light)', textColor: 'var(--text-color)' }] : []),
+    ...(physicalTabs.length > 0 ? [{
+      key: 'physical',
+      label: 'Physical Orders',
+      color: 'var(--primary-color)',
+      lightColor: 'var(--primary-light)',
+      textColor: 'var(--text-color)'
+    }] : []),
+    ...(onlineTabs.length > 0 ? [{
+      key: 'online',
+      label: 'Online Orders',
+      color: 'var(--success-color)',
+      lightColor: 'var(--success-light)',
+      textColor: 'var(--text-color)'
+    }] : []),
   ];
 
+
   useEffect(() => {
-    const tabs = outerActiveTab === 'physical' ? physicalTabs : onlineTabs;
-    if (tabs.length > 0) {
-      setActiveTab(prev => prev || tabs[0].key);
+    if (outerTabs.length > 0) {
+      // if physical exists, prefer physical; else online
+      const defaultOuter = physicalTabs.length > 0 ? 'physical' : 'online';
+
+      // ✅ ensure outerActiveTab is valid
+      const currentOuter = !outerActiveTab || !outerTabs.some(t => t.key === outerActiveTab)
+          ? defaultOuter
+          : outerActiveTab;
+
+      if (!outerActiveTab || currentOuter !== outerActiveTab) {
+        setOuterActiveTab(currentOuter);
+      }
+
+      const activeTabs = currentOuter === 'physical' ? physicalTabs : onlineTabs;
+      if (activeTabs.length > 0) {
+        setActiveTab(prev => prev || activeTabs[0].key);
+      } else {
+        setActiveTab(null);
+      }
+    } else {
+      // no outer tabs at all
+      setOuterActiveTab(null);
+      setActiveTab(null);
     }
-  }, [userPermissions, outerActiveTab, physicalTabs, onlineTabs]);
+  }, [userPermissions, outerActiveTab, physicalTabs, onlineTabs, outerTabs]);
 
 
   useEffect(() => {
@@ -907,7 +943,7 @@ export default function OrderList({
     setShowModal(true);
   }, []);
 
-  if (!userPermissions.some(perm => ['manage_prepared_orders', 'manage_ready_orders', 'manage_served_orders', 'manage_completed_orders', 'accept_onlineorders', 'manage_cancelled_orders'].includes(perm))) {
+  if (!userPermissions.some(perm => ['manage_prepared_orders', 'manage_ready_orders', 'manage_served_orders', 'manage_completed_orders', 'accept_onlineorders', 'manage_cancelled_orders','Manage_order_delivery'].includes(perm))) {
     return (
         <div className="text-center py-12 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
           <div className="text-5xl mb-3" style={{ color: 'var(--text-tertiary)' }}>
