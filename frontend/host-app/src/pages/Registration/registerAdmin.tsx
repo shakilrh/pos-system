@@ -265,7 +265,7 @@ export default function RegisterAdmin() {
         type: 'success'
       });
 
-      setTimeout(() => router.push('/login'), 2000);
+      setTimeout(() => router.push('/Registration/login'), 2000);
 
       // Reset form
       setFormData({
@@ -630,32 +630,77 @@ export default function RegisterAdmin() {
                 </div>
 
                 <div>
-                  <label htmlFor="logo" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <label
+                      htmlFor="logo"
+                      className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                  >
                     Store Logo
                   </label>
+
                   <div className="relative">
+                    {/* Hide the actual input */}
                     <input
                         type="file"
                         id="logo"
                         name="logo"
                         accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                         onChange={handleLogoChange}
-                        className={`w-full p-3 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-2 ${
-                            errors.logo && errors.logo.length > 0 ? 'border-red-400 ring-2 ring-red-200' : 'border-gray-200 dark:border-gray-600'
-                        } focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition-all duration-200 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-orange-50 file:to-red-50 file:text-orange-600 hover:file:from-orange-100 hover:file:to-red-100 dark:file:bg-gray-600 dark:file:text-gray-200`}
+                        className="hidden"
                     />
+
+                    {/* Custom button with upload icon */}
+                    <label
+                        htmlFor="logo"
+                        className={`inline-flex items-center gap-2 px-5 py-3 rounded-lg text-sm font-semibold cursor-pointer
+        bg-gradient-to-r from-orange-50 to-red-50 text-orange-600 
+        hover:from-orange-100 hover:to-red-100
+        dark:bg-gray-600 dark:text-gray-200
+        border-2 ${
+                            errors.logo && errors.logo.length > 0
+                                ? 'border-red-400 ring-2 ring-red-200'
+                                : 'border-gray-200 dark:border-gray-600'
+                        }
+      `}
+                    >
+                      {/* Upload Icon */}
+                      <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                      >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12V4m0 0l-4 4m4-4l4 4"
+                        />
+                      </svg>
+                      Upload Logo
+                    </label>
                   </div>
+
                   {renderFieldErrors('logo')}
+
                   {logo && (!errors.logo || errors.logo.length === 0) && (
                       <div className="mt-2 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-700 dark:to-gray-600 rounded-lg border border-green-200 dark:border-gray-600">
                         <p className="text-sm text-green-700 dark:text-green-400 flex items-center">
-                          <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          <svg
+                              className="w-4 h-4 mr-2"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                          >
+                            <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                            />
                           </svg>
                           <span className="font-medium">{logo.name}</span>
                           <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 px-2 py-1 rounded-full">
-                        {(logo.size / 1024).toFixed(1)} KB
-                      </span>
+          {(logo.size / 1024).toFixed(1)} KB
+        </span>
                         </p>
                       </div>
                   )}
