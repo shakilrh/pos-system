@@ -233,17 +233,22 @@ export default function RegisterAdmin() {
     const allFields = ['name', 'email', 'password', 'confirmPassword', 'storeName', 'phoneNumber', 'address', 'logo', 'slug'];
     setTouchedFields(new Set(allFields));
     const allErrors: any = {};
+
     try {
       allFields.forEach(field => {
         allErrors[field] = getFieldErrors(field);
       });
       setErrors(allErrors);
+
       const hasErrors = Object.values(allErrors).some((fieldErrors: any) => fieldErrors.length > 0);
       if (hasErrors) {
         setFlashMessage({ message: 'Please fix all errors before submitting', type: 'error' });
         return;
       }
+
       setLoading(true);
+      setFlashMessage(null); // Clear any existing messages
+
       await adminAuthService.registerAdmin(
           formData.name.trim(),
           formData.email.trim(),
@@ -254,8 +259,15 @@ export default function RegisterAdmin() {
           formData.address.trim() || null,
           formData.slug.trim() || null
       );
-      setFlashMessage({ message: 'Admin registered successfully! Redirecting to login...', type: 'success' });
+
+      setFlashMessage({
+        message: 'Admin registered successfully! Redirecting to login...',
+        type: 'success'
+      });
+
       setTimeout(() => router.push('/login'), 2000);
+
+      // Reset form
       setFormData({
         name: '',
         email: '',
@@ -269,12 +281,59 @@ export default function RegisterAdmin() {
       setLogo(null);
       setErrors({});
       setTouchedFields(new Set());
+
     } catch (error: any) {
-      console.error('Registration error:', error);
+      console.error('Full Registration error object:', error);
+      console.error('Error response:', error.response);
+      console.error('Error response data:', error.response?.data);
+
+      let errorMessage = 'Failed to register admin. Please try again.';
+
+      // Handle different error structures
+      if (error.response?.data) {
+        const data = error.response.data;
+
+        // Your API returns error in the 'message' field
+        if (data.message) {
+          errorMessage = data.message;
+        }
+        // Fallback to other possible error fields
+        else if (data.error) {
+          errorMessage = data.error;
+        }
+        else if (data.errors) {
+          // Handle validation errors array
+          if (Array.isArray(data.errors)) {
+            errorMessage = data.errors.join(', ');
+          } else if (typeof data.errors === 'object') {
+            // Handle object of field errors
+            const errorMessages = Object.values(data.errors).flat();
+            errorMessage = errorMessages.join(', ');
+          } else {
+            errorMessage = data.errors;
+          }
+        }
+        // If data is just a string
+        else if (typeof data === 'string') {
+          errorMessage = data;
+        }
+      }
+      // Handle network errors or other types of errors
+      else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      console.log('Final error message to display:', errorMessage);
+
+      // Force update the flash message
       setFlashMessage({
-        message: error.response?.data?.message || 'Failed to register admin. Please try again.',
+        message: errorMessage,
         type: 'error'
       });
+
+      // Also force a re-render by updating a timestamp (optional debugging)
+      console.log('Flash message set at:', new Date().toISOString());
+
     } finally {
       setLoading(false);
     }
