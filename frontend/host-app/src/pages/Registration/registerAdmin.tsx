@@ -261,7 +261,7 @@ export default function RegisterAdmin() {
       );
 
       setFlashMessage({
-        message: 'Admin registered successfully! Redirecting to login...',
+        message: 'Admin registered successfully!',
         type: 'success'
       });
 
@@ -634,7 +634,7 @@ export default function RegisterAdmin() {
                       htmlFor="logo"
                       className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
                   >
-                    Store Logo
+                    Store Logo (Optional)
                   </label>
 
                   <div className="relative">
