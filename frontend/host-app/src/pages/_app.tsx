@@ -93,15 +93,6 @@ function AppContent({ Component, pageProps }: AppProps) {
 
   const actualPathname = pathname || (typeof window !== 'undefined' ? window.location.pathname : null);
 
-  console.log('AppContent:', {
-    pathname,
-    actualPathname,
-    windowPathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR',
-    extractedSlug: extractSlugFromPath(actualPathname),
-    currentSlug,
-    isPublic: isPublicRoute(actualPathname)
-  });
-
   const extractedSlug = extractSlugFromPath(actualPathname);
   const pathWithoutSlug = getPathWithoutSlug(actualPathname, extractedSlug);
   const isCurrentRoutePublic = isPublicRoute(actualPathname);
