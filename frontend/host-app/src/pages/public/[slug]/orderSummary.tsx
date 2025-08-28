@@ -158,7 +158,7 @@ export default function OrderSummary() {
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
             case 'pending':
-                return 'bg-amber-50 text-amber-700 border-amber-200';
+                return 'bg-yellow-50 text-yellow-700 border-yellow-200';
             case 'confirmed':
                 return 'bg-blue-50 text-blue-700 border-blue-200';
             case 'ready':
@@ -167,7 +167,7 @@ export default function OrderSummary() {
             case 'out_for_delivery':
                 return 'bg-orange-50 text-orange-700 border-orange-200';
             case 'completed':
-                return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                return 'bg-green-50 text-green-700 border-green-200';
             case 'cancelled':
                 return 'bg-red-50 text-red-700 border-red-200';
             default:
@@ -232,9 +232,9 @@ export default function OrderSummary() {
     if (!isClient) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="bg-white p-8 rounded-lg shadow-lg text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600 font-medium">Loading...</p>
+                <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 border-t-4 border-b-4 border-[#F4B400] rounded-full animate-spin"></div>
+                    <p className="mt-4 text-lg font-semibold text-[#333333]">Loading...</p>
                 </div>
             </div>
         );
@@ -242,10 +242,10 @@ export default function OrderSummary() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
+            <div className="flex items-center justify-center min-h-screen bg-gray-50">
                 <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 border-t-4 border-b-4 border-orange-500 rounded-full animate-spin"></div>
-                    <p className="mt-4 text-lg font-semibold text-gray-700">Loading Orders history...</p>
+                    <div className="w-16 h-16 border-t-4 border-b-4 border-[#F4B400] rounded-full animate-spin"></div>
+                    <p className="mt-4 text-lg font-semibold text-[#333333]">Loading Order History...</p>
                 </div>
             </div>
         );
@@ -254,18 +254,20 @@ export default function OrderSummary() {
     if (error) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md">
-                    <div className="text-red-500 text-4xl mb-4">⚠️</div>
-                    <h2 className="text-xl font-semibold text-gray-800 mb-2">Unable to Load Orders</h2>
+                <div className="bg-white p-8 rounded-2xl shadow-lg text-center max-w-md border border-[#CCCCCC]">
+                    <div className="text-red-500 text-4xl mb-4">
+                        <i className="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h2 className="text-xl font-semibold text-[#333333] mb-2">Unable to Load Orders</h2>
                     <p className="text-gray-600 mb-6">{error}</p>
                     <button
                         onClick={() => {
                             fetchStoreInfo();
                             fetchCustomerDetails();
                         }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                        className="bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg"
                     >
-                        Try Again
+                        <i className="fas fa-refresh mr-2"></i>Try Again
                     </button>
                 </div>
             </div>
@@ -275,8 +277,8 @@ export default function OrderSummary() {
     if (!customerDetails) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="bg-white p-8 rounded-lg shadow-lg text-center">
-                    <p className="text-gray-600">No customer data available</p>
+                <div className="bg-white p-8 rounded-2xl shadow-lg text-center border border-[#CCCCCC]">
+                    <p className="text-[#333333]">No customer data available</p>
                 </div>
             </div>
         );
@@ -284,198 +286,208 @@ export default function OrderSummary() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className="bg-white shadow-sm border-b">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {/* Enhanced Header with matching design */}
+            <div className="bg-white shadow-lg sticky top-0 z-40">
+                <div className="container mx-auto px-4 py-6">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                             <button
                                 onClick={() => router.back()}
-                                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                className="bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-semibold py-2 px-4 rounded-lg shadow-md flex items-center space-x-2 transition-all duration-300 transform hover:scale-105"
                             >
-                                ← Back
+                                <i className="fas fa-arrow-left"></i>
+                                <span>Back</span>
                             </button>
+                            {store?.logo && (
+                                <div className="h-14 w-auto flex-shrink-0">
+                                    <img
+                                        src={store.logo}
+                                        alt={store.name || store.store_name}
+                                        className="h-full w-auto object-contain"
+                                    />
+                                </div>
+                            )}
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Order History</h1>
-                                <p className="text-sm text-gray-600 mt-1">View and track all your orders</p>
+                                <h1 className="text-3xl font-bold text-[#4c2c19] flex items-center">
+                                    <i className="fas fa-receipt mr-3 text-[#F4B400]"></i>
+                                    Order History
+                                </h1>
+                                <p className="text-[#F4B400] font-medium">Track all your delicious orders</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Customer Info Card */}
-                <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <h2 className="text-lg font-semibold text-gray-900 mb-2">{customerDetails.name}</h2>
-                            <div className="space-y-1 text-sm text-gray-600">
-                                <p className="flex items-center">
-                                    📱 {customerDetails.phone_number}
-                                </p>
-                                {customerDetails.email && (
-                                    <p className="flex items-center">
-                                        ✉️ {customerDetails.email}
-                                    </p>
-                                )}
-                                <p className="flex items-center">
-                                    📍 {customerDetails.addresses?.[0] || 'No address provided'}
+            <div className="container mx-auto px-4 py-6">
+                {/* Compact Customer Info Card */}
+                <div className="bg-[#FAFAFA] rounded-xl shadow-lg border border-[#CCCCCC] p-4 mb-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-12 h-12 bg-[#F4B400] rounded-full flex items-center justify-center">
+                                <i className="fas fa-user text-lg text-[#1E1E1E]"></i>
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold text-[#333333]">{customerDetails.name}</h2>
+                                <p className="text-xs text-[#333333] flex items-center">
+                                    <i className="fas fa-phone mr-1 text-[#F4B400]"></i>
+                                    {customerDetails.phone_number}
                                 </p>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <div className="bg-blue-50 px-3 py-2 rounded-lg">
-                                <p className="text-xs text-blue-600 font-medium">Total Orders</p>
-                                <p className="text-2xl font-bold text-blue-700">{customerDetails.orders?.length || 0}</p>
-                            </div>
+                        <div className="bg-[#F4B400] px-4 py-2 rounded-xl text-center">
+                            <p className="text-xs text-[#1E1E1E] font-medium">Orders</p>
+                            <p className="text-xl font-bold text-[#1E1E1E]">{customerDetails.orders?.length || 0}</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Filters */}
-                <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-                        <div>
-                            <h3 className="text-sm font-medium text-gray-900 mb-3">Filter by status:</h3>
-                            <div className="flex flex-wrap gap-2">
-                                {statusOptions.map((status) => (
-                                    <button
-                                        key={status}
-                                        onClick={() => setSelectedStatus(status)}
-                                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors capitalize ${
-                                            selectedStatus === status
-                                                ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
-                                        }`}
-                                    >
-                                        {status.replace('_', ' ')}
-                                    </button>
-                                ))}
-                            </div>
+                {/* Compact Filters */}
+                <div className="bg-[#FAFAFA] rounded-xl shadow-lg border border-[#CCCCCC] p-4 mb-6">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
+                        <div className="flex flex-wrap gap-2">
+                            {statusOptions.map((status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => setSelectedStatus(status)}
+                                    className={`px-3 py-1 rounded-lg font-medium text-xs transition-all capitalize ${
+                                        selectedStatus === status
+                                            ? 'bg-[#F4B400] text-[#1E1E1E]'
+                                            : 'bg-white text-[#333333] hover:bg-[#F4B400] hover:text-[#1E1E1E] border border-[#CCCCCC]'
+                                    }`}
+                                >
+                                    {status.replace('_', ' ')}
+                                </button>
+                            ))}
                         </div>
 
-                        <div className="lg:w-80">
-                            <label htmlFor="search" className="sr-only">Search orders</label>
+                        <div className="md:w-64">
                             <div className="relative">
                                 <input
                                     type="text"
-                                    id="search"
-                                    placeholder="Search by order number or address..."
+                                    placeholder="Search orders..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    className="block w-full pl-8 pr-3 py-2 border border-[#CCCCCC] rounded-lg bg-white placeholder-gray-500 focus:outline-none focus:border-[#F4B400] text-sm"
                                 />
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span className="text-gray-400">🔍</span>
+                                    <i className="fas fa-search text-[#F4B400] text-xs"></i>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Orders List */}
-                <div className="space-y-6">
+                {/* Compact Orders List */}
+                <div className="space-y-4">
                     {filteredOrders.length === 0 ? (
-                        <div className="bg-white rounded-lg shadow-sm border p-12 text-center">
-                            <div className="text-6xl text-gray-300 mb-4">📦</div>
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">No Orders Found</h3>
-                            <p className="text-gray-500">
+                        <div className="bg-[#FAFAFA] rounded-xl shadow-lg border border-[#CCCCCC] p-8 text-center">
+                            <div className="text-4xl text-[#F4B400] mb-3">
+                                <i className="fas fa-box-open"></i>
+                            </div>
+                            <h3 className="text-lg font-bold text-[#333333] mb-2">No Orders Found</h3>
+                            <p className="text-gray-500 text-sm">
                                 {searchTerm || selectedStatus !== 'all'
                                     ? 'Try adjusting your filters or search terms.'
                                     : "You haven't placed any orders yet."}
                             </p>
+                            {!searchTerm && selectedStatus === 'all' && (
+                                <button
+                                    onClick={() => router.push(`/public/${slug}`)}
+                                    className="mt-4 bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-semibold py-2 px-6 rounded-lg transition-all"
+                                >
+                                    <i className="fas fa-utensils mr-2"></i>
+                                    Explore Menu
+                                </button>
+                            )}
                         </div>
                     ) : (
                         filteredOrders.map((order) => (
-                            <div key={order.order_id} className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
-                                {/* Order Header */}
-                                <div className="px-6 py-4 border-b border-gray-200">
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                            <div key={order.order_id} className="bg-[#FAFAFA] rounded-xl shadow-lg border border-[#CCCCCC] hover:shadow-xl transition-all overflow-hidden">
+                                {/* Compact Order Header */}
+                                <div className="bg-gradient-to-r from-[#F4B400] to-[#F4B400]/80 px-4 py-3">
+                                    <div className="flex items-center justify-between">
                                         <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">
+                                            <h3 className="text-lg font-bold text-[#1E1E1E] flex items-center">
+                                                <i className="fas fa-receipt mr-2"></i>
                                                 Order #{order.order_number}
                                             </h3>
-                                            <p className="text-sm text-gray-600 mt-1">
-                                                Placed on {formatDate(order.order_date)}
+                                            <p className="text-[#1E1E1E]/80 text-sm">
+                                                <i className="fas fa-calendar mr-1"></i>
+                                                {formatDate(order.order_date)}
                                             </p>
                                         </div>
-                                        <div className="flex items-center space-x-4">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
-                                                <span className="mr-1">{order.status === 'completed' ? '✅' :
-                                                    order.status === 'cancelled' ? '❌' :
-                                                        order.status === 'pending' ? '⏱️' :
-                                                            order.status === 'confirmed' ? '✔️' :
-                                                                order.status === 'ready' ? '📦' :
-                                                                    (order.status === 'shipped' || order.status === 'out_for_delivery') ? '🚚' : '❓'}</span>
+                                        <div className="text-right">
+                                            <div className="bg-[#1E1E1E] px-3 py-1 rounded-lg mb-2">
+                                                <p className="text-lg font-bold text-[#F4B400]">{formatCurrency(order.total_amount)}</p>
+                                            </div>
+                                            <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold ${getStatusColor(order.status)}`}>
+                                                <i className={`fas fa-${getStatusIcon(order.status)} mr-1`}></i>
                                                 {order.status.replace('_', ' ').toUpperCase()}
                                             </span>
-                                            <div className="text-right">
-                                                <p className="text-lg font-bold text-gray-900">{formatCurrency(order.total_amount)}</p>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Order Details */}
-                                <div className="px-6 py-4">
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                        {/* Delivery Info */}
+                                {/* Compact Order Details */}
+                                <div className="px-4 py-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Compact Delivery Info */}
                                         <div>
-                                            <h4 className="text-sm font-medium text-gray-900 mb-3">Delivery Information</h4>
-                                            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                                                <p className="text-sm text-gray-600">
-                                                    <span className="font-medium">Customer:</span> {order.customer_name}
+                                            <h4 className="text-sm font-bold text-[#333333] mb-2 flex items-center">
+                                                <i className="fas fa-truck mr-2 text-[#F4B400]"></i>
+                                                Delivery Info
+                                            </h4>
+                                            <div className="bg-white rounded-lg border border-[#F4B400]/20 p-3 space-y-2">
+                                                <p className="text-[#333333] text-sm flex items-start">
+                                                    <i className="fas fa-user mr-2 text-[#F4B400] mt-0.5"></i>
+                                                    <span className="font-medium">{order.customer_name}</span>
                                                 </p>
-                                                <p className="text-sm text-gray-600">
-                                                    <span className="font-medium">Address:</span> {order.delivery_address}
+                                                <p className="text-[#333333] text-sm flex items-start">
+                                                    <i className="fas fa-map-marker-alt mr-2 text-[#F4B400] mt-0.5"></i>
+                                                    <span className="line-clamp-2">{order.delivery_address}</span>
                                                 </p>
                                                 {order.estimated_completion && (
-                                                    <p className="text-sm text-gray-600">
-                                                        <span className="font-medium">Estimated completion:</span>
-                                                        <span className="text-green-600 ml-1">{order.estimated_completion}</span>
+                                                    <p className="text-[#333333] text-sm flex items-center">
+                                                        <i className="fas fa-clock mr-2 text-[#F4B400]"></i>
+                                                        <span className="text-green-600 font-medium">{order.estimated_completion}</span>
                                                     </p>
                                                 )}
                                             </div>
                                         </div>
 
-                                        {/* Order Items */}
+                                        {/* Compact Order Items */}
                                         <div>
-                                            <h4 className="text-sm font-medium text-gray-900 mb-3">
-                                                Order Items ({order.items.length})
+                                            <h4 className="text-sm font-bold text-[#333333] mb-2 flex items-center">
+                                                <i className="fas fa-shopping-cart mr-2 text-[#F4B400]"></i>
+                                                Items ({order.items.length})
                                             </h4>
-                                            <div className="bg-gray-50 rounded-lg p-4">
-                                                <div className="space-y-2">
+                                            <div className="bg-white rounded-lg border border-[#F4B400]/20 p-3">
+                                                <div className="space-y-2 max-h-32 overflow-y-auto">
                                                     {order.items.map((item, index) => (
-                                                        <div key={index} className="flex justify-between items-center">
-                                                            <div>
-                                                                <p className="text-sm font-medium text-gray-900">
+                                                        <div key={index} className="flex justify-between items-center text-sm">
+                                                            <div className="flex-1">
+                                                                <p className="font-medium text-[#333333] truncate">
                                                                     {getProductDisplayName(item, index)}
                                                                 </p>
-                                                                <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                                                                <p className="text-xs text-gray-600">
+                                                                    Qty: {item.quantity}
+                                                                </p>
                                                             </div>
-                                                            <p className="text-sm font-semibold text-gray-900">
+                                                            <p className="font-bold text-[#F4B400] ml-2">
                                                                 {formatCurrency(item.sub_total)}
                                                             </p>
                                                         </div>
                                                     ))}
                                                 </div>
-                                                <div className="border-t border-gray-200 mt-3 pt-3">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-sm font-medium text-gray-900">Total Amount</span>
-                                                        <span className="text-lg font-bold text-gray-900">
-                                                            {formatCurrency(order.total_amount)}
-                                                        </span>
-                                                    </div>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Order ID */}
-                                    <div className="mt-4 pt-4 border-t border-gray-100">
+                                    {/* Compact Order ID */}
+                                    <div className="mt-3 pt-3 border-t border-gray-200">
                                         <p className="text-xs text-gray-500 text-center">
-                                            Order ID: {order.order_id}
+                                            ID: {order.order_id}
                                         </p>
                                     </div>
                                 </div>
@@ -484,15 +496,28 @@ export default function OrderSummary() {
                     )}
                 </div>
 
-                {/* Results Summary */}
+                {/* Compact Results Summary */}
                 {filteredOrders.length > 0 && (
-                    <div className="mt-8 text-center">
-                        <p className="text-sm text-gray-500">
-                            Showing {filteredOrders.length} of {customerDetails.orders?.length || 0} orders
-                        </p>
+                    <div className="mt-6 text-center">
+                        <div className="bg-[#FAFAFA] rounded-lg border border-[#CCCCCC] py-2 px-4 inline-block">
+                            <p className="text-[#333333] text-sm">
+                                <i className="fas fa-chart-bar mr-1 text-[#F4B400]"></i>
+                                Showing <span className="font-bold text-[#F4B400]">{filteredOrders.length}</span> of{' '}
+                                <span className="font-bold text-[#F4B400]">{customerDetails.orders?.length || 0}</span> orders
+                            </p>
+                        </div>
                     </div>
                 )}
             </div>
+
+            {/* Include FontAwesome */}
+            <link
+                rel="stylesheet"
+                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+                integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+                crossOrigin="anonymous"
+                referrerPolicy="no-referrer"
+            />
         </div>
     );
 }
