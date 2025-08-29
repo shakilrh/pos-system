@@ -6,6 +6,16 @@ import AddressConfirmationModal from '../AddressConfirmationModal';
 import CartModal from '../CartModal';
 import OrderSuccessModal from '../OrderSuccessModal';
 import { useAuth } from '../../../context/AuthContext';
+import {
+    fetchStoreData,
+    addToCart,
+    getCartItemCount,
+    clearCart,
+    getCurrencySymbol,
+    validateSlug,
+    createOrder,
+    fetchOrderHistory
+} from '../../../services/PublicStoreService';
 
 export default function PublicHome() {
     const router = useRouter();
@@ -24,6 +34,7 @@ export default function PublicHome() {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [orderData, setOrderData] = useState(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [error, setError] = useState(null);
 
     const {
         isAuthenticated,
@@ -34,7 +45,7 @@ export default function PublicHome() {
     } = useAuth();
 
     useEffect(() => {
-        if (slug) {
+        if (slug && validateSlug(slug)) {
             fetchData();
             loadCartCount();
         }
@@ -66,14 +77,13 @@ export default function PublicHome() {
 
     const loadCartCount = () => {
         try {
-            const savedCart = localStorage.getItem(`cart_${slug || 'default'}`);
-            if (savedCart) {
-                const cart = JSON.parse(savedCart);
-                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-                setCartCount(totalItems);
+            if (slug && validateSlug(slug)) {
+                const count = getCartItemCount(slug);
+                setCartCount(count);
             }
         } catch (error) {
             console.error('Error loading cart count:', error);
+            setError('Failed to load cart');
         }
     };
 
@@ -104,34 +114,27 @@ export default function PublicHome() {
 
     const fetchData = async () => {
         try {
+            if (!slug || !validateSlug(slug)) {
+                setError('Invalid store identifier');
+                setLoading(false);
+                return;
+            }
+
             setLoading(true);
-            const [productsRes, categoriesRes, storeRes] = await Promise.all([
-                fetch(`http://192.168.18.107:3000/products/api/v1/public/list/${slug}`),
-                fetch(`http://192.168.18.107:3000/categories/api/v1/public/list/${slug}`),
-                fetch(`http://192.168.18.107:3000/users/api/v1/public/store/${slug}`)
-            ]);
+            setError(null);
 
-            const [productsData, categoriesData, storeData] = await Promise.all([
-                productsRes.json(),
-                categoriesRes.json(),
-                storeRes.json()
-            ]);
+            const { products, categories, store } = await fetchStoreData(slug);
 
-            setProducts(productsData.data?.data || []);
-            setCategories(categoriesData.data?.data || []);
+            setProducts(products);
+            setCategories(categories);
+            setStore(store);
 
-            const storeInfo = storeData.data?.data?.store || null;
-
-            const storeWithSlug = storeInfo ? {
-                ...storeInfo,
-                slug: slug,
-                store_name: storeInfo.name,
-                store_logo: storeInfo.logo
-            } : null;
-
-            setStore(storeWithSlug);
+            if (!store) {
+                setError('Store not found');
+            }
         } catch (error) {
             console.error('Error fetching data:', error);
+            setError(error.message || 'Failed to load store data');
         } finally {
             setLoading(false);
         }
@@ -192,7 +195,7 @@ export default function PublicHome() {
     const scrollCategories = (direction) => {
         const container = document.getElementById('category-scroll');
         if (container) {
-            const scrollAmount = 300; // adjust width
+            const scrollAmount = 300;
             container.scrollBy({
                 left: direction === 'left' ? -scrollAmount : scrollAmount,
                 behavior: 'smooth'
@@ -207,37 +210,33 @@ export default function PublicHome() {
 
     const handleLogout = () => {
         logout();
-        localStorage.removeItem(`cart_${slug || 'default'}`);
-        setCartCount(0);
+        if (slug && validateSlug(slug)) {
+            clearCart(slug);
+            setCartCount(0);
+        }
     };
 
     const handleProfileClick = () => {
         setIsProfileModalOpen(true);
     };
 
-    const handleAddToCart = (product) => {
+    const handleAddToCart = async (product) => {
         if (!isAuthenticated || user?.user_type !== 'customer') {
             setIsAuthModalOpen(true);
             return;
         }
 
+        if (!slug || !validateSlug(slug)) {
+            setError('Invalid store');
+            return;
+        }
+
         try {
-            const savedCart = localStorage.getItem(`cart_${slug || 'default'}`);
-            let cart = savedCart ? JSON.parse(savedCart) : [];
-
-            const existingItemIndex = cart.findIndex(item => item._id === product._id);
-
-            if (existingItemIndex >= 0) {
-                cart[existingItemIndex].quantity += 1;
-            } else {
-                cart.push({ ...product, quantity: 1 });
-            }
-
-            localStorage.setItem(`cart_${slug || 'default'}`, JSON.stringify(cart));
-
-            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const updatedCart = addToCart(slug, product);
+            const totalItems = updatedCart.reduce((sum, item) => sum + item.quantity, 0);
             setCartCount(totalItems);
 
+            // Visual feedback
             const button = document.querySelector(`[data-product-id="${product._id}"]`);
             if (button) {
                 const originalContent = button.innerHTML;
@@ -248,11 +247,9 @@ export default function PublicHome() {
                     button.classList.remove('bg-green-500', 'hover:bg-green-600');
                 }, 2000);
             }
-
-            window.dispatchEvent(new CustomEvent('cartUpdated', { detail: cart }));
         } catch (error) {
             console.error('Error adding to cart:', error);
-            alert('Error adding item to cart');
+            setError(error.message || 'Failed to add item to cart');
         }
     };
 
@@ -263,13 +260,6 @@ export default function PublicHome() {
         }
         setIsCartModalOpen(true);
     };
-
-    const selectedCategoryProducts = products.filter(
-        (p) => selectedCategory && p.category_id?._id === selectedCategory
-    );
-    const otherProducts = products.filter(
-        (p) => !selectedCategory || p.category_id?._id !== selectedCategory
-    );
 
     const handleOrderSuccess = (orderData) => {
         setIsCartModalOpen(false);
@@ -287,12 +277,6 @@ export default function PublicHome() {
         }
         return 0;
     });
-
-    const getCurrencySymbol = () => {
-        if (store?.currency === 'dollar') return '$';
-        if (store?.currency === 'euro') return '€';
-        return 'PKR ';
-    };
 
     const nextSlide = () => {
         if (store?.images && store.images.length > 0) {
@@ -331,6 +315,28 @@ export default function PublicHome() {
         return user?.email || 'User';
     };
 
+    // Error state
+    if (error && !loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <i className="fas fa-exclamation-triangle text-4xl text-red-400 mb-4"></i>
+                    <h1 className="text-xl font-semibold text-gray-800 mb-2">Error Loading Store</h1>
+                    <p className="text-gray-600 mb-4">{error}</p>
+                    <button
+                        onClick={() => {
+                            setError(null);
+                            fetchData();
+                        }}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -342,12 +348,12 @@ export default function PublicHome() {
         );
     }
 
-    if (!slug) {
+    if (!slug || !validateSlug(slug)) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <i className="fas fa-exclamation-triangle text-4xl text-gray-300 mb-4"></i>
-                    <h1 className="text-xl font-semibold text-gray-800">Restaurant not found</h1>
+                    <h1 className="text-xl font-semibold text-gray-800">Invalid Store</h1>
                 </div>
             </div>
         );
@@ -378,14 +384,14 @@ export default function PublicHome() {
                         {product.name}
                     </h3>
                     <span className="text-xl font-bold text-[#F4B400] ml-2">
-                        {getCurrencySymbol()}{product.price}
+                        {getCurrencySymbol(store?.currency)}{product.price}
                     </span>
                 </div>
                 {product.description && (
                     <p className="text-[#333333] text-sm mb-4 line-clamp-2">{product.description}</p>
                 )}
                 <button
-                    onClick={() => handleAddToCart(product)} // Updated to use handleAddToCart
+                    onClick={() => handleAddToCart(product)}
                     data-product-id={product._id}
                     className="w-full bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg"
                 >
@@ -488,6 +494,22 @@ export default function PublicHome() {
                         </div>
                     </div>
                 </header>
+
+                {/* Error notification */}
+                {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mx-4 mt-4">
+                        <div className="flex items-center justify-between">
+                            <span className="block sm:inline">{error}</span>
+                            <button
+                                onClick={() => setError(null)}
+                                className="ml-2 text-red-700 hover:text-red-900"
+                            >
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {isSidebarOpen && (
                     <>
                         <div
@@ -569,6 +591,7 @@ export default function PublicHome() {
                         </div>
                     </>
                 )}
+
                 {store?.images && store.images.length > 0 && (
                     <section className="bg-white shadow-md">
                         <div className="relative h-72 md:h-96 lg:h-[550px] overflow-hidden">
@@ -620,6 +643,7 @@ export default function PublicHome() {
                         </div>
                     </section>
                 )}
+
                 {store?.aboutUs && (
                     <section className="py-8 bg-gray-100">
                         <div className="container mx-auto px-4">
@@ -637,20 +661,18 @@ export default function PublicHome() {
                         </div>
                     </section>
                 )}
+
                 <div className="container mx-auto px-4 py-8">
-
                     <section className="mb-12">
-
-
                         {/* Enhanced Sticky Category Navigation */}
                         <div className="sticky top-28 z-40 bg-white/90 backdrop-blur-md border-b border-gray-200/50 shadow-xl py-4 mb-8">
-                            <div className="relative flex items-center max-w-6xl mx-auto">
+                            <div className="flex items-center max-w-6xl mx-auto px-4">
                                 {/* Left Scroll Button */}
                                 <button
                                     onClick={() => scrollCategories("left")}
-                                    className="absolute -left-9 z-30 bg-yellow-400 hover:bg-yellow-500 text-white rounded-full p-3
+                                    className="flex-shrink-0 bg-yellow-400 hover:bg-yellow-500 text-white rounded-full p-3 mr-4
                          shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none
-                         focus:ring-4 focus:ring-yellow-200"
+                         focus:ring-4 focus:ring-yellow-200 z-30"
                                 >
                                     <i className="fas fa-chevron-left"></i>
                                 </button>
@@ -658,8 +680,7 @@ export default function PublicHome() {
                                 {/* Categories Container */}
                                 <div
                                     id="category-scroll"
-                                    className="flex overflow-x-auto scrollbar-hide space-x-3 px-20 mx-auto
-                         scrollbar-hide"
+                                    className="flex overflow-x-auto scrollbar-hide space-x-3 flex-1 mx-4"
                                     style={{
                                         scrollbarWidth: 'none',
                                         msOverflowStyle: 'none'
@@ -693,16 +714,16 @@ export default function PublicHome() {
                                 {/* Right Scroll Button */}
                                 <button
                                     onClick={() => scrollCategories("right")}
-                                    className="absolute -right-11 z-30 bg-yellow-500 hover:bg-yellow-500 text-black rounded-full p-3
+                                    className="flex-shrink-0 bg-yellow-400 hover:bg-yellow-500 text-white rounded-full p-3 ml-4
                          shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none
-                         focus:ring-4 focus:ring-yellow-200"
+                         focus:ring-4 focus:ring-yellow-200 z-30"
                                 >
                                     <i className="fas fa-chevron-right"></i>
                                 </button>
                             </div>
                         </div>
 
-                        {/* Your existing product sections */}
+                        {/* Product sections */}
                         <div className="container mx-auto px-4 py-8">
                             <div className="space-y-12">
                                 {groupedProducts.map(group => (
@@ -721,12 +742,13 @@ export default function PublicHome() {
                         </div>
 
                         <style jsx>{`
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-    `}</style>
+                            .scrollbar-hide::-webkit-scrollbar {
+                                display: none;
+                            }
+                        `}</style>
                     </section>
                 </div>
+
                 <section className="bg-[#1E1E1E] py-12 relative">
                     <div className="absolute inset-0 bg-[#1E1E1E]/10"></div>
                     <div className="relative container mx-auto px-4 text-center text-[#E0E0E0]">
@@ -740,6 +762,7 @@ export default function PublicHome() {
                         <div className="flex flex-col sm:flex-row gap-6 justify-center"></div>
                     </div>
                 </section>
+
                 <footer className="bg-[#1E1E1E] text-[#E0E0E0] py-8">
                     <div className="container mx-auto px-4">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
@@ -801,6 +824,7 @@ export default function PublicHome() {
                     </div>
                 </footer>
             </div>
+
             <AuthModal
                 isOpen={isAuthModalOpen}
                 onClose={() => setIsAuthModalOpen(false)}
@@ -848,24 +872,27 @@ export default function PublicHome() {
 export async function getServerSideProps(context) {
     const { slug } = context.params;
 
-    const [productsRes, categoriesRes, storeRes] = await Promise.all([
-        fetch(`http://192.168.18.107:3000/products/api/v1/public/list/${slug}`),
-        fetch(`http://192.168.18.107:3000/categories/api/v1/public/list/${slug}`),
-        fetch(`http://192.168.18.107:3000/users/api/v1/public/store/${slug}`)
-    ]);
+    try {
+        const { products, categories, store } = await fetchStoreData(slug);
 
-    const [productsData, categoriesData, storeData] = await Promise.all([
-        productsRes.json(),
-        categoriesRes.json(),
-        storeRes.json()
-    ]);
-
-    return {
-        props: {
-            initialProducts: productsData.data?.data || [],
-            initialCategories: categoriesData.data?.data || [],
-            initialStore: storeData.data?.data || null,
-            slug
-        }
-    };
+        return {
+            props: {
+                initialProducts: products,
+                initialCategories: categories,
+                initialStore: store,
+                slug
+            }
+        };
+    } catch (error) {
+        console.error('Error in getServerSideProps:', error);
+        return {
+            props: {
+                initialProducts: [],
+                initialCategories: [],
+                initialStore: null,
+                slug,
+                error: error.message || 'Failed to load store data'
+            }
+        };
+    }
 }
