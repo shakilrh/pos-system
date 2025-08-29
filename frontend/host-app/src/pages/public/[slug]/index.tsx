@@ -205,7 +205,6 @@ export default function PublicHome() {
 
     const handleProfileUpdated = () => {
         refreshUserProfile();
-        setIsProfileModalOpen(false);
     };
 
     const handleLogout = () => {

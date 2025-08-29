@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import FlashMessage from '../FlashMessage';
 
 const API_BASE_URL = 'http://192.168.18.107:3000';
 
@@ -25,15 +26,77 @@ export default function CustomerProfileModal({
     // State declarations
     const [customerDetails, setCustomerDetails] = useState<CustomerDetails | null>(null);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [flashMessage, setFlashMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [updating, setUpdating] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
-
     const [formData, setFormData] = useState({
         name: '',
         phone_number: '',
         addresses: ''
     });
+    const [errors, setErrors] = useState<{ [key: string]: string[] }>({});
+    const [touchedFields, setTouchedFields] = useState(new Set<string>());
+
+    // Validation functions
+    const validateName = (name: string): string[] => {
+        const errors: string[] = [];
+        if (!name.trim()) {
+            errors.push('Name is required');
+        } else {
+            if (name.length < 2) errors.push('Name must be at least 2 characters long');
+            if (name.length > 50) errors.push('Name must be less than 50 characters');
+            if (!/^[A-Za-z\s'-]+$/.test(name)) errors.push('Name can only contain letters, spaces, hyphens, and apostrophes');
+            if (/^\s|\s$/.test(name)) errors.push('Name cannot start or end with spaces');
+            if (/\s{2,}/.test(name)) errors.push('Name cannot contain multiple consecutive spaces');
+        }
+        return errors;
+    };
+
+    const validatePhoneNumber = (phoneNumber: string): string[] => {
+        if (!phoneNumber.trim()) return [];
+        const errors: string[] = [];
+        const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,6}$/;
+        if (!phoneRegex.test(phoneNumber)) errors.push('Please enter a valid phone number (e.g., +1234567890, (123) 456-7890)');
+        return errors;
+    };
+
+    const validateAddress = (address: string): string[] => {
+        if (!address.trim()) return [];
+        const errors: string[] = [];
+        if (address.length < 5) errors.push('Address must be at least 5 characters long');
+        if (address.length > 500) errors.push('Address must be less than 500 characters');
+        return errors;
+    };
+
+    const getFieldErrors = (fieldName: string): string[] => {
+        switch (fieldName) {
+            case 'name':
+                return validateName(formData.name);
+            case 'phone_number':
+                return validatePhoneNumber(formData.phone_number);
+            case 'addresses':
+                return validateAddress(formData.addresses);
+            default:
+                return [];
+        }
+    };
+
+    const isFormValid = (): boolean => {
+        const requiredFields = ['name'];
+        const requiredFieldsValid = requiredFields.every(field => getFieldErrors(field).length === 0);
+        const optionalFieldsValid = ['phone_number', 'addresses'].every(field => getFieldErrors(field).length === 0);
+        return requiredFieldsValid && optionalFieldsValid;
+    };
+
+    // Update errors on formData change
+    useEffect(() => {
+        const allFields = ['name', 'phone_number', 'addresses'];
+        const newErrors: { [key: string]: string[] } = {};
+        allFields.forEach(field => {
+            newErrors[field] = getFieldErrors(field);
+        });
+        setErrors(newErrors);
+    }, [formData]);
 
     // Fetch customer details when modal opens
     useEffect(() => {
@@ -45,7 +108,7 @@ export default function CustomerProfileModal({
     const fetchCustomerDetails = async () => {
         try {
             setInitialLoading(true);
-            setError('');
+            setFlashMessage(null);
 
             const response = await fetch(`${API_BASE_URL}/orders/api/v1/customer/details`, {
                 method: 'GET',
@@ -63,20 +126,14 @@ export default function CustomerProfileModal({
             }
 
             if (data.success) {
-                // Fix: Handle the nested data structure properly
-                // Try multiple levels of nesting to find the actual customer data
-                // Handle triple nested API response
-                // Handle triple nested API response
                 const customerData = data?.data?.data?.data || null;
                 console.log('Final Customer Data:', customerData);
-
 
                 if (!customerData) {
                     throw new Error('No customer data found in API response');
                 }
                 setCustomerDetails(customerData);
 
-                // Set form data with fetched customer details
                 setFormData({
                     name: customerData?.name || user?.name || '',
                     phone_number: customerData?.phone_number || user?.phone_number || '',
@@ -86,10 +143,9 @@ export default function CustomerProfileModal({
                 throw new Error(data.message || 'Failed to fetch customer details');
             }
         } catch (err: any) {
-            setError(err.message);
+            setFlashMessage({ message: err.message, type: 'error' });
             console.error('Error fetching customer details:', err);
 
-            // Fallback to user data from auth context
             setFormData({
                 name: user?.name || '',
                 phone_number: user?.phone_number || '',
@@ -100,16 +156,58 @@ export default function CustomerProfileModal({
         }
     };
 
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        setTouchedFields(prev => new Set(prev).add(name));
+    };
+
+    const handleFocus = (fieldName: string) => {
+        setTouchedFields(prev => new Set(prev).add(fieldName));
+    };
+
+    const handleBlur = (fieldName: string) => {
+        setTouchedFields(prev => new Set(prev).add(fieldName));
+    };
+
+    const renderFieldErrors = (fieldName: string) => {
+        const fieldErrors = errors[fieldName] || [];
+        if (fieldErrors.length === 0 || !touchedFields.has(fieldName)) return null;
+
+        return (
+            <div className="mt-1 space-y-1">
+                {fieldErrors.map((error, index) => (
+                    <p key={index} className="text-red-500 text-xs flex items-start">
+                        <svg className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        {error}
+                    </p>
+                ))}
+            </div>
+        );
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!formData.name.trim()) {
-            setError('Name is required');
+        const allFields = ['name', 'phone_number', 'addresses'];
+        setTouchedFields(new Set(allFields));
+        const allErrors: { [key: string]: string[] } = {};
+
+        allFields.forEach(field => {
+            allErrors[field] = getFieldErrors(field);
+        });
+        setErrors(allErrors);
+
+        const hasErrors = Object.values(allErrors).some(fieldErrors => fieldErrors.length > 0);
+        if (hasErrors) {
+            setFlashMessage({ message: 'Please fix all errors before submitting', type: 'error' });
             return;
         }
 
         setUpdating(true);
-        setError('');
+        setFlashMessage(null);
 
         try {
             const response = await fetch(`${API_BASE_URL}/users/api/v1/customer-profile`, {
@@ -128,19 +226,33 @@ export default function CustomerProfileModal({
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || `HTTP ${response.status}: Failed to update profile`);
+                let errorMessage = 'Failed to update profile';
+                if (data.message) errorMessage = data.message;
+                else if (data.error) errorMessage = data.error;
+                else if (data.errors) {
+                    if (Array.isArray(data.errors)) {
+                        errorMessage = data.errors.join(', ');
+                    } else if (typeof data.errors === 'object') {
+                        errorMessage = Object.values(data.errors).flat().join(', ');
+                    } else {
+                        errorMessage = data.errors;
+                    }
+                } else if (typeof data === 'string') {
+                    errorMessage = data;
+                }
+                throw new Error(errorMessage);
             }
 
             if (data.success) {
                 await refreshUserProfile();
-                await fetchCustomerDetails(); // Refresh customer details
+                await fetchCustomerDetails();
                 onProfileUpdated(data.data?.data || data.data);
-                onClose();
+                setFlashMessage({ message: 'Profile updated successfully!', type: 'success' });
             } else {
                 throw new Error(data.message || 'Failed to update profile');
             }
         } catch (err: any) {
-            setError(err.message);
+            setFlashMessage({ message: err.message, type: 'error' });
             console.error('Error updating profile:', err);
         } finally {
             setUpdating(false);
@@ -150,7 +262,9 @@ export default function CustomerProfileModal({
     // Reset state when modal closes
     useEffect(() => {
         if (!isOpen) {
-            setError('');
+            setFlashMessage(null);
+            setErrors({});
+            setTouchedFields(new Set());
             setFormData({
                 name: '',
                 phone_number: '',
@@ -164,7 +278,6 @@ export default function CustomerProfileModal({
     return (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto animate-slideUp">
-                {/* Header */}
                 <div className="bg-gradient-to-br from-[#F4B400] via-[#F4B400] to-yellow-500 text-[#1E1E1E] p-5 rounded-t-2xl relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-r from-[#F4B400]/20 to-yellow-400/20"></div>
                     <div className="relative flex items-center justify-between">
@@ -194,16 +307,24 @@ export default function CustomerProfileModal({
 
                 <div className="p-4">
                     {initialLoading ? (
-                        <div className="flex flex-col items-center justify-center py-8">
-                            <div className="relative">
-                                <div className="w-10 h-10 border-4 border-gray-300 rounded-full animate-spin"></div>
-                                <div className="absolute top-0 left-0 w-10 h-10 border-4 border-[#F4B400] border-t-transparent rounded-full animate-spin"></div>
-                            </div>
-                            <p className="mt-3 text-gray-600 text-sm">Loading...</p>
+                        <div className="flex items-center justify-center py-8">
+                            <svg className="animate-spin h-5 w-5 text-[#F4B400]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span className="ml-2 text-gray-600 text-sm">Loading...</span>
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {/* Current Info Display (moved to top) */}
+                            {flashMessage && (
+                                <FlashMessage
+                                    message={flashMessage.message}
+                                    type={flashMessage.type}
+                                    onClose={() => setFlashMessage(null)}
+                                    className="mb-6"
+                                />
+                            )}
+
                             {customerDetails && (
                                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                                     <h3 className="text-base font-bold text-gray-800 mb-2 flex items-center">
@@ -237,30 +358,7 @@ export default function CustomerProfileModal({
                                 </div>
                             )}
 
-                            {error && (
-                                <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
-                                    <div className="flex items-start">
-                                        <div className="bg-red-100 p-1 rounded-full mr-2 mt-0.5">
-                                            <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                        </div>
-                                        <div className="flex-1">
-                                            <h3 className="text-red-800 font-semibold text-sm">Error</h3>
-                                            <p className="text-red-700 text-xs">{error}</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={fetchCustomerDetails}
-                                        className="mt-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
-                                    >
-                                        Try Again
-                                    </button>
-                                </div>
-                            )}
-
                             <form onSubmit={handleSubmit} className="space-y-3">
-                                {/* Full Name */}
                                 <div>
                                     <label className="flex items-center text-xs font-semibold text-gray-700 mb-1">
                                         <div className="bg-[#F4B400]/20 p-1 rounded mr-1.5">
@@ -272,16 +370,19 @@ export default function CustomerProfileModal({
                                     </label>
                                     <input
                                         type="text"
+                                        name="name"
                                         required
                                         value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#F4B400] focus:border-[#F4B400] transition-all duration-200 text-gray-800 placeholder-gray-400 text-sm"
+                                        onChange={handleInputChange}
+                                        onFocus={() => handleFocus('name')}
+                                        onBlur={() => handleBlur('name')}
+                                        className={`w-full px-3 py-2 bg-gray-50 border-2 ${errors.name && errors.name.length > 0 && touchedFields.has('name') ? 'border-red-400 ring-2 ring-red-200' : 'border-gray-300'} rounded-lg focus:ring-1 focus:ring-[#F4B400] focus:border-[#F4B400] transition-all duration-200 text-gray-800 placeholder-gray-400 text-sm`}
                                         placeholder="Enter your full name"
                                         disabled={updating}
                                     />
+                                    {renderFieldErrors('name')}
                                 </div>
 
-                                {/* Phone Number */}
                                 <div>
                                     <label className="flex items-center text-xs font-semibold text-gray-700 mb-1">
                                         <div className="bg-green-500/20 p-1 rounded mr-1.5">
@@ -293,15 +394,18 @@ export default function CustomerProfileModal({
                                     </label>
                                     <input
                                         type="tel"
+                                        name="phone_number"
                                         value={formData.phone_number}
-                                        onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
-                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#F4B400] focus:border-[#F4B400] transition-all duration-200 text-gray-800 placeholder-gray-400 text-sm"
+                                        onChange={handleInputChange}
+                                        onFocus={() => handleFocus('phone_number')}
+                                        onBlur={() => handleBlur('phone_number')}
+                                        className={`w-full px-3 py-2 bg-gray-50 border-2 ${errors.phone_number && errors.phone_number.length > 0 && touchedFields.has('phone_number') ? 'border-red-400 ring-2 ring-red-200' : 'border-gray-300'} rounded-lg focus:ring-1 focus:ring-[#F4B400] focus:border-[#F4B400] transition-all duration-200 text-gray-800 placeholder-gray-400 text-sm`}
                                         placeholder="Enter your phone number"
                                         disabled={updating}
                                     />
+                                    {renderFieldErrors('phone_number')}
                                 </div>
 
-                                {/* Address */}
                                 <div>
                                     <label className="flex items-center text-xs font-semibold text-gray-700 mb-1">
                                         <div className="bg-blue-500/20 p-1 rounded mr-1.5">
@@ -314,9 +418,12 @@ export default function CustomerProfileModal({
                                     </label>
                                     <div className="relative">
                                         <textarea
+                                            name="addresses"
                                             value={formData.addresses}
-                                            onChange={(e) => setFormData({ ...formData, addresses: e.target.value })}
-                                            className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#F4B400] focus:border-[#F4B400] transition-all duration-200 text-gray-800 placeholder-gray-400 resize-none text-sm"
+                                            onChange={handleInputChange}
+                                            onFocus={() => handleFocus('addresses')}
+                                            onBlur={() => handleBlur('addresses')}
+                                            className={`w-full px-3 py-2 bg-gray-50 border-2 ${errors.addresses && errors.addresses.length > 0 && touchedFields.has('addresses') ? 'border-red-400 ring-2 ring-red-200' : 'border-gray-300'} rounded-lg focus:ring-1 focus:ring-[#F4B400] focus:border-[#F4B400] transition-all duration-200 text-gray-800 placeholder-gray-400 resize-none text-sm`}
                                             placeholder="Enter your address..."
                                             rows={2}
                                             disabled={updating}
@@ -324,10 +431,10 @@ export default function CustomerProfileModal({
                                         <div className="absolute bottom-2 right-2 text-xs text-gray-400">
                                             {formData.addresses.length}/500
                                         </div>
+                                        {renderFieldErrors('addresses')}
                                     </div>
                                 </div>
 
-                                {/* Action Buttons */}
                                 <div className="flex space-x-2 pt-3">
                                     <button
                                         type="button"
@@ -339,14 +446,17 @@ export default function CustomerProfileModal({
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={updating || !formData.name.trim()}
-                                        className="flex-1 bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-bold py-2.5 px-3 rounded-lg transition-all duration-200 flex items-center justify-center shadow-lg disabled:opacity-50 text-sm"
+                                        disabled={updating || !isFormValid()}
+                                        className={`flex-1 bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-bold py-2.5 px-3 rounded-lg transition-all duration-200 flex items-center justify-center shadow-lg disabled:opacity-50 text-sm ${!isFormValid() ? 'cursor-not-allowed' : ''}`}
                                     >
                                         {updating ? (
-                                            <>
-                                                <div className="animate-spin rounded-full h-3 w-3 border-2 border-[#1E1E1E] border-t-transparent mr-1"></div>
+                                            <span className="flex items-center justify-center">
+                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-[#1E1E1E]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
                                                 Saving...
-                                            </>
+                                            </span>
                                         ) : (
                                             <>
                                                 <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -361,33 +471,33 @@ export default function CustomerProfileModal({
                         </div>
                     )}
                 </div>
-            </div>
 
-            <style jsx>{`
-                .animate-fadeIn {
-                    animation: fadeIn 0.3s ease-out;
-                }
-                
-                .animate-slideUp {
-                    animation: slideUp 0.4s ease-out;
-                }
-                
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                
-                @keyframes slideUp {
-                    from { 
-                        opacity: 0; 
-                        transform: translateY(30px) scale(0.95); 
+                <style jsx>{`
+                    .animate-fadeIn {
+                        animation: fadeIn 0.3s ease-out;
                     }
-                    to { 
-                        opacity: 1; 
-                        transform: translateY(0) scale(1); 
+                    
+                    .animate-slideUp {
+                        animation: slideUp 0.4s ease-out;
                     }
-                }
-            `}</style>
+                    
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                    
+                    @keyframes slideUp {
+                        from { 
+                            opacity: 0; 
+                            transform: translateY(30px) scale(0.95); 
+                        }
+                        to { 
+                            opacity: 1; 
+                            transform: translateY(0) scale(1); 
+                        }
+                    }
+                `}</style>
+            </div>
         </div>
     );
 }
