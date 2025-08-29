@@ -160,7 +160,7 @@ export default function ForgotPassword() {
     try {
       await adminAuthService.resetPassword(formData.email, formData.resetCode, formData.newPassword);
       setFlashMessage({ message: 'Password reset successfully! Redirecting to login...', type: 'success' });
-      setTimeout(() => router.push('/login'), 2000);
+      setTimeout(() => router.push('/Registration/login'), 2000);
     } catch (error: any) {
       setFlashMessage({ message: error.message || 'Failed to reset password. Please try again.', type: 'error' });
     } finally {
@@ -168,7 +168,7 @@ export default function ForgotPassword() {
     }
   };
 
-  const handleLoginRedirect = () => router.push('/login');
+  const handleLoginRedirect = () => router.push('/Registration/login');
 
   const renderFieldErrors = (fieldName: string) => {
     const fieldErrors = errors[fieldName as keyof typeof errors] || [];
