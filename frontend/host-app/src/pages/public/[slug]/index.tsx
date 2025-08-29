@@ -665,88 +665,166 @@ export default function PublicHome() {
                 <div className="container mx-auto px-4 py-8">
                     <section className="mb-12">
                         {/* Enhanced Sticky Category Navigation */}
-                        <div className="sticky top-28 z-40 bg-white/90 backdrop-blur-md border-b border-gray-200/50 shadow-xl py-4 mb-8">
-                            <div className="flex items-center max-w-6xl mx-auto px-4">
-                                {/* Left Scroll Button */}
-                                <button
-                                    onClick={() => scrollCategories("left")}
-                                    className="flex-shrink-0 bg-yellow-400 hover:bg-yellow-500 text-white rounded-full p-3 mr-4
-                         shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none
-                         focus:ring-4 focus:ring-yellow-200 z-30"
-                                >
-                                    <i className="fas fa-chevron-left"></i>
-                                </button>
-
-                                {/* Categories Container */}
-                                <div
-                                    id="category-scroll"
-                                    className="flex overflow-x-auto scrollbar-hide space-x-3 flex-1 mx-4"
-                                    style={{
-                                        scrollbarWidth: 'none',
-                                        msOverflowStyle: 'none'
-                                    }}
-                                >
-                                    {categories.map((category) => (
+                        <div className="sticky top-28 z-40 bg-white/20 backdrop-blur-sm border-b border-gray-100/20 py-4 mb-8">
+                            <div className="max-w-7xl mx-auto">
+                                <div className="flex items-center">
+                                    {/* Left Scroll Button */}
+                                    <div className="flex-shrink-0 px-2">
                                         <button
-                                            key={category._id}
-                                            onClick={() => {
-                                                setSelectedCategory(category._id);
-                                                document
-                                                    .getElementById(`category-${category._id}`)
-                                                    .scrollIntoView({ behavior: "smooth", block: "start" });
-                                            }}
-                                            className={`flex-shrink-0 px-6 py-3 rounded-full font-semibold text-sm 
-                                  transition-all duration-300 whitespace-nowrap 
-                                  focus:outline-none focus:ring-2 focus:ring-yellow-400
-                                  transform hover:scale-105 active:scale-95
-                                  ${
-                                                selectedCategory === category._id
-                                                    ? "bg-yellow-400 text-black shadow-lg scale-105 ring-2 ring-yellow-300"
-                                                    : "bg-white text-gray-600 border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50 hover:shadow-md hover:text-gray-800 shadow-sm"
-                                            }`}
+                                            onClick={() => scrollCategories("left")}
+                                            className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600
+                                 text-white rounded-xl p-3 shadow-lg transition-all duration-300 hover:scale-110
+                                 focus:outline-none focus:ring-4 focus:ring-yellow-200/50"
                                         >
-                                            <i className="fas fa-tag mr-2"></i>
-                                            {category.name}
+                                            <i className="fas fa-chevron-left text-sm"></i>
                                         </button>
-                                    ))}
-                                </div>
+                                    </div>
 
-                                {/* Right Scroll Button */}
-                                <button
-                                    onClick={() => scrollCategories("right")}
-                                    className="flex-shrink-0 bg-yellow-400 hover:bg-yellow-500 text-white rounded-full p-3 ml-4
-                         shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none
-                         focus:ring-4 focus:ring-yellow-200 z-30"
-                                >
-                                    <i className="fas fa-chevron-right"></i>
-                                </button>
-                            </div>
-                        </div>
+                                    {/* Categories Container */}
+                                    <div className="flex-1 mx-4">
+                                        <div
+                                            id="category-scroll"
+                                            className="flex overflow-x-auto scrollbar-hide space-x-4 py-2"
+                                            style={{
+                                                scrollbarWidth: 'none',
+                                                msOverflowStyle: 'none'
+                                            }}
+                                        >
+                                            {categories
+                                                .filter(category =>
+                                                    groupedProducts.some(
+                                                        group =>
+                                                            group.category._id === category._id &&
+                                                            group.products?.length > 0
+                                                    )
+                                                )
+                                                .map((category) => (
+                                                    <button
+                                                        key={category._id}
+                                                        onClick={() => {
+                                                            setSelectedCategory(category._id);
 
-                        {/* Product sections */}
-                        <div className="container mx-auto px-4 py-8">
-                            <div className="space-y-12">
-                                {groupedProducts.map(group => (
-                                    <section id={`category-${group.category._id}`} key={group.category._id} className="scroll-mt-44">
-                                        <h3 className="text-2xl font-bold text-[#F4B400] mb-4">
-                                            <i className="fas fa-tag mr-2"></i>{group.category.name}
-                                        </h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                            {group.products.map(product => (
-                                                <ProductCard key={product._id} product={product} />
-                                            ))}
+                                                            const target = document.getElementById(
+                                                                `category-${category._id}`
+                                                            );
+                                                            if (target) {
+                                                                target.scrollIntoView({
+                                                                    behavior: "smooth",
+                                                                    block: "start",
+                                                                });
+                                                            }
+                                                        }}
+                                                        className={`flex-shrink-0 px-6 py-3 rounded-2xl font-medium text-sm 
+                                      transition-all duration-300 whitespace-nowrap 
+                                      focus:outline-none focus:ring-2 focus:ring-yellow-400/30
+                                      transform hover:scale-105 active:scale-95
+                                      ${
+                                                            selectedCategory === category._id
+                                                                ? "bg-gradient-to-r from-yellow-400 to-yellow-500 text-black shadow-md scale-105"
+                                                                : "bg-white/60 text-gray-700 border border-gray-200/30 hover:border-yellow-300/40 hover:bg-yellow-50/60 hover:shadow-sm hover:text-gray-800"
+                                                        }`}
+                                                    >
+                                                        <i className="fas fa-tag mr-2 text-xs"></i>
+                                                        {category.name}
+                                                    </button>
+                                                ))}
                                         </div>
-                                    </section>
-                                ))}
+                                    </div>
+
+                                    {/* Right Scroll Button */}
+                                    <div className="flex-shrink-0 px-2">
+                                        <button
+                                            onClick={() => scrollCategories("right")}
+                                            className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600
+                                 text-white rounded-xl p-3 shadow-lg transition-all duration-300 hover:scale-110
+                                 focus:outline-none focus:ring-4 focus:ring-yellow-200/50"
+                                        >
+                                            <i className="fas fa-chevron-right text-sm"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <style jsx>{`
-                            .scrollbar-hide::-webkit-scrollbar {
-                                display: none;
-                            }
-                        `}</style>
+                        {/* Product Sections */}
+                        <div className="container mx-auto px-4 py-8">
+                            <div className="space-y-16">
+                                {groupedProducts
+                                    .filter(group => group.products && group.products.length > 0)
+                                    .map(group => (
+                                        <section
+                                            id={`category-${group.category._id}`}
+                                            key={group.category._id}
+                                            className="scroll-mt-44"
+                                        >
+                                            {/* Enhanced Category Header */}
+                                            <div className="relative mb-8">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center space-x-4">
+                                                        {/* Category Icon */}
+                                                        <div className="bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-2xl p-4 shadow-lg">
+                                                            <i className="fas fa-tag text-white text-xl"></i>
+                                                        </div>
+
+                                                        {/* Category Title */}
+                                                        <div>
+                                                            <h3 className="text-3xl font-bold text-gray-800 mb-1">
+                                                                {group.category.name}
+                                                            </h3>
+                                                            <p className="text-gray-500 text-sm font-medium">
+                                                                {group.products.length}{" "}
+                                                                {group.products.length === 1
+                                                                    ? "item"
+                                                                    : "items"}{" "}
+                                                                available
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Decorative Line */}
+                                                    <div className="flex-1 ml-6">
+                                                        <div className="h-px bg-gradient-to-r from-yellow-400/50 to-transparent"></div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Category Badge */}
+                                                <div className="mt-4">
+                                <span className="inline-flex items-center px-4 py-2 rounded-full text-xs font-medium
+                                               bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-800
+                                               border border-yellow-200/50 shadow-sm">
+                                    <i className="fas fa-star mr-1 text-yellow-600"></i>
+                                    Popular Choice
+                                </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Products Grid */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                                {group.products.map(product => (
+                                                    <ProductCard key={product._id} product={product} />
+                                                ))}
+                                            </div>
+                                        </section>
+                                    ))}
+                            </div>
+
+                            {/* Empty State */}
+                            {groupedProducts.filter(group => group.products && group.products.length > 0).length === 0 && (
+                                <div className="text-center py-16">
+                                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl p-12 border border-gray-200/50">
+                                        <div className="bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full p-6 w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                                            <i className="fas fa-shopping-bag text-white text-2xl"></i>
+                                        </div>
+                                        <h3 className="text-2xl font-bold text-gray-800 mb-3">No Products Available</h3>
+                                        <p className="text-gray-600 max-w-md mx-auto">
+                                            We're working on adding amazing products to our catalog. Check back soon for exciting new items!
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </section>
+
                 </div>
 
                 <section className="bg-[#1E1E1E] py-12 relative">
