@@ -11,6 +11,12 @@ interface Product {
     quantity?: number;
 }
 
+interface CustomerDetails {
+    name: string;
+    phone_number: string;
+    addresses: string[];
+}
+
 interface Category {
     _id: string;
     name: string;
@@ -63,7 +69,7 @@ interface OrderRequest {
     notes?: string;
 }
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.37:3000';
 
 const handleApiError = (response: ApiResponse, logout?: () => void): string => {
     if (!response.success) {
@@ -535,3 +541,4 @@ export const formatPrice = (price: number, currency?: string): string => {
 export const validateSlug = (slug: string): boolean => {
     return !!(slug && slug.trim() && slug.length > 0);
 };
+

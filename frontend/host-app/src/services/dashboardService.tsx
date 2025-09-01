@@ -42,7 +42,7 @@ interface Order {
 
 export const getOrders = async (token: string, logout: () => void): Promise<Order[]> => {
   try {
-    const response = await fetch('http://192.168.18.107:3000/orders/api/v1/list', {
+    const response = await fetch('http://192.168.18.37:3000/orders/api/v1/list', {
       headers: { Authorization: `Bearer ${token}` },
     });
 

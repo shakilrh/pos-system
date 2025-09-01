@@ -276,6 +276,7 @@ export default function ProductList({
                 <div className={`relative h-1/2 cursor-pointer ${!product.isActive ? 'opacity-50' : ''}`} onClick={() => !isCategoryFormActive && onViewDetails(product)}>
                   {product.pictureUrl ? (
                       <img
+
                           src={product.pictureUrl}
                           alt={product.name}
                           className="w-full h-full object-cover"
@@ -331,6 +332,17 @@ export default function ProductList({
                             <PencilIcon className="w-4 h-4" style={{ color: 'var(--primary-color)' }} />
                           </button>
                       )}
+
+                      {/*{userPermissions.includes('can_delete_products') && (*/}
+                      {/*    <button*/}
+                      {/*        onClick={() => !isCategoryFormActive && onDelete(product._id)}*/}
+                      {/*        className={`p-0.5 rounded-full hover:bg-red-100 ${isCategoryFormActive ? 'opacity-50 cursor-not-allowed' : ''}`}*/}
+                      {/*        title="Delete"*/}
+                      {/*        disabled={isCategoryFormActive}*/}
+                      {/*    >*/}
+                      {/*      <TrashIcon className="w-4 h-4" style={{ color: 'red' }} />*/}
+                      {/*    </button>*/}
+                      {/*)}*/}
                     </div>
                   </div>
                 </div>

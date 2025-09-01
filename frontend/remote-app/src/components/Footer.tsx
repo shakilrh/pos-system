@@ -27,7 +27,7 @@ interface ApiResponse {
 }
 
 class UserService {
-  private static readonly BASE_URL = 'http://192.168.18.107:3000/users/api/v1';
+  private static readonly BASE_URL = 'http://192.168.18.37:3000/users/api/v1';
   private static readonly TIMEOUT = 10000;
 
   static async getUserDetails(token: string): Promise<UserDetails> {

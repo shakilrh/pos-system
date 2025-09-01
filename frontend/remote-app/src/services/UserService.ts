@@ -70,7 +70,7 @@ export interface User {
   store_logo: string;
 }
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.37:3000';
 const TIMEOUT = 10000; // 10 seconds
 
 const handleApiError = (response: ApiResponse, logout?: () => void): string => {
@@ -278,7 +278,7 @@ export const fetchUsers = async (token: string, logout: () => void): Promise<Use
 
 export const fetchUserProfile = async (token: string, logout: () => void): Promise<User> => {
   try {
-    const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/details`, {
+    const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.37:3000'}/users/api/v1/details`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,

@@ -60,7 +60,7 @@ export default function Profile() {
     setLoading(true);
     setErrors({});
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/details`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.37:3000'}/users/api/v1/details`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -237,8 +237,8 @@ export default function Profile() {
   };
   const getApiEndpoint = () => {
     return user?.user_type === 'isadmin'
-      ? `${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`
-      : `${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/profile`;
+      ? `${process.env.REACT_APP_API_URL || 'http://192.168.18.37:3000'}/users/api/v1/admin-profile`
+      : `${process.env.REACT_APP_API_URL || 'http://192.168.18.37:3000'}/users/api/v1/profile`;
   };
 
   const prepareFormData = (field: string, value: string | File | null): FormData => {
@@ -447,7 +447,7 @@ export default function Profile() {
     try {
       const formData = new FormData();
       formData.append('store_logo', storeLogoFile);
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.37:3000'}/users/api/v1/admin-profile`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -476,7 +476,7 @@ export default function Profile() {
     try {
       const formData = new FormData();
       formData.append('store_name', storeName.trim());
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.37:3000'}/users/api/v1/admin-profile`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -504,7 +504,7 @@ export default function Profile() {
     try {
       const formData = new FormData();
       formData.append('address', address.trim() || '');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.37:3000'}/users/api/v1/admin-profile`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -533,7 +533,7 @@ export default function Profile() {
     try {
       const formData = new FormData();
       formData.append('phone_number', phoneNumber.trim() || '');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000'}/users/api/v1/admin-profile`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.37:3000'}/users/api/v1/admin-profile`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,

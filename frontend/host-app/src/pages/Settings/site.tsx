@@ -29,7 +29,7 @@ export default function SiteSettings({ restaurantSlug }: SiteSettingsProps) {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
-    const API_BASE_URL = 'http://192.168.18.107:3000';
+    const API_BASE_URL = 'http://192.168.18.37:3000';
     const PUBLIC_STORE_ENDPOINT = '/users/api/v1/public/store';
     // Fixed endpoint - this is the correct one from your message
     const STORE_UPDATE_ENDPOINT = '/users/api/v1/store-details';

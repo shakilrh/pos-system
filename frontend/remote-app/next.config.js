@@ -12,7 +12,7 @@ module.exports = {
           './Footer': './src/components/Footer.tsx',
         },
         remotes: {
-          host: `host@http://localhost:3000/_next/static/${
+          host: `host@http://localhost:3002/_next/static/${
             isServer ? 'ssr' : 'chunks'
           }/remoteEntry.js`, // Align with host
         },

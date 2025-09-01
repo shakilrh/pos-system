@@ -88,7 +88,7 @@ function AppContent({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const API_BASE_URL = 'http://192.168.18.107:3000';
+  const API_BASE_URL = 'http://192.168.18.37:3000';
   const USER_DETAILS_ENDPOINT = '/users/api/v1/details';
 
   const actualPathname = pathname || (typeof window !== 'undefined' ? window.location.pathname : null);
@@ -588,7 +588,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     const updateFaviconForPublicRoute = async () => {
       if (pathname && pathname.startsWith('/public/') && extractedSlug) {
         try {
-          const response = await fetch(`http://192.168.18.107:3000/users/api/v1/public/store/${extractedSlug}`);
+          const response = await fetch(`http://192.168.18.37:3000/users/api/v1/public/store/${extractedSlug}`);
           const data = await response.json();
           const storeLogo = data.data?.data?.store_logo;
           if (storeLogo && faviconLink) {

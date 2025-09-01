@@ -188,7 +188,7 @@ const RiderAssignmentModal = ({
   useEffect(() => {
     const loadRiders = async () => {
       try {
-        const response = await fetch('http://192.168.18.107:3000/users/api/v1/all-riders', {
+        const response = await fetch('http://192.168.18.37:3000/users/api/v1/all-riders', {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -223,7 +223,7 @@ const RiderAssignmentModal = ({
 
     setIsLoading(true);
     try {
-      const response = await fetch('http://192.168.18.107:3000/orders/api/v1/out-for-delivery', {
+      const response = await fetch('http://192.168.18.37:3000/orders/api/v1/out-for-delivery', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

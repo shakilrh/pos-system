@@ -14,7 +14,7 @@ interface ApiResponse<T> {
   error?: string;
 }
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.37:3000';
 
 const handleApiError = (response: ApiResponse<any>, logout: () => void): string => {
   if (!response.success) {

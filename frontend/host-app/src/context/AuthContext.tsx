@@ -54,7 +54,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.107:3000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.37:3000';
 const DEBOUNCE_MS = 1000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;

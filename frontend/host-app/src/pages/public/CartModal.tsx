@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
-const API_BASE_URL = 'http://192.168.18.107:3000';
+const API_BASE_URL = 'http://192.168.18.37:3000';
 
 export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
     const [cart, setCart] = useState([]);

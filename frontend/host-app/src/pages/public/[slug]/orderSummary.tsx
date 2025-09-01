@@ -61,7 +61,7 @@ export default function OrderSummary() {
         try {
             if (!slug) return;
 
-            const response = await fetch(`http://192.168.18.107:3000/users/api/v1/public/store/${slug}`);
+            const response = await fetch(`http://192.168.18.37:3000/users/api/v1/public/store/${slug}`);
             if (!response.ok) {
                 throw new Error(`Failed to fetch store info: ${response.status}`);
             }
@@ -92,7 +92,7 @@ export default function OrderSummary() {
             }
 
             const response = await fetch(
-                'http://192.168.18.107:3000/orders/api/v1/customer/details',
+                'http://192.168.18.37:3000/orders/api/v1/customer/details',
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`,

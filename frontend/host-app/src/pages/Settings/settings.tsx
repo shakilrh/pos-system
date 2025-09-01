@@ -45,7 +45,7 @@ export default function Settings() {
   const lastKnownThemeRef = useRef<string>('default');
   const lastKnownCurrencyRef = useRef<string>('pkr');
 
-  const API_BASE_URL = 'http://192.168.18.107:3000';
+  const API_BASE_URL = 'http://192.168.18.37:3000';
   const ADMIN_PROFILE_ENDPOINT = '/users/api/v1/admin-profile';
   const USER_PROFILE_ENDPOINT = '/users/api/v1/profile';
   const USER_DETAILS_ENDPOINT = '/users/api/v1/details';
