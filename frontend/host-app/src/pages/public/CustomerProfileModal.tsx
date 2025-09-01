@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import FlashMessage from '../FlashMessage';
-
-const API_BASE_URL = 'http://192.168.18.37:3000';
+import {
+    fetchCustomerDetails,
+    updateCustomerProfile,
+    validateName,
+    validatePhoneNumber,
+    validateAddress
+} from '../../services/CustomerService';
 
 interface CustomerDetails {
     name: string;
@@ -21,7 +26,7 @@ export default function CustomerProfileModal({
                                                  onClose,
                                                  onProfileUpdated
                                              }: CustomerProfileModalProps) {
-    const { user, token, refreshUserProfile } = useAuth();
+    const { user, token, refreshUserProfile, logout } = useAuth();
 
     // State declarations
     const [customerDetails, setCustomerDetails] = useState<CustomerDetails | null>(null);
@@ -36,37 +41,6 @@ export default function CustomerProfileModal({
     });
     const [errors, setErrors] = useState<{ [key: string]: string[] }>({});
     const [touchedFields, setTouchedFields] = useState(new Set<string>());
-
-    // Validation functions
-    const validateName = (name: string): string[] => {
-        const errors: string[] = [];
-        if (!name.trim()) {
-            errors.push('Name is required');
-        } else {
-            if (name.length < 2) errors.push('Name must be at least 2 characters long');
-            if (name.length > 50) errors.push('Name must be less than 50 characters');
-            if (!/^[A-Za-z\s'-]+$/.test(name)) errors.push('Name can only contain letters, spaces, hyphens, and apostrophes');
-            if (/^\s|\s$/.test(name)) errors.push('Name cannot start or end with spaces');
-            if (/\s{2,}/.test(name)) errors.push('Name cannot contain multiple consecutive spaces');
-        }
-        return errors;
-    };
-
-    const validatePhoneNumber = (phoneNumber: string): string[] => {
-        if (!phoneNumber.trim()) return [];
-        const errors: string[] = [];
-        const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,6}$/;
-        if (!phoneRegex.test(phoneNumber)) errors.push('Please enter a valid phone number (e.g., +1234567890, (123) 456-7890)');
-        return errors;
-    };
-
-    const validateAddress = (address: string): string[] => {
-        if (!address.trim()) return [];
-        const errors: string[] = [];
-        if (address.length < 5) errors.push('Address must be at least 5 characters long');
-        if (address.length > 500) errors.push('Address must be less than 500 characters');
-        return errors;
-    };
 
     const getFieldErrors = (fieldName: string): string[] => {
         switch (fieldName) {
@@ -101,51 +75,28 @@ export default function CustomerProfileModal({
     // Fetch customer details when modal opens
     useEffect(() => {
         if (isOpen && token) {
-            fetchCustomerDetails();
+            loadCustomerDetails();
         }
     }, [isOpen, token]);
 
-    const fetchCustomerDetails = async () => {
+    const loadCustomerDetails = async () => {
         try {
             setInitialLoading(true);
             setFlashMessage(null);
 
-            const response = await fetch(`${API_BASE_URL}/orders/api/v1/customer/details`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
+            const customerData = await fetchCustomerDetails(token!, logout);
+            setCustomerDetails(customerData);
+
+            setFormData({
+                name: customerData?.name || user?.name || '',
+                phone_number: customerData?.phone_number || user?.phone_number || '',
+                addresses: customerData?.addresses?.[0] || ''
             });
-
-            const data = await response.json();
-            console.log('Full API Response:', data);
-
-            if (!response.ok) {
-                throw new Error(data.message || `HTTP ${response.status}: Failed to fetch customer details`);
-            }
-
-            if (data.success) {
-                const customerData = data?.data?.data?.data || null;
-                console.log('Final Customer Data:', customerData);
-
-                if (!customerData) {
-                    throw new Error('No customer data found in API response');
-                }
-                setCustomerDetails(customerData);
-
-                setFormData({
-                    name: customerData?.name || user?.name || '',
-                    phone_number: customerData?.phone_number || user?.phone_number || '',
-                    addresses: customerData?.addresses?.[0] || ''
-                });
-            } else {
-                throw new Error(data.message || 'Failed to fetch customer details');
-            }
         } catch (err: any) {
             setFlashMessage({ message: err.message, type: 'error' });
             console.error('Error fetching customer details:', err);
 
+            // Fallback to user data
             setFormData({
                 name: user?.name || '',
                 phone_number: user?.phone_number || '',
@@ -210,47 +161,18 @@ export default function CustomerProfileModal({
         setFlashMessage(null);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/users/api/v1/customer-profile`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: formData.name.trim(),
-                    phone_number: formData.phone_number.trim(),
-                    addresses: formData.addresses.trim() ? [formData.addresses.trim()] : []
-                }),
-            });
+            const profileData = {
+                name: formData.name.trim(),
+                phone_number: formData.phone_number.trim(),
+                addresses: formData.addresses.trim() ? [formData.addresses.trim()] : []
+            };
 
-            const data = await response.json();
+            const updatedProfile = await updateCustomerProfile(token!, profileData, logout);
 
-            if (!response.ok) {
-                let errorMessage = 'Failed to update profile';
-                if (data.message) errorMessage = data.message;
-                else if (data.error) errorMessage = data.error;
-                else if (data.errors) {
-                    if (Array.isArray(data.errors)) {
-                        errorMessage = data.errors.join(', ');
-                    } else if (typeof data.errors === 'object') {
-                        errorMessage = Object.values(data.errors).flat().join(', ');
-                    } else {
-                        errorMessage = data.errors;
-                    }
-                } else if (typeof data === 'string') {
-                    errorMessage = data;
-                }
-                throw new Error(errorMessage);
-            }
-
-            if (data.success) {
-                await refreshUserProfile();
-                await fetchCustomerDetails();
-                onProfileUpdated(data.data?.data || data.data);
-                setFlashMessage({ message: 'Profile updated successfully!', type: 'success' });
-            } else {
-                throw new Error(data.message || 'Failed to update profile');
-            }
+            await refreshUserProfile();
+            await loadCustomerDetails();
+            onProfileUpdated(updatedProfile);
+            setFlashMessage({ message: 'Profile updated successfully!', type: 'success' });
         } catch (err: any) {
             setFlashMessage({ message: err.message, type: 'error' });
             console.error('Error updating profile:', err);

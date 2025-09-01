@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AddressConfirmationModal from './AddressConfirmationModal';
-
-const API_BASE_URL = 'http://192.168.18.37:3000';
+import {
+    createCustomerAndSendOTP,
+    verifyOTPAndLogin,
+    validateEmail,
+    validateOTP,
+    getStoreDetails
+} from '../../services/CustomerService';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -11,7 +16,6 @@ interface AuthModalProps {
         id?: string;
         store_logo?: string;
         store_name?: string;
-        // Add support for nested store structure from API
         store?: {
             id?: string;
             logo?: string;
@@ -31,29 +35,9 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
     const [email, setEmail] = useState('');
     const [otpCode, setOtpCode] = useState('');
     const [emailErrors, setEmailErrors] = useState<string[]>([]);
+    const [otpErrors, setOtpErrors] = useState<string[]>([]);
     const [touchedFields, setTouchedFields] = useState(new Set<string>());
     const [showAddressModal, setShowAddressModal] = useState(false);
-
-    // Helper function to get store details from either structure
-    const getStoreDetails = () => {
-        if (!store) return { id: 'default_admin_id', logo: null, name: 'Store' };
-
-        // Check if store has nested store structure (from API response)
-        if (store.store) {
-            return {
-                id: store.store.id || 'default_admin_id',
-                logo: store.store.logo,
-                name: store.store.name || 'Store'
-            };
-        }
-
-        // Fallback to original structure
-        return {
-            id: store.id || 'default_admin_id',
-            logo: store.store_logo,
-            name: store.store_name || 'Store'
-        };
-    };
 
     // Auto-hide success message after 5 seconds
     useEffect(() => {
@@ -73,23 +57,11 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
             setEmail('');
             setOtpCode('');
             setEmailErrors([]);
+            setOtpErrors([]);
             setTouchedFields(new Set());
             setShowAddressModal(false);
         }
     }, [isOpen]);
-
-    const validateEmail = (email: string): string[] => {
-        const errors: string[] = [];
-        if (!email.trim()) {
-            errors.push('Email is required');
-        } else {
-            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-            if (!emailRegex.test(email)) errors.push('Please enter a valid email address');
-            if (email.length > 254) errors.push('Email address is too long');
-            if (email.includes('..')) errors.push('Email cannot contain consecutive dots');
-        }
-        return errors;
-    };
 
     const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -101,6 +73,16 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
         }
     };
 
+    const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setOtpCode(value);
+
+        // Validate OTP in real-time if field has been touched
+        if (touchedFields.has('otp')) {
+            setOtpErrors(validateOTP(value));
+        }
+    };
+
     const handleEmailFocus = () => {
         setTouchedFields(prev => new Set(prev).add('email'));
     };
@@ -109,8 +91,16 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
         setEmailErrors(validateEmail(email));
     };
 
+    const handleOtpFocus = () => {
+        setTouchedFields(prev => new Set(prev).add('otp'));
+    };
+
+    const handleOtpBlur = () => {
+        setOtpErrors(validateOTP(otpCode));
+    };
+
     const renderFieldErrors = (errors: string[]) => {
-        if (errors.length === 0 || !touchedFields.has('email')) return null;
+        if (errors.length === 0 || (!touchedFields.has('email') && !touchedFields.has('otp'))) return null;
 
         return (
             <div className="mt-2 space-y-1">
@@ -142,34 +132,9 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
         setSuccess('');
 
         try {
-            const storeDetails = getStoreDetails();
-            const requestBody = {
-                email: email.trim().toLowerCase(),
-                created_by: storeDetails.id,
-            };
-
-            console.log('Sending OTP request with:', requestBody); // Debug log
-
-            const response = await fetch(`${API_BASE_URL}/users/api/v1/create-customer`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestBody),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || `HTTP ${response.status}: Failed to send OTP`);
-            }
-
-            if (data.success) {
-                setSuccess('OTP sent to your email successfully!');
-                setCurrentStep('otp');
-            } else {
-                throw new Error(data.message || 'Failed to send OTP');
-            }
+            await createCustomerAndSendOTP(email, store);
+            setSuccess('OTP sent to your email successfully!');
+            setCurrentStep('otp');
         } catch (err: any) {
             setError(err.message);
             console.error('Error sending OTP:', err);
@@ -180,14 +145,19 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
 
     const handleVerifyOtp = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validate OTP before verifying
+        const validationErrors = validateOTP(otpCode);
+        if (validationErrors.length > 0) {
+            setOtpErrors(validationErrors);
+            setTouchedFields(prev => new Set(prev).add('otp'));
+            return;
+        }
+
         setLoading(true);
         setError('');
 
         try {
-            if (!otpCode || !otpCode.trim()) {
-                throw new Error('OTP code is required');
-            }
-
             const customerData = await login(email.trim().toLowerCase(), otpCode.trim(), true);
 
             setSuccess('Account verified successfully! You are now logged in.');
@@ -218,34 +188,10 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
         setResendLoading(true);
         setError('');
         setSuccess('');
+
         try {
-            const storeDetails = getStoreDetails();
-            const requestBody = {
-                email: email.trim().toLowerCase(),
-                created_by: storeDetails.id,
-            };
-
-            console.log('Resending OTP with:', requestBody); // Debug log
-
-            const response = await fetch(`${API_BASE_URL}/users/api/v1/create-customer`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestBody),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || `HTTP ${response.status}: Failed to resend OTP`);
-            }
-
-            if (data.success) {
-                setSuccess('OTP sent to your email again!');
-            } else {
-                throw new Error(data.message || 'Failed to resend OTP');
-            }
+            await createCustomerAndSendOTP(email, store);
+            setSuccess('OTP sent to your email again!');
         } catch (err: any) {
             setError(err.message);
             console.error('Error resending OTP:', err);
@@ -260,7 +206,7 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
 
     if (!isOpen && !showAddressModal) return null;
 
-    const storeDetails = getStoreDetails();
+    const storeDetails = getStoreDetails(store);
 
     return (
         <>
@@ -417,12 +363,19 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
                                             type="text"
                                             required
                                             value={otpCode}
-                                            onChange={(e) => setOtpCode(e.target.value)}
-                                            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#F4B400] focus:border-[#F4B400] text-center text-xl font-mono tracking-widest transition-all duration-200 text-gray-800 placeholder-gray-400"
+                                            onChange={handleOtpChange}
+                                            onFocus={handleOtpFocus}
+                                            onBlur={handleOtpBlur}
+                                            className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl focus:ring-2 focus:ring-[#F4B400] focus:border-[#F4B400] text-center text-xl font-mono tracking-widest transition-all duration-200 text-gray-800 placeholder-gray-400 ${
+                                                touchedFields.has('otp') && otpErrors.length > 0
+                                                    ? 'border-red-400 ring-2 ring-red-200'
+                                                    : 'border-gray-200 hover:border-[#F4B400]/50'
+                                            }`}
                                             placeholder="• • • • • •"
                                             maxLength={10}
                                             disabled={loading}
                                         />
+                                        {renderFieldErrors(otpErrors)}
                                         <p className="text-xs text-gray-500 text-center">
                                             Code sent to <span className="font-medium">{email}</span>
                                         </p>
@@ -430,7 +383,7 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
 
                                     <button
                                         type="submit"
-                                        disabled={loading}
+                                        disabled={loading || otpErrors.length > 0}
                                         className="w-full bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-semibold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:opacity-50 disabled:transform-none"
                                     >
                                         {loading ? (
