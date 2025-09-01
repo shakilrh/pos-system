@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-
-const API_BASE_URL = 'http://192.168.18.37:3000';
+import { fetchCustomerDetails, updateCustomerAddress } from '../../services/CustomerService';
 
 interface CustomerDetails {
     name: string;
@@ -24,7 +23,7 @@ export default function AddressConfirmationModal({
                                                      title = "Confirm Delivery Address",
                                                      subtitle = "Where should we deliver your order?"
                                                  }: AddressConfirmationModalProps) {
-    const { user, token, refreshUserProfile } = useAuth();
+    const { user, token, refreshUserProfile, logout } = useAuth();
     const [customerDetails, setCustomerDetails] = useState<CustomerDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -32,46 +31,21 @@ export default function AddressConfirmationModal({
     const [editAddress, setEditAddress] = useState('');
     const [updating, setUpdating] = useState(false);
 
-    // Fetch customer details
     useEffect(() => {
         if (isOpen && token) {
-            fetchCustomerDetails();
+            fetchCustomerDetailsData();
         }
     }, [isOpen, token]);
 
-    const fetchCustomerDetails = async () => {
+    const fetchCustomerDetailsData = async () => {
         try {
             setLoading(true);
             setError('');
-
-            const response = await fetch(`${API_BASE_URL}/orders/api/v1/customer/details`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            const data = await response.json();
-            console.log('Full API Response:', data);
-
-            if (!response.ok) {
-                throw new Error(data.message || `HTTP ${response.status}: Failed to fetch customer details`);
-            }
-
-            if (data.success) {
-                // Fix: Handle the nested data structure properly
-                // Try multiple levels of nesting to find the actual customer data
-                const customerData = data.data?.data?.data || data.data?.data || data.data;
-                console.log('Customer Data:', customerData);
-
-                setCustomerDetails(customerData);
-                setEditAddress(customerData?.addresses?.[0] || '');
-            } else {
-                throw new Error(data.message || 'Failed to fetch customer details');
-            }
-        } catch (err: any) {
-            setError(err.message);
+            const customerData = await fetchCustomerDetails(token, logout);
+            setCustomerDetails(customerData);
+            setEditAddress(customerData.addresses?.[0] || '');
+        } catch (err) {
+            setError(err.message || 'Failed to fetch customer details');
             console.error('Error fetching customer details:', err);
         } finally {
             setLoading(false);
@@ -87,36 +61,18 @@ export default function AddressConfirmationModal({
         try {
             setUpdating(true);
             setError('');
-
-            const response = await fetch(`${API_BASE_URL}/users/api/v1/customer-profile`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: customerDetails?.name || user?.name || '',
-                    phone_number: customerDetails?.phone_number || user?.phone_number || '',
-                    addresses: [editAddress]
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || `HTTP ${response.status}: Failed to update address`);
-            }
-
-            if (data.success) {
-                await refreshUserProfile();
-                await fetchCustomerDetails();
-                setIsEditing(false);
-                setError('');
-            } else {
-                throw new Error(data.message || 'Failed to update address');
-            }
-        } catch (err: any) {
-            setError(err.message);
+            await updateCustomerAddress(
+                token,
+                logout,
+                customerDetails?.name || user?.name || '',
+                customerDetails?.phone_number || user?.phone_number || '',
+                [editAddress]
+            );
+            await refreshUserProfile();
+            await fetchCustomerDetailsData();
+            setIsEditing(false);
+        } catch (err) {
+            setError(err.message || 'Failed to update address');
             console.error('Error updating address:', err);
         } finally {
             setUpdating(false);
@@ -128,7 +84,6 @@ export default function AddressConfirmationModal({
         onClose();
     };
 
-    // Reset state when modal closes
     useEffect(() => {
         if (!isOpen) {
             setError('');
@@ -142,7 +97,6 @@ export default function AddressConfirmationModal({
     return (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto animate-slideUp">
-                {/* Header */}
                 <div className="bg-gradient-to-br from-[#F4B400] via-[#F4B400] to-yellow-500 text-[#1E1E1E] p-5 rounded-t-2xl relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-r from-[#F4B400]/20 to-yellow-400/20"></div>
                     <div className="relative flex items-center justify-between">
@@ -168,7 +122,6 @@ export default function AddressConfirmationModal({
                         </button>
                     </div>
                 </div>
-
                 <div className="p-4">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-8">
@@ -180,7 +133,6 @@ export default function AddressConfirmationModal({
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {/* Current Info Display */}
                             {customerDetails && (
                                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                                     <h3 className="text-base font-bold text-gray-800 mb-2 flex items-center">
@@ -213,7 +165,6 @@ export default function AddressConfirmationModal({
                                     </div>
                                 </div>
                             )}
-
                             {error && (
                                 <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
                                     <div className="flex items-start">
@@ -228,15 +179,13 @@ export default function AddressConfirmationModal({
                                         </div>
                                     </div>
                                     <button
-                                        onClick={fetchCustomerDetails}
+                                        onClick={fetchCustomerDetailsData}
                                         className="mt-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
                                     >
                                         Try Again
                                     </button>
                                 </div>
                             )}
-
-                            {/* Address Section */}
                             <div>
                                 <div className="flex items-center justify-between mb-3">
                                     <label className="flex items-center text-xs font-semibold text-gray-700">
@@ -260,7 +209,6 @@ export default function AddressConfirmationModal({
                                         </button>
                                     )}
                                 </div>
-
                                 {isEditing ? (
                                     <div className="space-y-3">
                                         <div className="relative">
@@ -335,8 +283,6 @@ export default function AddressConfirmationModal({
                                     </div>
                                 )}
                             </div>
-
-                            {/* Action Buttons */}
                             {!isEditing && (
                                 <div className="flex space-x-2 pt-3">
                                     <button
@@ -361,7 +307,6 @@ export default function AddressConfirmationModal({
                     )}
                 </div>
             </div>
-
             <style jsx>{`
                 .animate-fadeIn {
                     animation: fadeIn 0.3s ease-out;

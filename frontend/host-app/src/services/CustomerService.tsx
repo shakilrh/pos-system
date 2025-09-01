@@ -2,6 +2,9 @@ interface CustomerDetails {
     name: string;
     phone_number: string;
     addresses: string[];
+    email?: string | null;
+    loyalty_points?: number | null;
+    orders?: Order[];
 }
 
 interface StoreDetails {
@@ -24,6 +27,14 @@ interface ApiResponse {
     data?: any;
 }
 
+interface Store {
+    slug: string;
+    name?: string;
+    logo?: string;
+    currency?: string;
+    loyaltyprogram?: string;
+}
+
 interface CreateCustomerRequest {
     email: string;
     created_by: string;
@@ -40,6 +51,26 @@ interface LoginRequest {
     otp: string;
 }
 
+interface Order {
+    order_id: string;
+    order_number: string;
+    order_date: string;
+    total_amount: number;
+    status: string;
+    delivery_address: string;
+    customer_name: string;
+    items: OrderItem[];
+    estimated_completion: string | null;
+    redeemed_points?: number;
+    earned_points?: number;
+}
+
+interface OrderItem {
+    product_id: string;
+    quantity: number;
+    product_name?: string | null;
+    sub_total?: number;
+}
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.18.37:3000';
 
 const handleApiError = (response: ApiResponse, logout?: () => void): string => {
@@ -402,4 +433,179 @@ export const validateOTP = (otp: string): string[] => {
 
     }
     return errors;
+};
+
+export const fetchStoreInfo = async (slug: string): Promise<Store> => {
+    try {
+        if (!slug) {
+            throw new Error('Store slug is required');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/users/api/v1/public/store/${slug}`);
+        const data = await validateResponse(response);
+
+        if (!data.success || !data.data?.data?.store) {
+            throw new Error(handleApiError(data, () => {}));
+        }
+
+        const storeInfo = data.data.data.store;
+        return {
+            ...storeInfo,
+            slug,
+            store_name: storeInfo.name,
+            store_logo: storeInfo.logo
+        };
+    } catch (err) {
+        throw new Error(err instanceof Error ? err.message : 'Failed to fetch store info');
+    }
+};
+
+export const fetchCustomerorderDetails = async (token: string, logout: () => void): Promise<CustomerDetails> => {
+    try {
+        if (!token) {
+            throw new Error('Authentication token is required');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/orders/api/v1/customer/details`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (response.status === 401) {
+            logout();
+            throw new Error('Session expired. Please log in again');
+        }
+
+        const data = await validateResponse(response);
+
+        if (!data.success) {
+            throw new Error(handleApiError(data, logout));
+        }
+
+        const customerData = data.data?.data?.data || data.data?.data || data.data;
+        if (!customerData) {
+            throw new Error('No customer data found in response');
+        }
+
+        return {
+            ...customerData,
+            orders: customerData.orders || [],
+            addresses: customerData.addresses || [],
+            loyalty_points: customerData.loyalty_points ?? 0
+        };
+    } catch (err) {
+        throw new Error(err instanceof Error ? err.message : 'Failed to fetch customer details');
+    }
+};
+
+export const updateCustomerAddress = async (
+    token: string,
+    logout: () => void,
+    name: string,
+    phone_number: string,
+    addresses: string[]
+): Promise<void> => {
+    try {
+        if (!token) {
+            throw new Error('Authentication token is required');
+        }
+
+        if (!addresses[0]?.trim()) {
+            throw new Error('Address is required');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/users/api/v1/customer-profile`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: name.trim(),
+                phone_number: phone_number.trim(),
+                addresses: [addresses[0].trim()]
+            }),
+        });
+
+        if (response.status === 401) {
+            logout();
+            throw new Error('Session expired. Please log in again');
+        }
+
+        const data = await validateResponse(response);
+
+        if (!data.success) {
+            throw new Error(handleApiError(data, logout));
+        }
+    } catch (err) {
+        throw new Error(err instanceof Error ? err.message : 'Failed to update address');
+    }
+};
+
+export const placeOrder = async (
+    token: string,
+    logout: () => void,
+    orderData: {
+        items: { product_id: string; quantity: number }[];
+        delivery_address: string;
+        phone_number: string;
+        rider_note?: string;
+        use_redeem_points?: boolean;
+    }
+): Promise<Order> => {
+    try {
+        if (!token) {
+            throw new Error('Authentication token is required');
+        }
+
+        if (!orderData.items.length) {
+            throw new Error('Cart is empty');
+        }
+
+        if (!orderData.delivery_address.trim()) {
+            throw new Error('Delivery address is required');
+        }
+
+        if (!orderData.phone_number.trim()) {
+            throw new Error('Phone number is required');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/orders/api/v1/online-create`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                items: orderData.items,
+                delivery_address: orderData.delivery_address.trim(),
+                phone_number: orderData.phone_number.trim(),
+                rider_note: orderData.rider_note?.trim(),
+                use_redeem_points: orderData.use_redeem_points
+            }),
+        });
+
+        if (response.status === 401) {
+            logout();
+            throw new Error('Session expired. Please log in again');
+        }
+
+        const data = await validateResponse(response);
+
+        if (!data.success) {
+            throw new Error(handleApiError(data, logout));
+        }
+
+        const order = data.data?.data;
+        if (!order) {
+            throw new Error('Invalid order data received');
+        }
+
+        return order;
+    } catch (err) {
+        throw new Error(err instanceof Error ? err.message : 'Failed to place order');
+    }
 };

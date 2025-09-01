@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
+import { fetchStoreInfo, fetchCustomerorderDetails } from '../../../services/CustomerService';
 
 interface OrderItem {
     product_name: string | null;
@@ -30,20 +31,10 @@ interface CustomerDetails {
     orders: Order[];
 }
 
-interface ApiResponse {
-    statusCode: number;
-    message: string;
-    success: boolean;
-    type: number;
-    data: {
-        data: CustomerDetails;
-    };
-}
-
 export default function OrderSummary() {
     const router = useRouter();
     const { slug } = router.query;
-    const { isAuthenticated, user, token } = useAuth();
+    const { isAuthenticated, user, token, logout } = useAuth();
     const [customerDetails, setCustomerDetails] = useState<CustomerDetails | null>(null);
     const [store, setStore] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -52,100 +43,38 @@ export default function OrderSummary() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isClient, setIsClient] = useState(false);
 
-    // Ensure we're on the client side before doing anything
     useEffect(() => {
         setIsClient(true);
     }, []);
 
-    const fetchStoreInfo = async () => {
-        try {
-            if (!slug) return;
-
-            const response = await fetch(`http://192.168.18.37:3000/users/api/v1/public/store/${slug}`);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch store info: ${response.status}`);
-            }
-
-            const storeData = await response.json();
-            const storeInfo = storeData.data?.data?.store || null;
-
-            const storeWithSlug = storeInfo ? {
-                ...storeInfo,
-                slug: slug,
-                store_name: storeInfo.name,
-                store_logo: storeInfo.logo
-            } : null;
-
-            setStore(storeWithSlug);
-        } catch (error) {
-            console.error('Error fetching store info:', error);
-        }
-    };
-
-    const fetchCustomerDetails = async () => {
+    const fetchData = async () => {
         try {
             setLoading(true);
             setError(null);
-
-            if (!token) {
-                throw new Error('No authentication token found');
+            if (slug) {
+                const storeData = await fetchStoreInfo(slug as string);
+                setStore(storeData);
             }
-
-            const response = await fetch(
-                'http://192.168.18.37:3000/orders/api/v1/customer/details',
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: Failed to fetch customer details`);
+            if (token) {
+                const customerData = await fetchCustomerorderDetails(token, logout);
+                setCustomerDetails(customerData);
             }
-
-            const raw = await response.json();
-            console.log('Full API Response:', raw);
-
-            // Normalize like AuthModal does
-            let customerData = null;
-
-            if (raw?.data?.data?.data) {
-                customerData = raw.data.data.data;
-            } else if (raw?.data?.data) {
-                customerData = raw.data.data;
-            } else if (raw?.data) {
-                customerData = raw.data;
-            }
-
-            console.log('Normalized Customer Data:', customerData);
-
-            if (!customerData) {
-                throw new Error('No customer data found in API response');
-            }
-
-            setCustomerDetails(customerData);
-        } catch (error: any) {
-            console.error('Error fetching customer details:', error);
-            setError(error.message || 'Failed to load customer details');
+        } catch (error) {
+            setError(error.message || 'Failed to load data');
+            console.error('Error fetching data:', error);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        // Only run on client side after hydration
         if (!isClient) return;
-
         if (!isAuthenticated || user?.user_type !== 'customer') {
             router.push('/');
             return;
         }
-
         if (token && slug) {
-            fetchStoreInfo();
-            fetchCustomerDetails();
+            fetchData();
         }
     }, [isAuthenticated, user, router, token, isClient, slug]);
 
@@ -228,7 +157,6 @@ export default function OrderSummary() {
 
     const statusOptions = ['all', 'pending', 'confirmed', 'ready', 'shipped', 'out_for_delivery', 'completed', 'cancelled'];
 
-    // Show loading state during hydration
     if (!isClient) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -261,10 +189,7 @@ export default function OrderSummary() {
                     <h2 className="text-xl font-semibold text-[#333333] mb-2">Unable to Load Orders</h2>
                     <p className="text-gray-600 mb-6">{error}</p>
                     <button
-                        onClick={() => {
-                            fetchStoreInfo();
-                            fetchCustomerDetails();
-                        }}
+                        onClick={fetchData}
                         className="bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg"
                     >
                         <i className="fas fa-refresh mr-2"></i>Try Again
@@ -286,7 +211,6 @@ export default function OrderSummary() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Enhanced Header with matching design */}
             <div className="bg-white shadow-lg sticky top-0 z-40">
                 <div className="container mx-auto px-4 py-6">
                     <div className="flex items-center justify-between">
@@ -318,9 +242,7 @@ export default function OrderSummary() {
                     </div>
                 </div>
             </div>
-
             <div className="container mx-auto px-4 py-6">
-                {/* Compact Customer Info Card */}
                 <div className="bg-[#FAFAFA] rounded-xl shadow-lg border border-[#CCCCCC] p-4 mb-6">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
@@ -341,8 +263,6 @@ export default function OrderSummary() {
                         </div>
                     </div>
                 </div>
-
-                {/* Compact Filters */}
                 <div className="bg-[#FAFAFA] rounded-xl shadow-lg border border-[#CCCCCC] p-4 mb-6">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
                         <div className="flex flex-wrap gap-2">
@@ -360,7 +280,6 @@ export default function OrderSummary() {
                                 </button>
                             ))}
                         </div>
-
                         <div className="md:w-64">
                             <div className="relative">
                                 <input
@@ -377,8 +296,6 @@ export default function OrderSummary() {
                         </div>
                     </div>
                 </div>
-
-                {/* Compact Orders List */}
                 <div className="space-y-4">
                     {filteredOrders.length === 0 ? (
                         <div className="bg-[#FAFAFA] rounded-xl shadow-lg border border-[#CCCCCC] p-8 text-center">
@@ -404,7 +321,6 @@ export default function OrderSummary() {
                     ) : (
                         filteredOrders.map((order) => (
                             <div key={order.order_id} className="bg-[#FAFAFA] rounded-xl shadow-lg border border-[#CCCCCC] hover:shadow-xl transition-all overflow-hidden">
-                                {/* Compact Order Header */}
                                 <div className="bg-gradient-to-r from-[#F4B400] to-[#F4B400]/80 px-4 py-3">
                                     <div className="flex items-center justify-between">
                                         <div>
@@ -428,11 +344,8 @@ export default function OrderSummary() {
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Compact Order Details */}
                                 <div className="px-4 py-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {/* Compact Delivery Info */}
                                         <div>
                                             <h4 className="text-sm font-bold text-[#333333] mb-2 flex items-center">
                                                 <i className="fas fa-truck mr-2 text-[#F4B400]"></i>
@@ -455,8 +368,6 @@ export default function OrderSummary() {
                                                 )}
                                             </div>
                                         </div>
-
-                                        {/* Compact Order Items */}
                                         <div>
                                             <h4 className="text-sm font-bold text-[#333333] mb-2 flex items-center">
                                                 <i className="fas fa-shopping-cart mr-2 text-[#F4B400]"></i>
@@ -483,8 +394,6 @@ export default function OrderSummary() {
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* Compact Order ID */}
                                     <div className="mt-3 pt-3 border-t border-gray-200">
                                         <p className="text-xs text-gray-500 text-center">
                                             ID: {order.order_id}
@@ -495,8 +404,6 @@ export default function OrderSummary() {
                         ))
                     )}
                 </div>
-
-                {/* Compact Results Summary */}
                 {filteredOrders.length > 0 && (
                     <div className="mt-6 text-center">
                         <div className="bg-[#FAFAFA] rounded-lg border border-[#CCCCCC] py-2 px-4 inline-block">
@@ -509,8 +416,6 @@ export default function OrderSummary() {
                     </div>
                 )}
             </div>
-
-            {/* Include FontAwesome */}
             <link
                 rel="stylesheet"
                 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"

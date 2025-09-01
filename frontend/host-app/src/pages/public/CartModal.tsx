@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-
-const API_BASE_URL = 'http://192.168.18.37:3000';
+import { fetchStoreInfo, fetchCustomerDetails, placeOrder } from '../../services/CustomerService';
 
 export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
     const [cart, setCart] = useState([]);
@@ -14,83 +13,31 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
     const [useRedeemPoints, setUseRedeemPoints] = useState(false);
     const [loyaltyPoints, setLoyaltyPoints] = useState(0);
     const [loyaltyProgramEnabled, setLoyaltyProgramEnabled] = useState(false);
-    const { user, token } = useAuth();
+    const { user, token, logout } = useAuth();
 
     useEffect(() => {
         if (isOpen) {
             loadCart();
-            fetchCustomerDetails();
-            checkLoyaltyProgramStatus();
+            fetchCustomerDetailsAndStore();
         }
     }, [isOpen, user, token, store]);
 
-    const checkLoyaltyProgramStatus = async () => {
-        if (!store?.slug) return;
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/users/api/v1/public/store/${store.slug}`);
-            const data = await response.json();
-
-            if (data.success && data.data?.data?.store?.loyaltyprogram === 'enable') {
-                setLoyaltyProgramEnabled(true);
-            } else {
-                setLoyaltyProgramEnabled(false);
-            }
-        } catch (error) {
-            console.error('Error checking loyalty program status:', error);
-            setLoyaltyProgramEnabled(false);
-        }
-    };
-
-    const fetchCustomerDetails = async () => {
-        if (!token) {
-            console.error('No token available');
-            return;
-        }
+    const fetchCustomerDetailsAndStore = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API_BASE_URL}/orders/api/v1/customer/details`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to fetch customer details');
+            if (store?.slug) {
+                const storeData = await fetchStoreInfo(store.slug);
+                setLoyaltyProgramEnabled(storeData.loyaltyprogram === 'enable');
             }
-
-            if (data.success) {
-                let customerData = null;
-
-                if (data.data?.data?.data) {
-                    customerData = data.data.data.data;
-                } else if (data.data?.data) {
-                    customerData = data.data.data;
-                } else if (data.data) {
-                    customerData = data.data;
-                }
-
-                if (customerData) {
-                    if (customerData.addresses && customerData.addresses.length > 0) {
-                        setDeliveryAddress(customerData.addresses[0]);
-                    }
-
-                    if (customerData.phone_number) {
-                        setPhoneNumber(customerData.phone_number);
-                    }
-
-                    if (customerData.loyalty_points !== undefined && customerData.loyalty_points !== null) {
-                        setLoyaltyPoints(customerData.loyalty_points);
-                    }
-                }
-            } else {
-                throw new Error(data.message || 'Failed to retrieve customer data');
+            if (token) {
+                const customerData = await fetchCustomerDetails(token, logout);
+                setDeliveryAddress(customerData.addresses?.[0] || '');
+                setPhoneNumber(customerData.phone_number || '');
+                setLoyaltyPoints(customerData.loyalty_points || 0);
             }
         } catch (error) {
-            console.error('Error fetching customer details:', error);
+            console.error('Error fetching data:', error);
+            setLoyaltyProgramEnabled(false);
         } finally {
             setLoading(false);
         }
@@ -175,53 +122,26 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                 })),
                 delivery_address: deliveryAddress.trim(),
                 phone_number: phoneNumber.trim(),
-
+                rider_note: riderNote.trim() || undefined,
+                use_redeem_points: useRedeemPoints
             };
 
-            // Add loyalty points usage flag if user chose to use them
-            if (useRedeemPoints) {
-                orderData.use_redeem_points = true;
+            const result = await placeOrder(token, logout, orderData);
+
+            let successMessage = 'Order placed successfully!';
+            if (result.redeemed_points && result.redeemed_points > 0) {
+                successMessage += ` You redeemed ${result.redeemed_points} loyalty points!`;
+            }
+            if (result.earned_points && result.earned_points > 0) {
+                successMessage += ` You earned ${result.earned_points} new loyalty points with this order!`;
             }
 
-            if (riderNote.trim()) {
-                orderData.rider_note = riderNote.trim();
-            }
-
-            const response = await fetch(`${API_BASE_URL}/orders/api/v1/online-create`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(orderData)
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                const orderData = result.data.data;
-
-                // Show appropriate success message based on loyalty points usage
-                let successMessage = 'Order placed successfully!';
-                if (orderData.redeemed_points && orderData.redeemed_points > 0) {
-                    successMessage += ` You redeemed ${orderData.redeemed_points} loyalty points!`;
-                }
-                if (orderData.earned_points && orderData.earned_points > 0) {
-                    successMessage += ` You earned ${orderData.earned_points} new loyalty points with this order!`;
-                }
-
-
-                // Reset form and close modal
-                clearCart();
-                setShowCheckout(false);
-                setUseRedeemPoints(false);
-                setRiderNote('');
-                onClose();
-                orderData.successMessage = successMessage;
-                onOrderSuccess(orderData);
-            } else {
-                throw new Error(result.message || 'Failed to place order');
-            }
+            clearCart();
+            setShowCheckout(false);
+            setUseRedeemPoints(false);
+            setRiderNote('');
+            onClose();
+            onOrderSuccess({ ...result, successMessage });
         } catch (error) {
             console.error('Error placing order:', error);
             alert(error.message || 'Failed to place order. Please try again.');
@@ -235,7 +155,6 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-                {/* Header */}
                 <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 p-4 md:p-6 text-white flex-shrink-0">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2 md:space-x-3">
@@ -257,12 +176,9 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                         </button>
                     </div>
                 </div>
-
-                {/* Content */}
                 <div className="flex-1 overflow-auto p-4 md:p-6">
                     {!showCheckout ? (
                         <div>
-                            {/* Loyalty Info at Cart View */}
                             {loyaltyProgramEnabled && loyaltyPoints > 0 && (
                                 <div className="mb-3 md:mb-4 p-3 md:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-l-4 border-blue-400 shadow-sm">
                                     <div className="flex items-center space-x-2 mb-1 md:mb-2">
@@ -276,7 +192,6 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                                     </p>
                                 </div>
                             )}
-
                             {cart.length === 0 ? (
                                 <div className="text-center py-8 md:py-12">
                                     <i className="fas fa-shopping-cart text-4xl md:text-6xl text-gray-300 mb-4"></i>
@@ -327,62 +242,26 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                                                         <i className="fas fa-plus"></i>
                                                     </button>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="font-bold text-gray-800 text-sm md:text-base">
-                                                        {getCurrencySymbol()}{(item.price * item.quantity).toFixed(2)}
-                                                    </p>
-                                                    <button
-                                                        onClick={() => removeFromCart(item._id)}
-                                                        className="text-red-500 hover:text-red-700 text-xs transition-colors"
-                                                    >
-                                                        <i className="fas fa-trash mr-1"></i>Remove
-                                                    </button>
-                                                </div>
+                                                <button
+                                                    onClick={() => removeFromCart(item._id)}
+                                                    className="text-red-500 hover:text-red-600 transition-colors p-1 md:p-2"
+                                                >
+                                                    <i className="fas fa-trash text-xs md:text-sm"></i>
+                                                </button>
                                             </div>
                                         </div>
                                     ))}
-
-                                    {/* Cart Summary */}
-                                    <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl p-4 md:p-6 mt-4 md:mt-6 shadow-lg">
-                                        <div className="flex justify-between items-center mb-3 md:mb-4">
-                                            <span className="text-gray-700 text-sm md:text-lg">Total Items:</span>
-                                            <span className="font-bold text-gray-800 text-base md:text-xl">{getTotalItems()}</span>
+                                    <div className="bg-gray-50 rounded-xl p-3 md:p-4 mt-3 md:mt-4 shadow-sm">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm md:text-base font-semibold text-gray-800">Subtotal ({getTotalItems()} items):</span>
+                                            <span className="text-base md:text-lg font-bold text-yellow-600">{getCurrencySymbol()}{getSubtotal().toFixed(2)}</span>
                                         </div>
-                                        <div className="flex justify-between items-center mb-4 md:mb-6">
-                                            <span className="text-gray-800 text-base md:text-xl font-semibold">Total Amount:</span>
-                                            <span className="font-bold text-lg md:text-2xl text-yellow-600">
-                                                {getCurrencySymbol()}{getSubtotal().toFixed(2)}
-                                            </span>
-                                        </div>
-
-                                        {loyaltyProgramEnabled && loyaltyPoints > 0 && (
-                                            <div className="mb-3 md:mb-4 p-3 md:p-4 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg border border-blue-300 shadow-sm">
-                                                <div className="flex items-center space-x-2 mb-1 md:mb-2">
-                                                    <i className="fas fa-star text-yellow-500 text-sm md:text-base"></i>
-                                                    <span className="text-xs md:text-sm font-semibold text-gray-800">
-                                                        You have {loyaltyPoints} loyalty points!
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-blue-700">
-                                                    Use them at checkout to get discounts on your order
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        <div className="flex space-x-2 md:space-x-3">
-                                            <button
-                                                onClick={clearCart}
-                                                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 md:py-3 rounded-xl transition-colors text-xs md:text-sm shadow-md"
-                                            >
-                                                <i className="fas fa-trash mr-1 md:mr-2"></i>Clear Cart
-                                            </button>
-                                            <button
-                                                onClick={() => setShowCheckout(true)}
-                                                className="flex-[2] bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-bold py-2 md:py-3 rounded-xl transition-all duration-200 text-xs md:text-sm shadow-lg transform hover:scale-105"
-                                            >
-                                                <i className="fas fa-credit-card mr-1 md:mr-2"></i>Proceed to Checkout
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={() => setShowCheckout(true)}
+                                            className="w-full mt-3 md:mt-4 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-white font-bold py-2 md:py-3 rounded-xl transition-all duration-200 shadow-lg transform hover:scale-105"
+                                        >
+                                            <i className="fas fa-credit-card mr-1 md:mr-2"></i>Proceed to Checkout
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -399,7 +278,6 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                             ) : (
                                 <div className="flex-1 overflow-auto">
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 pb-20">
-                                        {/* Order Summary */}
                                         <div>
                                             <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-3 md:mb-4">
                                                 <i className="fas fa-list-alt mr-2"></i>Order Summary
@@ -416,7 +294,6 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                                                         </span>
                                                     </div>
                                                 ))}
-
                                                 <div className="pt-3 md:pt-4 mt-3 md:mt-4 border-t border-gray-300 space-y-1 md:space-y-2">
                                                     <div className="flex justify-between items-center pt-2 border-t-2 border-yellow-400">
                                                         <span className="text-lg md:text-xl font-bold">Total:</span>
@@ -425,8 +302,6 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                                                         </span>
                                                     </div>
                                                 </div>
-
-                                                {/* Loyalty Points Section */}
                                                 {loyaltyProgramEnabled && loyaltyPoints > 0 && (
                                                     <div className="mt-3 md:mt-4 p-3 md:p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-l-4 border-blue-400 shadow-sm">
                                                         <div className="flex items-center justify-between mb-2 md:mb-3">
@@ -464,8 +339,6 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                                                 )}
                                             </div>
                                         </div>
-
-                                        {/* Delivery Details */}
                                         <div>
                                             <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-3 md:mb-4">
                                                 <i className="fas fa-map-marker-alt mr-2"></i>Delivery Details
@@ -523,8 +396,6 @@ export default function CartModal({ isOpen, onClose, store, onOrderSuccess }) {
                                     </div>
                                 </div>
                             )}
-
-                            {/* Checkout Footer */}
                             <div className="bg-white border-t pt-4 pb-2 mt-4 sticky bottom-0 shadow-lg">
                                 <div className="flex space-x-2 md:space-x-4">
                                     <button
