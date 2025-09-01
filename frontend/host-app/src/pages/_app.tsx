@@ -5,6 +5,20 @@ import { useRouter, usePathname } from 'next/navigation';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import 'shared-tailwind/styles';
 import '@fontsource/nunito';
+import {
+  fetchUserDetails,
+  fetchPublicStoreDetails,
+  applyThemeToDOM,
+  applyCurrencyToDOM,
+  getStoredSettings,
+  saveSettingsToStorage,
+  clearStoredSettings,
+  extractSlugFromPath,
+  getPathWithoutSlug,
+  showThemeChangeNotification,
+  showCurrencyChangeNotification,
+  dispatchSettingsLoadedEvent
+} from '../services/AppService';
 
 const FallbackHeader = () => <div>Header failed to load</div>;
 const FallbackFooter = () => <div>Footer failed to load</div>;
@@ -29,15 +43,6 @@ const Footer = dynamic(
 
 const publicRoutes = ['/Registration/login', '/Registration/forgotPassword', '/Registration/registerAdmin', '/public/[slug]', '/NoAccess'];
 
-const createSlug = (storeName: string): string => {
-  return storeName
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
-};
-
 const isPublicRoute = (pathname: string | null): boolean => {
   if (!pathname) return false;
   if (pathname.startsWith('/public/')) return true;
@@ -45,29 +50,6 @@ const isPublicRoute = (pathname: string | null): boolean => {
     if (route === '/public/[slug]') return pathname.startsWith('/public/');
     return pathname === route || pathname.startsWith(route);
   });
-};
-
-const extractSlugFromPath = (pathname: string | null): string | null => {
-  if (!pathname) return null;
-  const segments = pathname.split('/').filter(Boolean);
-  if (pathname.startsWith('/public/') && segments.length >= 2) {
-    return segments[1];
-  }
-  if (segments.length > 0 && !isPublicRoute(pathname)) {
-    const firstSegment = segments[0];
-    const directRoutes = ['Dashboard', 'Orders', 'MenuManagement', 'RoleAndUserManagement', 'Tables', 'Settings'];
-    if (!directRoutes.includes(firstSegment)) {
-      return firstSegment;
-    }
-  }
-  return null;
-};
-
-const getPathWithoutSlug = (pathname: string | null, slug: string | null): string => {
-  if (!pathname) return '/';
-  if (pathname.startsWith('/public/')) return pathname;
-  if (!slug) return pathname;
-  return pathname.replace(`/${slug}`, '') || '/';
 };
 
 function AppContent({ Component, pageProps }: AppProps) {
@@ -88,90 +70,39 @@ function AppContent({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const API_BASE_URL = 'http://192.168.18.37:3000';
-  const USER_DETAILS_ENDPOINT = '/users/api/v1/details';
-
   const actualPathname = pathname || (typeof window !== 'undefined' ? window.location.pathname : null);
-
   const extractedSlug = extractSlugFromPath(actualPathname);
   const pathWithoutSlug = getPathWithoutSlug(actualPathname, extractedSlug);
   const isCurrentRoutePublic = isPublicRoute(actualPathname);
 
-  const applyThemeToDOM = (selectedTheme: string) => {
-    console.log('Applying theme to DOM:', selectedTheme);
-    document.documentElement.classList.remove(
-        'theme-default', 'theme-blue', 'theme-green',
-        'theme-professional', 'theme-warm-minimal', 'theme-dark-pro'
-    );
-    document.documentElement.classList.add(`theme-${selectedTheme}`);
-    document.documentElement.setAttribute('data-theme', selectedTheme);
-    window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme: selectedTheme } }));
-    localStorage.setItem('appTheme', selectedTheme);
-    document.documentElement.style.display = 'none';
-    document.documentElement.offsetHeight;
-    document.documentElement.style.display = '';
-  };
-
-  const applyCurrencyToDOM = (selectedCurrency: string) => {
-    console.log('Applying currency to DOM:', selectedCurrency);
-    const currencySymbol = {
-      pkr: '₨',
-      dollar: '$',
-      euro: '€'
-    }[selectedCurrency] || '₨';
-    document.documentElement.setAttribute('data-currency', selectedCurrency);
-    document.documentElement.setAttribute('data-currency-symbol', currencySymbol);
-    window.dispatchEvent(new CustomEvent('currencyChange', { detail: { currency: selectedCurrency, symbol: currencySymbol } }));
-    localStorage.setItem('appCurrency', selectedCurrency);
-    document.documentElement.style.setProperty('--current-currency', selectedCurrency);
-    document.documentElement.style.setProperty('--current-currency-symbol', currencySymbol);
-    console.log('Currency applied successfully:', { selectedCurrency, currencySymbol });
-  };
-
   const loadUserSettings = async () => {
     if (!token) {
-      const savedTheme = localStorage.getItem('appTheme') || 'default';
-      const savedCurrency = localStorage.getItem('appCurrency') || 'pkr';
-      const savedSlug = localStorage.getItem('restaurantSlug') || '';
-      const savedStoreName = localStorage.getItem('storeName') || '';
-      console.log('No token, using saved settings:', { theme: savedTheme, currency: savedCurrency, slug: savedSlug });
-      setCurrentTheme(savedTheme);
-      setCurrentCurrency(savedCurrency);
-      setCurrentSlug(savedSlug || null);
-      setStoreName(savedStoreName);
-      applyThemeToDOM(savedTheme);
-      applyCurrencyToDOM(savedCurrency);
-      lastKnownThemeRef.current = savedTheme;
-      lastKnownCurrencyRef.current = savedCurrency;
+      const savedSettings = getStoredSettings();
+      console.log('No token, using saved settings:', savedSettings);
+
+      setCurrentTheme(savedSettings.theme);
+      setCurrentCurrency(savedSettings.currency);
+      setCurrentSlug(savedSettings.slug || null);
+      setStoreName(savedSettings.storeName);
+
+      applyThemeToDOM(savedSettings.theme);
+      applyCurrencyToDOM(savedSettings.currency);
+
+      lastKnownThemeRef.current = savedSettings.theme;
+      lastKnownCurrencyRef.current = savedSettings.currency;
       setThemeLoaded(true);
       return;
     }
 
     try {
       console.log('Fetching user settings from API...');
-      const response = await fetch(`${API_BASE_URL}${USER_DETAILS_ENDPOINT}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const userDetails = await fetchUserDetails(token, logout);
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          console.log('Token expired, logging out');
-          logout();
-          return;
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.message || 'Failed to fetch user details');
-      }
-
-      const userTheme = data.data?.data?.user?.theme || 'default';
-      const userCurrency = data.data?.data?.user?.currency || 'pkr';
-      const userStoreName = data.data?.data?.user?.store_name || '';
-      const slug = data.data?.data?.user?.slug || '';
-      const userType = data.data?.data?.user?.user_type || '';
+      const userTheme = userDetails.user?.theme || 'default';
+      const userCurrency = userDetails.user?.currency || 'pkr';
+      const userStoreName = userDetails.user?.store_name || '';
+      const slug = userDetails.user?.slug || '';
+      const userType = userDetails.user?.user_type || '';
 
       console.log('Loaded user settings from API:', {
         theme: userTheme,
@@ -186,11 +117,16 @@ function AppContent({ Component, pageProps }: AppProps) {
       setStoreName(userStoreName);
       setCurrentSlug(slug || null);
 
-      localStorage.setItem('restaurantSlug', slug);
-      localStorage.setItem('storeName', userStoreName);
+      saveSettingsToStorage({
+        theme: userTheme,
+        currency: userCurrency,
+        slug,
+        storeName: userStoreName
+      });
 
       applyThemeToDOM(userTheme);
       applyCurrencyToDOM(userCurrency);
+
       lastKnownThemeRef.current = userTheme;
       lastKnownCurrencyRef.current = userCurrency;
       setThemeLoaded(true);
@@ -224,33 +160,29 @@ function AppContent({ Component, pageProps }: AppProps) {
         }
       }
 
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('settingsLoaded', {
-          detail: { theme: userTheme, currency: userCurrency, slug, storeName: userStoreName, userType }
-        }));
-      }, 100);
+      dispatchSettingsLoadedEvent({
+        theme: userTheme,
+        currency: userCurrency,
+        slug,
+        storeName: userStoreName,
+        userType
+      });
     } catch (error) {
       console.error('Error loading user settings:', error);
-      const savedTheme = localStorage.getItem('appTheme') || 'default';
-      const savedCurrency = localStorage.getItem('appCurrency') || 'pkr';
-      const savedSlug = localStorage.getItem('restaurantSlug') || '';
-      const savedStoreName = localStorage.getItem('storeName') || '';
+      const savedSettings = getStoredSettings();
 
-      console.log('API failed, using saved settings:', {
-        theme: savedTheme,
-        currency: savedCurrency,
-        slug: savedSlug,
-        storeName: savedStoreName
-      });
+      console.log('API failed, using saved settings:', savedSettings);
 
-      setCurrentTheme(savedTheme);
-      setCurrentCurrency(savedCurrency);
-      setCurrentSlug(savedSlug || null);
-      setStoreName(savedStoreName);
-      applyThemeToDOM(savedTheme);
-      applyCurrencyToDOM(savedCurrency);
-      lastKnownThemeRef.current = savedTheme;
-      lastKnownCurrencyRef.current = savedCurrency;
+      setCurrentTheme(savedSettings.theme);
+      setCurrentCurrency(savedSettings.currency);
+      setCurrentSlug(savedSettings.slug || null);
+      setStoreName(savedSettings.storeName);
+
+      applyThemeToDOM(savedSettings.theme);
+      applyCurrencyToDOM(savedSettings.currency);
+
+      lastKnownThemeRef.current = savedSettings.theme;
+      lastKnownCurrencyRef.current = savedSettings.currency;
       setThemeLoaded(true);
     }
   };
@@ -258,180 +190,6 @@ function AppContent({ Component, pageProps }: AppProps) {
   const handleSettingsChange = () => {
     console.log('Settings changed, reloading user settings...');
     loadUserSettings();
-  };
-
-  const showThemeChangeNotification = (themeName: string) => {
-    const existingNotifications = document.querySelectorAll('.theme-change-notification');
-    existingNotifications.forEach(notification => notification.remove());
-
-    const notification = document.createElement('div');
-    notification.className = 'theme-change-notification fixed top-6 right-6 z-[9999] transform translate-x-full opacity-0 transition-all duration-500 ease-out';
-    notification.innerHTML = `
-      <div class="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-2xl shadow-2xl border border-white/20 backdrop-blur-sm overflow-hidden min-w-[320px] max-w-[400px]">
-        <div class="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-purple-400/10 to-pink-400/10 animate-pulse"></div>
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-green-400 to-blue-400"></div>
-        <div class="relative p-4 flex items-center space-x-4">
-          <div class="flex-shrink-0">
-            <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm animate-bounce">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a4 4 0 004-4V5z"></path>
-              </svg>
-            </div>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="text-sm font-medium text-white/90 mb-1">Theme Updated</div>
-            <div class="text-lg font-bold text-white capitalize">${themeName} Theme Active</div>
-            <div class="text-xs text-white/70 mt-1">Changes synced across devices</div>
-          </div>
-          <div class="flex-shrink-0">
-            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-              </svg>
-            </div>
-          </div>
-        </div>
-        <div class="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
-          <div class="progress-bar h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-[4000ms] ease-linear" style="width: 100%"></div>
-        </div>
-        <div class="absolute inset-0 pointer-events-none overflow-hidden">
-          <div class="particle absolute w-2 h-2 bg-white/30 rounded-full animate-ping" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
-          <div class="particle absolute w-1 h-1 bg-white/40 rounded-full animate-ping" style="top: 60%; right: 15%; animation-delay: 0.5s;"></div>
-          <div class="particle absolute w-1.5 h-1.5 bg-white/25 rounded-full animate-ping" style="bottom: 30%; left: 20%; animation-delay: 1s;"></div>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(notification);
-    setTimeout(() => {
-      notification.classList.remove('translate-x-full', 'opacity-0');
-      notification.classList.add('translate-x-0', 'opacity-100');
-    }, 50);
-
-    notification.addEventListener('mouseenter', () => {
-      notification.style.transform = 'translateX(0) scale(1.02)';
-    });
-
-    notification.addEventListener('mouseleave', () => {
-      notification.style.transform = 'translateX(0) scale(1)';
-    });
-
-    setTimeout(() => {
-      const progressBar = notification.querySelector('.progress-bar') as HTMLElement;
-      if (progressBar) {
-        progressBar.style.width = '0%';
-      }
-    }, 100);
-
-    setTimeout(() => {
-      notification.classList.add('animate-pulse');
-      setTimeout(() => {
-        notification.style.transform = 'translateX(100%) scale(0.8)';
-        notification.style.opacity = '0';
-        setTimeout(() => {
-          if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
-          }
-        }, 500);
-      }, 200);
-    }, 4000);
-
-    notification.addEventListener('click', () => {
-      notification.style.transform = 'translateX(100%) scale(0.8)';
-      notification.style.opacity = '0';
-      setTimeout(() => {
-        if (document.body.contains(notification)) {
-          document.body.removeChild(notification);
-        }
-      }, 300);
-    });
-  };
-
-  const showCurrencyChangeNotification = (currencyName: string) => {
-    const existingNotifications = document.querySelectorAll('.currency-change-notification');
-    existingNotifications.forEach(notification => notification.remove());
-
-    const notification = document.createElement('div');
-    notification.className = 'currency-change-notification fixed top-6 right-6 z-[9999] transform translate-x-full opacity-0 transition-all duration-500 ease-out';
-    notification.innerHTML = `
-      <div class="relative bg-gradient-to-r from-green-600 via-teal-600 to-blue-600 text-white rounded-2xl shadow-2xl border border-white/20 backdrop-blur-sm overflow-hidden min-w-[320px] max-w-[400px]">
-        <div class="absolute inset-0 bg-gradient-to-r from-green-400/10 via-teal-400/10 to-blue-400/10 animate-pulse"></div>
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-green-400 to-blue-400"></div>
-        <div class="relative p-4 flex items-center space-x-4">
-          <div class="flex-shrink-0">
-            <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm animate-bounce">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .672-3 1.5S10.343 11 12 11s3-.672 3-1.5S13.657 8 12 8zm0 8c-1.657 0-3 .672-3 1.5S10.343 19 12 19s3-.672 3-1.5S13.657 16 12 16zm0-12c-1.657 0-3 .672-3 1.5S10.343 7 12 7s3-.672 3-1.5S13.657 4 12 4z"></path>
-              </svg>
-            </div>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="text-sm font-medium text-white/90 mb-1">Currency Updated</div>
-            <div class="text-lg font-bold text-white capitalize">${currencyName} Currency Active</div>
-            <div class="text-xs text-white/70 mt-1">Changes synced across devices</div>
-          </div>
-          <div class="flex-shrink-0">
-            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-              </svg>
-            </div>
-          </div>
-        </div>
-        <div class="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
-          <div class="progress-bar h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-[4000ms] ease-linear" style="width: 100%"></div>
-        </div>
-        <div class="absolute inset-0 pointer-events-none overflow-hidden">
-          <div class="particle absolute w-2 h-2 bg-white/30 rounded-full animate-ping" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
-          <div class="particle absolute w-1 h-1 bg-white/40 rounded-full animate-ping" style="top: 60%; right: 15%; animation-delay: 0.5s;"></div>
-          <div class="particle absolute w-1.5 h-1.5 bg-white/25 rounded-full animate-ping" style="bottom: 30%; left: 20%; animation-delay: 1s;"></div>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(notification);
-    setTimeout(() => {
-      notification.classList.remove('translate-x-full', 'opacity-0');
-      notification.classList.add('translate-x-0', 'opacity-100');
-    }, 50);
-
-    notification.addEventListener('mouseenter', () => {
-      notification.style.transform = 'translateX(0) scale(1.02)';
-    });
-
-    notification.addEventListener('mouseleave', () => {
-      notification.style.transform = 'translateX(0) scale(1)';
-    });
-
-    setTimeout(() => {
-      const progressBar = notification.querySelector('.progress-bar') as HTMLElement;
-      if (progressBar) {
-        progressBar.style.width = '0%';
-      }
-    }, 100);
-
-    setTimeout(() => {
-      notification.classList.add('animate-pulse');
-      setTimeout(() => {
-        notification.style.transform = 'translateX(100%) scale(0.8)';
-        notification.style.opacity = '0';
-        setTimeout(() => {
-          if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
-          }
-        }, 500);
-      }, 200);
-    }, 4000);
-
-    notification.addEventListener('click', () => {
-      notification.style.transform = 'translateX(100%) scale(0.8)';
-      notification.style.opacity = '0';
-      setTimeout(() => {
-        if (document.body.contains(notification)) {
-          document.body.removeChild(notification);
-        }
-      }, 300);
-    });
   };
 
   useEffect(() => {
@@ -444,12 +202,11 @@ function AppContent({ Component, pageProps }: AppProps) {
     });
 
     if (isCurrentRoutePublic && !themeLoaded) {
-      const savedTheme = localStorage.getItem('appTheme') || 'default';
-      const savedCurrency = localStorage.getItem('appCurrency') || 'pkr';
-      setCurrentTheme(savedTheme);
-      setCurrentCurrency(savedCurrency);
-      applyThemeToDOM(savedTheme);
-      applyCurrencyToDOM(savedCurrency);
+      const savedSettings = getStoredSettings();
+      setCurrentTheme(savedSettings.theme);
+      setCurrentCurrency(savedSettings.currency);
+      applyThemeToDOM(savedSettings.theme);
+      applyCurrencyToDOM(savedSettings.currency);
       setThemeLoaded(true);
     }
 
@@ -558,8 +315,7 @@ function AppContent({ Component, pageProps }: AppProps) {
       setCurrentSlug(null);
       setStoreName('');
 
-      localStorage.removeItem('restaurantSlug');
-      localStorage.removeItem('storeName');
+      clearStoredSettings();
 
       console.log('User logged out successfully');
       await router.replace('/Registration/login');
@@ -588,9 +344,8 @@ function AppContent({ Component, pageProps }: AppProps) {
     const updateFaviconForPublicRoute = async () => {
       if (pathname && pathname.startsWith('/public/') && extractedSlug) {
         try {
-          const response = await fetch(`http://192.168.18.37:3000/users/api/v1/public/store/${extractedSlug}`);
-          const data = await response.json();
-          const storeLogo = data.data?.data?.store_logo;
+          const storeDetails = await fetchPublicStoreDetails(extractedSlug);
+          const storeLogo = storeDetails?.store_logo;
           if (storeLogo && faviconLink) {
             faviconLink.href = storeLogo;
             faviconLink.type = 'image/jpeg';
