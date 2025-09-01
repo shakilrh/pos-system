@@ -16,6 +16,9 @@ export default function Profile() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
+  // 1. Add state near other fields
+  const [slug, setSlug] = useState('');
+
   const [errors, setErrors] = useState<{
     name?: string[];
     password?: string[];
@@ -48,6 +51,8 @@ export default function Profile() {
       setPhoneNumber(user?.phone_number || '');
       setAddress(user?.address || '');
       setUserId(user?.id || ''); // Set the user ID from user object
+      setSlug(user?.slug || '');
+
     }
   }, [user]);
 
@@ -152,6 +157,14 @@ export default function Profile() {
     return errors;
   };
 
+  const validateSlug = (value: string): string[] => {
+    const errors: string[] = [];
+    if (!value.trim()) errors.push('Slug is required');
+    else if (value.length < 2) errors.push('Slug must be at least 2 characters');
+    else if (!/^[a-z0-9-]+$/.test(value)) errors.push('Slug must contain only lowercase letters, numbers, or dashes');
+    return errors;
+  };
+
   const validateAddress = (value: string): string[] => {
     if (!value.trim()) return [];
     const errors: string[] = [];
@@ -206,6 +219,7 @@ export default function Profile() {
     if (field === 'phoneNumber') setPhoneNumber(value);
     if (field === 'address') setAddress(value);
     if (field === 'password') setPassword(value);
+    if (field === 'slug') setSlug(value);
     if (field === 'confirmPassword') setConfirmPassword(value);
     setErrors(prev => ({ ...prev, [field]: getFieldErrors(field) }));
   };
@@ -270,6 +284,41 @@ export default function Profile() {
       setTouchedFields(prev => new Set(prev).add('logo'));
     }
   };
+
+  const handleSlugSave = async () => {
+    if (!token || !slug.trim()) return;
+
+    const slugErrors = validateSlug(slug);
+    setErrors(prev => ({ ...prev, slug: slugErrors }));
+    if (slugErrors.length > 0) return;
+
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('slug', slug.trim());
+
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://192.168.18.37:3000'}/users/api/v1/admin-profile`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update slug');
+
+      const updatedUser = { ...user, slug: slug.trim() };
+      setUser(updatedUser);
+      setEditingField(null);
+      setErrors(prev => ({ ...prev, slug: [] }));
+      showSuccess('Slug updated successfully');
+    } catch (err) {
+      console.error('Update slug error:', err);
+      setErrors(prev => ({ ...prev, slug: [(err as Error).message || 'Failed to update slug'] }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const handleStoreLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -847,6 +896,62 @@ export default function Profile() {
                   <p className="text-[var(--text-color)]">{storeName || 'Not set'}</p>
                 )}
               </div>
+            )}
+
+            {/* Slug Field */}
+            {isAdmin && (
+                <div className="px-6 py-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-[var(--text-color)]">Store Slug</label>
+                    {editingField !== 'slug' && (
+                        <button
+                            onClick={() => setEditingField('slug')}
+                            className="text-sm text-[var(--primary-color)] hover:text-[var(--primary-hover)] font-medium"
+                        >
+                          Edit
+                        </button>
+                    )}
+                  </div>
+                  {editingField === 'slug' ? (
+                      <div className="space-y-3">
+                        <input
+                            type="text"
+                            value={slug}
+                            onChange={(e) => handleInputChange('slug', e.target.value)}
+                            onFocus={() => handleFocus('slug')}
+                            onBlur={() => handleBlur('slug')}
+                            className={`block w-full px-3 py-2 rounded-lg bg-[var(--surface-color)] text-[var(--text-color)] border ${
+                                touchedFields.has('slug') && errors.slug?.length > 0
+                                    ? 'border-red-500 ring-1 ring-red-500'
+                                    : 'border-[var(--border-color)]'
+                            } focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] focus:border-transparent text-sm`}
+                            placeholder="Enter store slug"
+                        />
+                        {renderFieldErrors('slug')}
+                        <div className="flex space-x-3">
+                          <button
+                              onClick={handleSlugSave}
+                              disabled={loading || errors.slug?.length > 0}
+                              className="px-4 py-2 bg-[var(--primary-color)] text-white text-sm font-medium rounded-lg hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-color)] disabled:opacity-50 transition-colors"
+                          >
+                            {loading ? 'Saving...' : 'Save'}
+                          </button>
+                          <button
+                              onClick={() => {
+                                setEditingField(null);
+                                setSlug(user?.slug || '');
+                                setErrors(prev => ({ ...prev, slug: [] }));
+                              }}
+                              className="px-4 py-2 bg-[var(--surface-color)] text-[var(--text-color)] text-sm font-medium rounded-lg hover:bg-[var(--surface-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--border-color)] transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                  ) : (
+                      <p className="text-[var(--text-color)]">{slug || 'Not set'}</p>
+                  )}
+                </div>
             )}
 
             {/* Store Logo Field */}
