@@ -777,15 +777,34 @@ const Dashboard = () => {
       setLoading(false);
       return;
     }
-
     const fetchData = async () => {
       try {
-        const [orderData, roleData] = await Promise.all([
+        const [rawOrders, roleData] = await Promise.all([
           getOrders(token, logout),
           fetch('http://192.168.18.37:3000/rolepermission/api/v1/roles/list', {
             headers: { Authorization: `Bearer ${token}` },
           }).then(res => res.json()).then(data => data.data.data)
         ]);
+
+        // Safely transform API response to match local Order interface
+        const orderData: Order[] = rawOrders.map((order: any) => ({
+          ...order,
+          items: (order.items || []).map((item: any) => {
+            const product = item.product || {};
+            return {
+              _id: item._id ?? '',
+              product_id: {
+                _id: product._id ?? '',
+                name: product.name ?? 'Unknown',
+                pictureUrl: product.pictureUrl ?? '/placeholder.png',
+                price: product.price ?? 0,
+              },
+              quantity: item.quantity ?? 0,
+              sub_total: item.sub_total ?? 0,
+            };
+          }),
+        }));
+
         setOrders(orderData);
         setRoles(roleData);
       } catch (err) {
@@ -795,6 +814,7 @@ const Dashboard = () => {
         setLoading(false);
       }
     };
+
 
     fetchData();
   }, [isAuthenticated, token, logout]);
