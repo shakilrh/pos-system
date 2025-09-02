@@ -1,3 +1,4 @@
+// AppService.tsx
 interface UserDetails {
     user: {
         theme?: string;
@@ -6,6 +7,7 @@ interface UserDetails {
         slug?: string;
         user_type?: string;
         store_logo?: string;
+        role_id?: string;
         [key: string]: any;
     };
     [key: string]: any;

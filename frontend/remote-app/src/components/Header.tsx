@@ -15,7 +15,7 @@ interface User {
   name: string;
   email: string;
   user_type: string;
-  role_id: string | null;
+  role_id?: string;
   profile?: any;
   logoUrl?: string;
   store_name?: string;
@@ -30,6 +30,9 @@ interface HeaderProps {
   onLogout: () => void;
   token: string | null;
   user: User | null;
+  className?: string;
+  restaurantSlug: string | null;
+  storeName: string;
 }
 
 // --- Helper Functions for Avatar ---
@@ -141,6 +144,9 @@ export default function Header({
                                  onLogout,
                                  token,
                                  user,
+                                 className,
+                                 restaurantSlug,
+                                 storeName,
                                }: HeaderProps) {
   const [storeData, setStoreData] = useState<{ store_name: string; store_logo: string }>({
     store_name: '',

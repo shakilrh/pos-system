@@ -1,11 +1,12 @@
 import { fetchUserProfile } from './UserService';
 
+// AuthService.ts
 export interface User {
     _id: string;
     name: string;
     email: string;
     user_type: string;
-    role_id?: string | null;
+    role_id?: string;
     profile?: any;
     logoUrl?: string;
     store_name?: string;
@@ -88,7 +89,7 @@ export const normalizeUser = (apiUser: any, email?: string): User => {
         name: apiUser.name || 'User',
         email: apiUser.email || email || '',
         user_type: apiUser.user_type || 'customer',
-        role_id: apiUser.role_id || null,
+        role_id: apiUser.role_id ? String(apiUser.role_id) : undefined,
         logoUrl: apiUser.logoUrl || '',
         store_name: apiUser.store_name || '',
         store_logo: apiUser.store_logo || '',

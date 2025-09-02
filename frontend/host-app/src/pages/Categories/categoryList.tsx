@@ -115,7 +115,7 @@ export default function CategoryList({
                 <button
                     onClick={onAdd}
                     className={`flex items-center px-2.5 py-1.5 mt-9 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isProductFormActive ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-hover)]'}`}
-                    style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+                    style={{ '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
                     disabled={isProductFormActive}
                 >
                     <PlusCircleIcon className="w-4 h-4 mr-1" />
@@ -196,7 +196,7 @@ export default function CategoryList({
                               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                               disabled={currentPage === 1 || isProductFormActive}
                               className={`flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${currentPage === 1 || isProductFormActive ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-hover)]'}`}
-                              style={{ '--tw-ring-color': 'var(--focus-ring)', borderColor: 'var(--border-color)' }}
+                              style={{ '--tw-ring-color': 'var(--focus-ring)', borderColor: 'var(--border-color)' } as React.CSSProperties}
                           >
                               Previous
                           </button>
@@ -205,7 +205,7 @@ export default function CategoryList({
                                   key={page}
                                   onClick={() => setCurrentPage(page)}
                                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${currentPage === page ? 'bg-[var(--primary-color)] text-[var(--text-on-primary)]' : 'bg-[var(--background-secondary)] text-[var(--button-inactive-text, var(--text-secondary))] hover:bg-[var(--surface-secondary)]'}`}
-                                  style={{ '--tw-ring-color': 'var(--focus-ring)', borderColor: 'var(--border-color)' }}
+                                  style={{ '--tw-ring-color': 'var(--focus-ring)', borderColor: 'var(--border-color)' } as React.CSSProperties}
                               >
                                   {page}
                               </button>
@@ -214,7 +214,7 @@ export default function CategoryList({
                               onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                               disabled={currentPage === totalPages || isProductFormActive}
                               className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${currentPage === totalPages || isProductFormActive ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-hover)]'}`}
-                              style={{ '--tw-ring-color': 'var(--focus-ring)', borderColor: 'var(--border-color)' }}
+                              style={{ '--tw-ring-color': 'var(--focus-ring)', borderColor: 'var(--border-color)' } as React.CSSProperties}
                           >
                               Next
                           </button>

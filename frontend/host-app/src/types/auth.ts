@@ -3,7 +3,7 @@ export interface User {
     name: string;
     email: string;
     user_type: string; // 'worker', 'isadmin', or 'customer'
-    role_id?: string | null;
+    role_id?: string;
     profile?: any;
     logoUrl?: string;
     store_name?: string;

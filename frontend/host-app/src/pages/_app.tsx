@@ -52,7 +52,7 @@ const isPublicRoute = (pathname: string | null): boolean => {
   });
 };
 
-function AppContent({ Component, pageProps }: AppProps) {
+function AppContent({ Component, pageProps, router }: AppProps) { // Add router to AppContent props
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isPageLoading, setIsPageLoading] = useState(false);
   const [currentTheme, setCurrentTheme] = useState('default');
@@ -67,7 +67,7 @@ function AppContent({ Component, pageProps }: AppProps) {
   const lastKnownCurrencyRef = useRef<string>('pkr');
 
   const { isAuthenticated, isLoading, logout, token, user, userPermissions } = useAuth();
-  const router = useRouter();
+  const nextRouter = useRouter(); // Rename to avoid conflict with prop
   const pathname = usePathname();
 
   const actualPathname = pathname || (typeof window !== 'undefined' ? window.location.pathname : null);
@@ -136,18 +136,18 @@ function AppContent({ Component, pageProps }: AppProps) {
         if (userType === 'rider') {
           if (actualPathname === '/' || actualPathname.includes('/Dashboard')) {
             const ordersPath = `/${slug}/Orders/orders`;
-            router.replace(ordersPath);
+            nextRouter.replace(ordersPath);
             return;
           }
           if (!actualPathname.includes('/Orders')) {
             const ordersPath = `/${slug}/Orders/orders`;
-            router.replace(ordersPath);
+            nextRouter.replace(ordersPath);
             return;
           }
         } else {
           if (actualPathname === '/') {
             const newPath = `/${slug}/Dashboard/dashboard`;
-            router.replace(newPath);
+            nextRouter.replace(newPath);
           } else if (!actualPathname.startsWith(expectedSlugPrefix)) {
             let pathWithoutAnySlug = actualPathname.replace(/^\/[^\/]+/, '');
             if (!pathWithoutAnySlug || pathWithoutAnySlug.toLowerCase() === '/dashboard') {
@@ -155,7 +155,7 @@ function AppContent({ Component, pageProps }: AppProps) {
             }
             const newPath = `/${slug}${pathWithoutAnySlug}`;
             console.log('Redirecting from', actualPathname, 'to', newPath);
-            router.replace(newPath);
+            nextRouter.replace(newPath);
           }
         }
       }
@@ -334,12 +334,13 @@ function AppContent({ Component, pageProps }: AppProps) {
   useEffect(() => {
     if (typeof document === 'undefined') return;
 
-    let faviconLink = document.querySelector("link[rel='icon']");
+    let faviconLink = document.querySelector<HTMLLinkElement>("link[rel='icon']");
     if (!faviconLink) {
       faviconLink = document.createElement('link');
-      faviconLink.rel = 'icon';
+      (faviconLink as HTMLLinkElement).rel = 'icon';
       document.head.appendChild(faviconLink);
     }
+
 
     const updateFaviconForPublicRoute = async () => {
       if (pathname && pathname.startsWith('/public/') && extractedSlug) {
@@ -423,6 +424,11 @@ function AppContent({ Component, pageProps }: AppProps) {
   const sidebarWidth = sidebarOpen ? 'w-64' : 'w-20';
   const contentMargin = sidebarOpen ? 'ml-80' : 'ml-28';
   const headerHeight = 'h-16';
+// _app.tsx, in AppContent
+  const normalizedUser = user ? {
+    ...user,
+    role_id: user.role_id ?? null // Convert undefined to null
+  } : null;
 
   return (
       <div className="flex flex-col min-h-screen" style={{ backgroundColor: 'var(--background-color)' }}>
@@ -431,7 +437,7 @@ function AppContent({ Component, pageProps }: AppProps) {
             onLogout={handleLogout}
             onNavigate={navigateWithSlug}
             token={token}
-            user={user}
+            user={normalizedUser}
             className={headerHeight}
             restaurantSlug={extractedSlug}
             storeName={storeName}
@@ -476,10 +482,10 @@ function AppContent({ Component, pageProps }: AppProps) {
   );
 }
 
-export default function MyApp({ Component, pageProps }: AppProps) {
+export default function MyApp({ Component, pageProps, router }: AppProps) {
   return (
       <AuthProvider>
-        <AppContent Component={Component} pageProps={pageProps} />
+        <AppContent Component={Component} pageProps={pageProps} router={router} /> {/* Pass router to AppContent */}
       </AuthProvider>
   );
 }

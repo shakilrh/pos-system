@@ -1,10 +1,10 @@
+// UserService.tsx
 interface User {
   id: string;
   name: string;
   email: string;
-  password?: string;
   user_type: string;
-  role_id?: string | null | { id: string; name: string };
+  role_id?: string;
   phone_number?: string;
   job_title?: string;
   shift_time?: string;
@@ -31,7 +31,7 @@ interface UserDetails {
   name: string;
   email: string;
   user_type: string;
-  role_id: string | null;
+  role_id?: string;
   profile?: any;
   logoUrl?: string;
   store_name?: string;
