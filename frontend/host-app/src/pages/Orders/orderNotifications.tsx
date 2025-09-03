@@ -18,7 +18,8 @@ interface OrderNotificationsProps {
   setShowOrderModal: (show: boolean) => void;
   selectedOrder: Order | null;
   setSelectedOrder: (order: Order | null) => void;
-  preparationTime: number;
+  preparationTime: number;   // ✅ required
+  setPreparationTime: (time: number) => void;  // (likely required too)
   setTimeLeft: React.Dispatch<React.SetStateAction<{ [key: string]: number }>>;
   token: string | null;
   logout: () => void;
@@ -35,6 +36,7 @@ interface NotificationItem {
   timestamp: Date;
   isRead: boolean;
   status: string;
+  orderType: string;   // ✅ add this
   tab: string;
   localRead?: boolean;
 }
@@ -263,8 +265,11 @@ export default function OrderNotifications({
     const timer = setInterval(() => {
       const newTimeLeft: { [key: string]: number } = {};
       (groupedOrders.to_be_prepared || []).forEach(order => {
-        const createdAt = new Date(order.created_at || order.createdAt || new Date());
-        const estimatedTime = order.estimated_time || preparationTime;
+        const createdAt = new Date(order.createdAt || new Date());
+        const estimatedTime = order.estimated_completion
+            ? parseInt(order.estimated_completion, 10)
+            : preparationTime;
+
         const elapsedMs = Date.now() - createdAt.getTime();
         const estimatedTimeMs = estimatedTime * 60 * 1000;
         newTimeLeft[order._id] = Math.max(0, Math.floor((estimatedTimeMs - elapsedMs) / 1000));
@@ -337,11 +342,23 @@ export default function OrderNotifications({
               <div className="space-y-2">
                 {orderItems.length > 0 ? (
                     orderItems.map((item, index) => {
-                      // Fixed: Access product_id instead of product for your data structure
-                      const productName = item.product_id?.name || item.product?.name || item.product_name || 'Unknown Product';
+                      // Support both QueueOrderItem (with `product`) and OrderItem (with `product_id`)
+                      const productName =
+                          (item as any).product_id?.name ||
+                          (item as any).product?.name ||
+                          (item as any).product_name ||
+                          'Unknown Product';
+
                       const quantity = item.quantity || 1;
-                      const pictureUrl = item.product_id?.pictureUrl || item.product?.pictureUrl;
-                      const price = item.product_id?.price || item.product?.price || 0;
+
+                      const pictureUrl =
+                          (item as any).product_id?.pictureUrl ||
+                          (item as any).product?.pictureUrl;
+
+                      const price =
+                          (item as any).product_id?.price ||
+                          (item as any).product?.price ||
+                          0;
 
                       return (
                           <div key={index} className="flex items-center space-x-3 p-2 rounded-lg border transition-all duration-200 hover:shadow-md" style={{
@@ -368,6 +385,7 @@ export default function OrderNotifications({
                           </div>
                       );
                     })
+
                 ) : (
                     <div className="text-center py-3 text-sm" style={{ color: 'var(--text-tertiary)' }}>No items available</div>
                 )}
