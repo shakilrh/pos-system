@@ -57,6 +57,7 @@ export interface OrderDetailsProps {
   receivedAmount: number;
   setReceivedAmount: (amount: number) => void;
   paymentMethod: string;
+  onClose?: () => void;
   setPaymentMethod: (method: string) => void;
   orderItems: OrderItem[];
   setOrderItems: React.Dispatch<React.SetStateAction<OrderItem[]>>;
@@ -67,6 +68,7 @@ export interface OrderDetailsProps {
   setSelectedTableId: (tableId: string | null) => void;
   token: string | null;
   logout: () => void;
+  order?: Order;
   orders: Order[];
   waiterId: string | null;
   setWaiterId: (id: string | null) => void;

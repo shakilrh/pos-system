@@ -32,6 +32,7 @@ export interface Order {
   payment_status: string;
   received_amount?: number;
   customer_name: string;
+  location?: string;
   notification: string;
   rider_note?: string;
   notification_status: number;

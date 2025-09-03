@@ -5,6 +5,7 @@ import OrderList from './orderList';
 import createOrder from './createOrder';
 import { getAllOrders, getOrderQueue } from '../../services/orderService';
 import { Order } from './orderTypes';
+import OrderDetails from './orderDetails';
 
 export default function Orders() {
   const { isAuthenticated, isLoading, token, logout } = useAuth();
@@ -110,7 +111,7 @@ export default function Orders() {
         setOrders(orderList.map(order => ({
           ...order,
           customer_name: order.customer_name || 'N/A',
-          location: order.location || 'N/A',
+          address: order.delivery_address || 'N/A',
           total_amount: order.total_amount || 0,
           items: order.items || []
         })));
@@ -120,12 +121,12 @@ export default function Orders() {
         if (queue && typeof queue === 'object') {
           if (Array.isArray(queue)) {
             queueArray = queue;
-          } else if (queue.data && Array.isArray(queue.data.data)) {
-            queueArray = queue.data.data;
-          } else if (queue.data && Array.isArray(queue.data)) {
-            queueArray = queue.data;
-          } else if (Array.isArray(queue.data)) {
-            queueArray = queue.data;
+          } else if ((queue as any).data && Array.isArray((queue as any).data.data)) {
+            queueArray = (queue as any).data.data;
+          } else if ((queue as any).data && Array.isArray((queue as any).data)) {
+            queueArray = (queue as any).data;
+          } else if (Array.isArray((queue as any).data)) {
+            queueArray = (queue as any).data;
           }
         }
 
@@ -241,17 +242,7 @@ export default function Orders() {
                 setOrders={setOrders}
                 queueData={queueData}
               />
-              {selectedOrder && (
-                <OrderDetails
-                  order={selectedOrder}
-                  token={token}
-                  logout={logout}
-                  onClose={() => setSelectedOrder(null)}
-                  setOrders={setOrders}
-                  orders={orders}
-                  setMessage={setMessage}
-                />
-              )}
+
             </div>
           </div>
         </div>

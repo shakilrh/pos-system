@@ -55,6 +55,7 @@ interface Order {
   customer_name: string;
   notification: string;
   rider_note?: string;
+  delivery_address?: string;
   notification_status: number;
   parent_order_id: string | null;
   service_type: 'dine_in' | 'take_away'; // Add this line
