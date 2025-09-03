@@ -2,7 +2,7 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { User, AuthContextType } from '../types/auth';
 import { loginUser, getUserPermissions, createSlug } from '../services/AuthService';
-
+import {  refreshUserProfile as refreshProfile} from '../services/AuthService';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -34,6 +34,27 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     setPermissionsLoaded(false);
     setAllPermissions([]);
     setProfileError(null);
+  };
+
+  const refreshUserProfile = async () => {
+    if (!token) {
+      throw new Error('No authentication token');
+    }
+
+    setProfileLoading(true);
+    setProfileError(null);
+
+    try {
+      const updatedUser = await refreshProfile(token);
+      setUser(updatedUser);
+      localStorage.setItem('authUser', JSON.stringify(updatedUser));
+    } catch (error) {
+      console.error('Failed to refresh user profile:', error);
+      setProfileError(error instanceof Error ? error.message : 'Failed to refresh profile');
+      throw error;
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -134,6 +155,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             allPermissions,
             storeName,
             restaurantSlug,
+            refreshUserProfile,
             login,
             logout,
             setUser,

@@ -2,13 +2,14 @@ import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { fetchStoreInfo, fetchCustomerorderDetails } from '../../../services/CustomerService';
+import type { Store } from "../../../services/PublicStoreService";
 
 interface OrderItem {
-    product_name: string | null;
+    product_id: string;
     quantity: number;
-    sub_total: number;
+    product_name?: string | null;
+    sub_total?: number;
 }
-
 interface Order {
     order_id: string;
     order_number: string;
@@ -19,24 +20,26 @@ interface Order {
     customer_name: string;
     items: OrderItem[];
     estimated_completion: string | null;
+    redeemed_points?: number;
+    earned_points?: number;
 }
 
 interface CustomerDetails {
     name: string;
     phone_number: string;
     addresses: string[];
-    email: string | null;
-    created_by: string;
-    loyalty_points: number | null;
-    orders: Order[];
+    email?: string | null;
+    loyalty_points?: number | null;
+    orders?: Order[];
 }
+
 
 export default function OrderSummary() {
     const router = useRouter();
     const { slug } = router.query;
     const { isAuthenticated, user, token, logout } = useAuth();
     const [customerDetails, setCustomerDetails] = useState<CustomerDetails | null>(null);
-    const [store, setStore] = useState(null);
+    const [store, setStore] = useState<Store | null>(null); // Add Store type
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -60,7 +63,8 @@ export default function OrderSummary() {
                 setCustomerDetails(customerData);
             }
         } catch (error) {
-            setError(error.message || 'Failed to load data');
+            const errorMessage = error instanceof Error ? error.message : 'Failed to load data';
+            setError(errorMessage);
             console.error('Error fetching data:', error);
         } finally {
             setLoading(false);
@@ -386,7 +390,7 @@ export default function OrderSummary() {
                                                                 </p>
                                                             </div>
                                                             <p className="font-bold text-[#F4B400] ml-2">
-                                                                {formatCurrency(item.sub_total)}
+                                                                {formatCurrency(item.sub_total || 0)}
                                                             </p>
                                                         </div>
                                                     ))}

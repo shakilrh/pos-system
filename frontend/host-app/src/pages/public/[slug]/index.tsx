@@ -6,6 +6,23 @@ import AddressConfirmationModal from '../AddressConfirmationModal';
 import CartModal from '../CartModal';
 import OrderSuccessModal from '../OrderSuccessModal';
 import { useAuth } from '../../../context/AuthContext';
+import type { OrderData } from "../../../services/PublicStoreService";
+import type { Product } from "../../../services/PublicStoreService";
+import type { GetServerSideProps, GetServerSidePropsContext } from "next";
+
+interface Store {
+    _id?: string;
+    name?: string;
+    store_name?: string;
+    logo?: string;
+    store_logo?: string;
+    images?: string[];
+    aboutUs?: string;
+    currency?: string;
+    address?: string;
+    [key: string]: any; // Allow additional properties
+}
+
 import {
     fetchStoreData,
     addToCart,
@@ -17,14 +34,34 @@ import {
     fetchOrderHistory
 } from '../../../services/PublicStoreService';
 
+interface Category {
+    _id: string;
+    name: string;
+}
+
+interface Store {
+    _id?: string;
+    name?: string;
+    store_name?: string;
+    logo?: string;
+    store_logo?: string;
+    images?: string[];
+    aboutUs?: string;
+    currency?: string;
+    address?: string;
+
+}
+
 export default function PublicHome() {
     const router = useRouter();
     const { slug } = router.query;
-    const [products, setProducts] = useState([]);
-    const [categories, setCategories] = useState([]);
-    const [store, setStore] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [selectedCategory, setSelectedCategory] = useState(null);
+    // Update the state declarations with explicit types:
+    const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [store, setStore] = useState<Store | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -32,9 +69,10 @@ export default function PublicHome() {
     const [isCartModalOpen, setIsCartModalOpen] = useState(false);
     const [cartCount, setCartCount] = useState(0);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [orderData, setOrderData] = useState(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
+    const [orderData, setOrderData] = useState<OrderData | null>(null);
+
 
     const {
         isAuthenticated,
@@ -45,7 +83,8 @@ export default function PublicHome() {
     } = useAuth();
 
     useEffect(() => {
-        if (slug && validateSlug(slug)) {
+        const slugString = Array.isArray(slug) ? slug[0] : slug;
+        if (slugString && validateSlug(slugString)) {
             fetchData();
             loadCartCount();
         }
@@ -56,29 +95,31 @@ export default function PublicHome() {
     }, [slug, isAuthenticated]);
 
     useEffect(() => {
-        if (store?.images && store.images.length > 1) {
+        const storeData = store as Store | null;
+        if (storeData?.images && storeData.images.length > 1) {
             const interval = setInterval(() => {
-                setCurrentSlide((prev) => (prev + 1) % store.images.length);
+                setCurrentSlide((prev) => (prev + 1) % (storeData.images?.length || 0));
             }, 4000);
             return () => clearInterval(interval);
         }
     }, [store?.images]);
 
     useEffect(() => {
-        const handleCartUpdate = (event) => {
+        const handleCartUpdate = (event: CustomEvent) => {
             const cart = event.detail || [];
-            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalItems = cart.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0);
             setCartCount(totalItems);
         };
 
-        window.addEventListener('cartUpdated', handleCartUpdate);
-        return () => window.removeEventListener('cartUpdated', handleCartUpdate);
+        window.addEventListener('cartUpdated', handleCartUpdate as EventListener);
+        return () => window.removeEventListener('cartUpdated', handleCartUpdate as EventListener);
     }, []);
 
     const loadCartCount = () => {
         try {
-            if (slug && validateSlug(slug)) {
-                const count = getCartItemCount(slug);
+            const slugString = Array.isArray(slug) ? slug[0] : slug;
+            if (slugString && validateSlug(slugString)) {
+                const count = getCartItemCount(slugString);
                 setCartCount(count);
             }
         } catch (error) {
@@ -114,7 +155,8 @@ export default function PublicHome() {
 
     const fetchData = async () => {
         try {
-            if (!slug || !validateSlug(slug)) {
+            const slugString = Array.isArray(slug) ? slug[0] : slug;
+            if (!slugString || !validateSlug(slugString)) {
                 setError('Invalid store identifier');
                 setLoading(false);
                 return;
@@ -123,7 +165,7 @@ export default function PublicHome() {
             setLoading(true);
             setError(null);
 
-            const { products, categories, store } = await fetchStoreData(slug);
+            const { products, categories, store } = await fetchStoreData(slugString);
 
             setProducts(products);
             setCategories(categories);
@@ -132,9 +174,9 @@ export default function PublicHome() {
             if (!store) {
                 setError('Store not found');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching data:', error);
-            setError(error.message || 'Failed to load store data');
+            setError(error.message || 'Failed to load store data')
         } finally {
             setLoading(false);
         }
@@ -192,13 +234,13 @@ export default function PublicHome() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, [selectedCategory]);
 
-    const scrollCategories = (direction) => {
-        const container = document.getElementById('category-scroll');
+    const scrollCategories = (direction: "left" | "right") => {
+        const container = document.getElementById("category-scroll");
         if (container) {
             const scrollAmount = 300;
             container.scrollBy({
-                left: direction === 'left' ? -scrollAmount : scrollAmount,
-                behavior: 'smooth'
+                left: direction === "left" ? -scrollAmount : scrollAmount,
+                behavior: "smooth",
             });
         }
     };
@@ -209,8 +251,9 @@ export default function PublicHome() {
 
     const handleLogout = () => {
         logout();
-        if (slug && validateSlug(slug)) {
-            clearCart(slug);
+        const slugString = Array.isArray(slug) ? slug[0] : slug;
+        if (slugString && validateSlug(slugString)) {
+            clearCart(slugString);
             setCartCount(0);
         }
     };
@@ -219,36 +262,48 @@ export default function PublicHome() {
         setIsProfileModalOpen(true);
     };
 
-    const handleAddToCart = async (product) => {
-        if (!isAuthenticated || user?.user_type !== 'customer') {
+    interface CartItem extends Product {
+        quantity: number;
+    }
+
+    const handleAddToCart = async (product: Product) => {
+        if (!isAuthenticated || user?.user_type !== "customer") {
             setIsAuthModalOpen(true);
             return;
         }
 
-        if (!slug || !validateSlug(slug)) {
-            setError('Invalid store');
+        const slugString = Array.isArray(slug) ? slug[0] : slug;
+        if (!slugString || !validateSlug(slugString)) {
+            setError("Invalid store");
             return;
         }
 
         try {
-            const updatedCart = addToCart(slug, product);
-            const totalItems = updatedCart.reduce((sum, item) => sum + item.quantity, 0);
+            const updatedCart: CartItem[] = addToCart(slugString, product);
+            const totalItems = updatedCart.reduce(
+                (sum, item) => sum + item.quantity,
+                0
+            );
             setCartCount(totalItems);
 
             // Visual feedback
-            const button = document.querySelector(`[data-product-id="${product._id}"]`);
+            const button = document.querySelector(
+                `[data-product-id="${product._id}"]`
+            );
             if (button) {
                 const originalContent = button.innerHTML;
                 button.innerHTML = '<i class="fas fa-check mr-2"></i>Added!';
-                button.classList.add('bg-green-500', 'hover:bg-green-600');
+                button.classList.add("bg-green-500", "hover:bg-green-600");
                 setTimeout(() => {
                     button.innerHTML = originalContent;
-                    button.classList.remove('bg-green-500', 'hover:bg-green-600');
+                    button.classList.remove("bg-green-500", "hover:bg-green-600");
                 }, 2000);
             }
-        } catch (error) {
-            console.error('Error adding to cart:', error);
-            setError(error.message || 'Failed to add item to cart');
+        } catch (err) {
+            console.error("Error adding to cart:", err);
+            setError(
+                err instanceof Error ? err.message : "Failed to add item to cart"
+            );
         }
     };
 
@@ -260,9 +315,9 @@ export default function PublicHome() {
         setIsCartModalOpen(true);
     };
 
-    const handleOrderSuccess = (orderData) => {
+    const handleOrderSuccess = (orderData: OrderData) => {
         setIsCartModalOpen(false);
-        setOrderData(orderData);
+        setOrderData(orderData); // ✅ no type error now
         setShowSuccessModal(true);
         setCartCount(0);
     };
@@ -279,17 +334,20 @@ export default function PublicHome() {
 
     const nextSlide = () => {
         if (store?.images && store.images.length > 0) {
-            setCurrentSlide((prev) => (prev + 1) % store.images.length);
+            setCurrentSlide((prev) => (prev + 1) % (store.images?.length ?? 1));
         }
     };
+
 
     const prevSlide = () => {
         if (store?.images && store.images.length > 0) {
-            setCurrentSlide((prev) => (prev - 1 + store.images.length) % store.images.length);
+            const length = store.images?.length ?? 1;
+            setCurrentSlide((prev) => (prev - 1 + length) % length);
         }
     };
 
-    const goToSlide = (index) => {
+
+    const goToSlide = (index: number) => {
         setCurrentSlide(index);
     };
 
@@ -347,56 +405,39 @@ export default function PublicHome() {
         );
     }
 
-    if (!slug || !validateSlug(slug)) {
+    const slugString = Array.isArray(slug) ? slug[0] : slug;
+
+    if (!slugString || !validateSlug(slugString)) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <i className="fas fa-exclamation-triangle text-4xl text-gray-300 mb-4"></i>
-                    <h1 className="text-xl font-semibold text-gray-800">Invalid Store</h1>
+                    <h1 className="text-2xl font-bold text-gray-800">Invalid store</h1>
+                    <p className="text-gray-600">The store you are looking for does not exist.</p>
                 </div>
             </div>
         );
     }
 
     // Product Card component
-    const ProductCard = ({ product }) => (
+    const ProductCard = ({ product }: { product: Product }) => (
         <div className="group bg-[#FAFAFA] rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-[#CCCCCC] overflow-hidden transform hover:scale-105">
             <div className="relative h-48 overflow-hidden">
                 {product.pictureUrl ? (
                     <img
                         src={product.pictureUrl}
                         alt={product.name}
-                        className="w-full h-full object-contain hover:scale-110 transition-transform duration-300 p-2"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                 ) : (
-                    <div className="w-full h-full bg-white flex items-center justify-center">
-                        <i className="fas fa-utensils text-4xl text-[#F4B400]"></i>
+                    <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500">
+                        No Image
                     </div>
                 )}
-                <div className="absolute top-3 right-3 bg-[#F4B400] text-[#1E1E1E] px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                    <i className="fas fa-fire mr-1 animate-pulse"></i>Hot
-                </div>
             </div>
-            <div className="p-5">
-                <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-bold text-[#333333] capitalize leading-tight group-hover:text-[#F4B400] transition-colors duration-200">
-                        {product.name}
-                    </h3>
-                    <span className="text-xl font-bold text-[#F4B400] ml-2">
-                        {getCurrencySymbol(store?.currency)}{product.price}
-                    </span>
-                </div>
-                {product.description && (
-                    <p className="text-[#333333] text-sm mb-4 line-clamp-2">{product.description}</p>
-                )}
-                <button
-                    onClick={() => handleAddToCart(product)}
-                    data-product-id={product._id}
-                    className="w-full bg-[#F4B400] hover:bg-[#F4B400]/90 text-[#1E1E1E] font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg"
-                >
-                    <i className="fas fa-shopping-cart mr-2"></i>
-                    Order Now
-                </button>
+            <div className="p-4">
+                <h3 className="text-lg font-semibold text-gray-900 truncate">{product.name}</h3>
+                <p className="text-sm text-gray-600 line-clamp-2">{product.description || "No description available"}</p>
+                <p className="mt-2 text-base font-bold text-gray-900">{product.price} PKR</p>
             </div>
         </div>
     );
@@ -946,8 +987,10 @@ export default function PublicHome() {
     );
 }
 
-export async function getServerSideProps(context) {
-    const { slug } = context.params;
+export const getServerSideProps: GetServerSideProps = async (
+    context: GetServerSidePropsContext
+) => {
+    const { slug } = context.params as { slug: string };
 
     try {
         const { products, categories, store } = await fetchStoreData(slug);
@@ -961,15 +1004,16 @@ export async function getServerSideProps(context) {
             }
         };
     } catch (error) {
-        console.error('Error in getServerSideProps:', error);
+        const err = error as Error;
         return {
             props: {
                 initialProducts: [],
                 initialCategories: [],
                 initialStore: null,
                 slug,
-                error: error.message || 'Failed to load store data'
-            }
+                error: err.message || "Failed to load store data",
+            },
         };
     }
+
 }

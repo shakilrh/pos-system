@@ -8,20 +8,11 @@ import {
     validateOTP,
     getStoreDetails
 } from '../../services/CustomerService';
-
+import type { Store } from "../../services/PublicStoreService";
 interface AuthModalProps {
     isOpen: boolean;
     onClose: () => void;
-    store?: {
-        id?: string;
-        store_logo?: string;
-        store_name?: string;
-        store?: {
-            id?: string;
-            logo?: string;
-            name?: string;
-        };
-    };
+    store?: Store | null;
     onLoginSuccess: (customerData: any, token: string) => void;
 }
 
@@ -132,7 +123,14 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
         setSuccess('');
 
         try {
-            await createCustomerAndSendOTP(email, store);
+            // Convert Store to StoreDetails format
+            const storeDetails = store ? {
+                id: store._id || 'default_store_id',
+                store_logo: store.logo || store.store_logo,
+                store_name: store.name || store.store_name
+            } : undefined;
+
+            await createCustomerAndSendOTP(email, storeDetails);
             setSuccess('OTP sent to your email successfully!');
             setCurrentStep('otp');
         } catch (err: any) {
@@ -190,7 +188,14 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
         setSuccess('');
 
         try {
-            await createCustomerAndSendOTP(email, store);
+            // Convert Store to StoreDetails format
+            const storeDetails = store ? {
+                id: store._id || 'default_store_id',
+                store_logo: store.logo || store.store_logo,
+                store_name: store.name || store.store_name
+            } : undefined;
+
+            await createCustomerAndSendOTP(email, storeDetails);
             setSuccess('OTP sent to your email again!');
         } catch (err: any) {
             setError(err.message);
@@ -206,7 +211,17 @@ export default function AuthModal({ isOpen, onClose, store, onLoginSuccess }: Au
 
     if (!isOpen && !showAddressModal) return null;
 
-    const storeDetails = getStoreDetails(store);
+    // Transform Store into StoreDetails-compatible object
+    const storeDetails = getStoreDetails(
+        store
+            ? {
+                id: store._id || 'default_store_id',
+                store_logo: store.logo || store.store_logo,
+                store_name: store.name || store.store_name,
+            }
+            : undefined
+    );
+
 
     return (
         <>

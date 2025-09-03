@@ -1,4 +1,4 @@
-interface Product {
+export interface Product {
     _id: string;
     name: string;
     description?: string;
@@ -9,6 +9,19 @@ interface Product {
         name: string;
     };
     quantity?: number;
+}
+export interface OrderData {
+    _id: string;
+    order_number: string;
+    total_amount: number;
+    status: string;
+    items: Array<{
+        product: Product;
+        quantity: number;
+        price: number;
+    }>;
+    delivery_address?: string;
+    created_at: string;
 }
 
 interface CustomerDetails {
@@ -23,9 +36,9 @@ interface Category {
     description?: string;
 }
 
-interface Store {
-    _id: string;
-    name: string;
+export interface Store {
+    _id?: string; // Made optional to fix the type error
+    name?: string; // Made optional to fix the type error
     store_name?: string;
     logo?: string;
     store_logo?: string;
@@ -34,6 +47,10 @@ interface Store {
     currency?: string;
     address?: string;
     slug?: string;
+}
+
+export interface CartItem extends Product {
+    quantity: number; // required in cart
 }
 
 interface ApiResponse<T = any> {
@@ -425,7 +442,7 @@ export const getCartKey = (slug: string): string => {
     return `cart_${slug || 'default'}`;
 };
 
-export const getCartFromStorage = (slug: string): Product[] => {
+export const getCartFromStorage = (slug: string): CartItem[] => {
     try {
         const savedCart = localStorage.getItem(getCartKey(slug));
         if (savedCart) {
@@ -438,7 +455,7 @@ export const getCartFromStorage = (slug: string): Product[] => {
     }
 };
 
-export const saveCartToStorage = (slug: string, cart: Product[]): void => {
+export const saveCartToStorage = (slug: string, cart: CartItem[]): void => {
     try {
         localStorage.setItem(getCartKey(slug), JSON.stringify(cart));
         // Dispatch custom event for cart updates
@@ -449,7 +466,7 @@ export const saveCartToStorage = (slug: string, cart: Product[]): void => {
     }
 };
 
-export const addToCart = (slug: string, product: Product): Product[] => {
+export const addToCart = (slug: string, product: Product): CartItem[] =>{
     try {
         const cart = getCartFromStorage(slug);
         const existingItemIndex = cart.findIndex(item => item._id === product._id);
@@ -468,7 +485,7 @@ export const addToCart = (slug: string, product: Product): Product[] => {
     }
 };
 
-export const removeFromCart = (slug: string, productId: string): Product[] => {
+export const removeFromCart = (slug: string, productId: string): CartItem[] => {
     try {
         const cart = getCartFromStorage(slug);
         const updatedCart = cart.filter(item => item._id !== productId);
@@ -480,7 +497,11 @@ export const removeFromCart = (slug: string, productId: string): Product[] => {
     }
 };
 
-export const updateCartItemQuantity = (slug: string, productId: string, quantity: number): Product[] => {
+export const updateCartItemQuantity = (
+    slug: string,
+    productId: string,
+    quantity: number
+): CartItem[] =>{
     try {
         if (quantity <= 0) {
             return removeFromCart(slug, productId);

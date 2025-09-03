@@ -41,20 +41,31 @@ export default function AddressConfirmationModal({
         try {
             setLoading(true);
             setError('');
+
+            if (!token) {
+                setError('Authentication token is missing');
+                return;
+            }
+
             const customerData = await fetchCustomerDetails(token, logout);
             setCustomerDetails(customerData);
             setEditAddress(customerData.addresses?.[0] || '');
         } catch (err) {
-            setError(err.message || 'Failed to fetch customer details');
+            const errorMessage = err instanceof Error ? err.message : 'Failed to fetch customer details';
+            setError(errorMessage);
             console.error('Error fetching customer details:', err);
         } finally {
             setLoading(false);
         }
     };
-
     const handleUpdateAddress = async () => {
         if (!editAddress.trim()) {
             setError('Please enter a valid address');
+            return;
+        }
+
+        if (!token) {
+            setError('Authentication token is missing');
             return;
         }
 
@@ -72,7 +83,8 @@ export default function AddressConfirmationModal({
             await fetchCustomerDetailsData();
             setIsEditing(false);
         } catch (err) {
-            setError(err.message || 'Failed to update address');
+            const errorMessage = err instanceof Error ? err.message : 'Failed to update address';
+            setError(errorMessage);
             console.error('Error updating address:', err);
         } finally {
             setUpdating(false);

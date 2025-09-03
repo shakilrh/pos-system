@@ -42,6 +42,7 @@ export interface AuthContextType {
     permissionsLoaded: boolean;
     allPermissions: string[];
     storeName: string;
+    refreshUserProfile: () => Promise<void>;
     restaurantSlug: string;
     login: (email: string, passwordOrOtp: string, isCustomer?: boolean) => Promise<void>;
     logout: () => void;
