@@ -217,7 +217,7 @@ export default function ProductList({
             <button
                 onClick={onAdd}
                 className={`flex items-center px-2.5 py-1.5 mt-9 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isCategoryFormActive ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-hover)]'}`}
-                style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+                style={{ '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
                 disabled={isCategoryFormActive}
             >
               <PlusCircleIcon className="w-4 h-4 mr-1" />
@@ -232,14 +232,14 @@ export default function ProductList({
           <button
               onClick={() => handleFilterChange('all')}
               className={`px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${filterCategory === 'all' || filterCategory === null ? 'bg-[var(--primary-color)] text-[var(--text-on-primary)]' : 'bg-[var(--background-secondary)] text-[var(--button-inactive-text, var(--text-secondary))] hover:bg-[var(--surface-secondary)]'}`}
-              style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+              style={{ '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
           >
             All Products
           </button>
           <button
               onClick={() => handleFilterChange('inactive')}
               className={`px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${filterCategory === 'inactive' ? 'bg-[var(--primary-color)] text-[var(--text-on-primary)]' : 'bg-[var(--background-secondary)] text-[var(--button-inactive-text, var(--text-secondary))] hover:bg-[var(--surface-secondary)]'}`}
-              style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+              style={{ '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
           >
             Inactive Products
           </button>
@@ -248,7 +248,7 @@ export default function ProductList({
                   key={category._id}
                   onClick={() => handleFilterChange(category._id)}
                   className={`px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${filterCategory === category._id ? 'bg-[var(--primary-color)] text-[var(--text-on-primary)]' : 'bg-[var(--background-secondary)] text-[var(--button-inactive-text, var(--text-secondary))] hover:bg-[var(--surface-secondary)]'}`}
-                  style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+                  style={{ '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
               >
                 {category.name}
               </button>
@@ -361,7 +361,7 @@ export default function ProductList({
               onClick={() => !isCategoryFormActive && setCurrentProductPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentProductPage === 1 || isCategoryFormActive}
               className={`flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${currentProductPage === 1 || isCategoryFormActive ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-hover)]'}`}
-              style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+              style={{ '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
           >
             <ArrowLeftIcon className="w-4 h-4 mr-1" />
             Previous
@@ -373,7 +373,7 @@ export default function ProductList({
               onClick={() => !isCategoryFormActive && setCurrentProductPage((prev) => Math.min(prev + 1, totalProductPages))}
               disabled={currentProductPage === totalProductPages || isCategoryFormActive}
               className={`flex items-center px-2.5 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${currentProductPage === totalProductPages || isCategoryFormActive ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-hover)]'}`}
-              style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+              style={{ '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
           >
             Next
             <ArrowRightIcon className="w-4 h-4 ml-1" />

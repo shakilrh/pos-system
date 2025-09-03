@@ -247,24 +247,25 @@ export default function Products({
       )}
 
       {/* Delete Modal - Overlays on list */}
-      {activeSection === 'delete' && deleteProductId && selectedProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-md" style={{ backgroundColor: 'var(--background-color)' }}>
-            <ProductCrud
-              token={token}
-              logout={logout}
-              product={selectedProduct}
-              deleteProductId={deleteProductId}
-              setProducts={setAllProducts}
-              products={allProducts}
-              onCancel={resetForm}
-              isCategoryFormActive={isCategoryFormActive}
-              mode="delete"
-              setFlashMessageInParent={setFlashMessage}
-            />
-          </div>
-        </div>
-      )}
+        {activeSection === 'delete' && deleteProductId && selectedProduct && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg max-w-md" style={{ backgroundColor: 'var(--background-color)' } as React.CSSProperties}>
+                <ProductCrud
+                    token={token}
+                    logout={logout}
+                    categories={categories}
+                    product={selectedProduct}
+                    deleteProductId={deleteProductId}
+                    setProducts={setAllProducts}
+                    products={allProducts}
+                    onCancel={resetForm}
+                    isCategoryFormActive={isCategoryFormActive}
+                    mode="delete"
+                    setFlashMessageInParent={setFlashMessage}
+                />
+              </div>
+            </div>
+        )}
     </div>
   );
 }

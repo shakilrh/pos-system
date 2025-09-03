@@ -359,12 +359,14 @@ export default function ProductCrud({
     });
     setErrors(allErrors);
     if (Object.values(allErrors).some((fieldErrors: any) => fieldErrors.length > 0)) {
-      setFlashMessage({ message: 'Please fix all errors before submitting', type: 'error' });
+      const errorMessage: { message: string; type: 'success' | 'error' } = { message: 'Please fix all errors before submitting', type: 'error' };
+      setFlashMessage(errorMessage);
+      setFlashMessageInParent?.(errorMessage);
       return;
     }
 
     if (!token) {
-      const errorMessage = { message: 'Please log in to add a product', type: 'error' };
+      const errorMessage: { message: string; type: 'success' | 'error' } = { message: 'Please log in to add a product', type: 'error' };
       setFlashMessage(errorMessage);
       setFlashMessageInParent?.(errorMessage);
       return;
@@ -382,11 +384,11 @@ export default function ProductCrud({
 
       const newProduct = await addProduct(token, logout, categories, formData);
       setProducts((prev) => [...prev, newProduct]);
-      const successMessage = { message: `Product "${newProductName || 'new product'}" added successfully!`, type: 'success' };
+      const successMessage: { message: string; type: 'success' | 'error' } = { message: `Product "${newProductName || 'new product'}" added successfully!`, type: 'success' };
       setFlashMessageInParent?.(successMessage);
       onCancel();
     } catch (err) {
-      const errorMessage = { message: err instanceof Error ? err.message : 'Failed to add product', type: 'error' };
+      const errorMessage: { message: string; type: 'success' | 'error' } = { message: err instanceof Error ? err.message : 'Failed to add product', type: 'error' };
       setFlashMessage(errorMessage);
       setFlashMessageInParent?.(errorMessage);
     } finally {
@@ -404,12 +406,14 @@ export default function ProductCrud({
     });
     setErrors(allErrors);
     if (Object.values(allErrors).some((fieldErrors: any) => fieldErrors.length > 0)) {
-      setFlashMessage({ message: 'Please fix all errors before submitting', type: 'error' });
+      const errorMessage: { message: string; type: 'success' | 'error' } = { message: 'Please fix all errors before submitting', type: 'error' };
+      setFlashMessage(errorMessage);
+      setFlashMessageInParent?.(errorMessage);
       return;
     }
 
     if (!token || !editingProductId) {
-      const errorMessage = { message: 'Please log in to update a product', type: 'error' };
+      const errorMessage: { message: string; type: 'success' | 'error' } = { message: 'Please log in to update a product', type: 'error' };
       setFlashMessage(errorMessage);
       setFlashMessageInParent?.(errorMessage);
       return;
@@ -428,11 +432,11 @@ export default function ProductCrud({
 
       const updatedProduct = await updateProduct(token, logout, categories, formData);
       setProducts((prev) => prev.map((prod) => (prod._id === editingProductId ? updatedProduct : prod)));
-      const successMessage = { message: `Product "${newProductName || 'updated product'}" updated successfully!`, type: 'success' };
+      const successMessage: { message: string; type: 'success' | 'error' } = { message: `Product "${newProductName || 'updated product'}" updated successfully!`, type: 'success' };
       setFlashMessageInParent?.(successMessage);
       onCancel();
     } catch (err) {
-      const errorMessage = { message: err instanceof Error ? err.message : 'Failed to update product', type: 'error' };
+      const errorMessage: { message: string; type: 'success' | 'error' } = { message: err instanceof Error ? err.message : 'Failed to update product', type: 'error' };
       setFlashMessage(errorMessage);
       setFlashMessageInParent?.(errorMessage);
     } finally {
@@ -442,7 +446,7 @@ export default function ProductCrud({
 
   const handleDeleteConfirm = async () => {
     if (!token || !deleteProductId) {
-      const errorMessage = { message: 'Please log in to delete a product', type: 'error' };
+      const errorMessage: { message: string; type: 'success' | 'error' } = { message: 'Please log in to delete a product', type: 'error' };
       setFlashMessage(errorMessage);
       setFlashMessageInParent?.(errorMessage);
       return;
@@ -452,13 +456,13 @@ export default function ProductCrud({
     try {
       await deleteProduct(token, logout, deleteProductId);
       setProducts((prev) => prev.filter((prod) => prod._id !== deleteProductId));
-      const successMessage = { message: `Product "${product?.name || 'product'}" deleted successfully!`, type: 'success' };
+      const successMessage: { message: string; type: 'success' | 'error' } = { message: `Product "${product?.name || 'product'}" deleted successfully!`, type: 'success' };
       setFlashMessageInParent?.(successMessage);
       setGridErrorMessage?.(null);
       setFlashMessage(null);
       onCancel();
     } catch (err) {
-      const errorMessage = { message: err instanceof Error ? err.message : 'Failed to delete product', type: 'error' };
+      const errorMessage: { message: string; type: 'success' | 'error' } = { message: err instanceof Error ? err.message : 'Failed to delete product', type: 'error' };
       setFlashMessage(errorMessage);
       setFlashMessageInParent?.(errorMessage);
       setGridErrorMessage?.(err instanceof Error ? err.message : 'Failed to delete product');
@@ -624,7 +628,7 @@ export default function ProductCrud({
                   <label
                       htmlFor="imageUpload"
                       className={`cursor-pointer flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${isCategoryFormActive || isLoading.create || isLoading.update ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-hover)]'}`}
-                      style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+                      style={{ '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
                   >
                     <PlusCircleIcon className="w-4 h-4 mr-1" />
                     <span>Upload</span>
@@ -647,7 +651,7 @@ export default function ProductCrud({
                   type="button"
                   onClick={onCancel}
                   className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isCategoryFormActive || isLoading.create || isLoading.update ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : 'text-[var(--button-inactive-text, var(--text-secondary))] border border-[var(--border-color)] hover:bg-[var(--surface-secondary)]'}`}
-                  style={{ backgroundColor: 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' }}
+                  style={{ backgroundColor: 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
                   disabled={isCategoryFormActive || isLoading.create || isLoading.update}
               >
                 Cancel
@@ -655,17 +659,17 @@ export default function ProductCrud({
               <button
                   type="submit"
                   className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 ${isCategoryFormActive || isLoading.create || isLoading.update || !isFormValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--primary-color)] text-[var(--text-on-primary)] hover:bg-[var(--primary-color)]'}`}
-                  style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+                  style={{ '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
                   disabled={isCategoryFormActive || isLoading.create || isLoading.update || !isFormValid()}
               >
                 {isLoading.create || isLoading.update ? (
                     <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--text-on-primary)' }}>
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--text-on-primary)' } as React.CSSProperties}>
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
                       {mode === 'edit' ? 'Updating...' : 'Creating...'}
-                </span>
+  </span>
                 ) : (
                     mode === 'edit' ? 'Update Product' : 'Create Product'
                 )}
@@ -692,7 +696,7 @@ export default function ProductCrud({
                   onClick={handleDeleteConfirm}
                   disabled={isLoading.delete}
                   className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isLoading.delete ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[var(--error-color)] text-[var(--text-on-primary)] hover:bg-opacity-90'}`}
-                  style={{ '--tw-ring-color': 'var(--focus-ring)' }}
+                  style={{ '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
               >
                 {isLoading.delete ? (
                     <span className="flex items-center justify-center">
@@ -710,7 +714,7 @@ export default function ProductCrud({
                   onClick={onCancel}
                   disabled={isLoading.delete}
                   className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-colors duration-200 ${isLoading.delete ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--background-secondary)]'}`}
-                  style={{ backgroundColor: 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' }}
+                  style={{ backgroundColor: 'var(--background-color)', '--tw-ring-color': 'var(--focus-ring)' } as React.CSSProperties}
               >
                 Cancel
               </button>

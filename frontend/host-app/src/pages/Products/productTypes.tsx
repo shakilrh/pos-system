@@ -19,4 +19,4 @@ interface Product {
   time_required: number;
 }
 
-export { Category, Product };
+export type { Category, Product };
