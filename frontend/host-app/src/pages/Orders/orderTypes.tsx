@@ -29,6 +29,7 @@ export interface Order {
   payment_method: string;
   table_id: string | null;
   table_number?: string;
+  combined_total_amount?: number;
   payment_status: string;
   received_amount?: number;
   customer_name: string;

@@ -27,7 +27,7 @@ export interface OrderItem {
   sub_total?: number;
 }
 
-interface Waiter {
+export interface Waiter {
   _id: string;
   name: string;
   email: string;
