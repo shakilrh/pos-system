@@ -291,12 +291,14 @@ const AddToOrderForm = ({
 
   // Fetch store information
   useEffect(() => {
+    // Replace the fetchStoreData function in addToOrder.tsx with this version:
+
     const fetchStoreData = async () => {
       if (!token) {
         setStoreInfo({
           storeName: user?.store_name || user?.name || 'POS Store',
-          phoneNumber: user?.phone_number || null,
-          address: user?.address || null,
+          phoneNumber: (user as any)?.phone_number || null,
+          address: (user as any)?.address || null,
           store_logo: user?.store_logo || user?.logoUrl,
         });
         return;
@@ -306,16 +308,16 @@ const AddToOrderForm = ({
         const response = await UserService.getUserDetails(token);
         setStoreInfo({
           storeName: response.store_name || response.name || 'POS Store',
-          phoneNumber: response.phone_number || null,
-          address: response.address || null,
-          store_logo: response.store_logo || response.logoUrl,
+          phoneNumber: (response as any).phone_number || null,
+          address: (response as any).address || null,
+          store_logo: (response as any).store_logo || response.logoUrl,
         });
       } catch (err) {
         console.error('Fetch store data error:', err);
         setStoreInfo({
           storeName: user?.store_name || user?.name || 'POS Store',
-          phoneNumber: user?.phone_number || null,
-          address: user?.address || null,
+          phoneNumber: (user as any)?.phone_number || null,
+          address: (user as any)?.address || null,
           store_logo: user?.store_logo || user?.logoUrl,
         });
       }
@@ -571,6 +573,8 @@ const AddToOrderForm = ({
     setTouchedFields(prev => new Set(prev).add('orderItems'));
   };
 
+  // Replace the handleDirectPrint function in addToOrder.tsx with this version:
+
   const handleDirectPrint = () => {
     if (!createdOrder) {
       toast.error('No order to print. Please create an order first.');
@@ -584,12 +588,10 @@ const AddToOrderForm = ({
       selectedTable,
       selectedWaiter,
       changeAmount,
-      paymentMethod,
+      paymentMethod: parentOrder?.payment_method || 'cash', // Use parent order's payment method
       formatPrice,
     });
   };
-
-
 
   // Clear order function
 

@@ -60,6 +60,7 @@ interface OrderListProps {
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   queueData: QueueOrder[] | any;
   currentCurrency?: string;
+
 }
 
 const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessage, activeTab, currentCurrency = 'pkr' }: any) => {
@@ -83,7 +84,7 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
     setIsLoading(true);
     try {
       const updatedOrder = await markOrderAsReady(token, logout, order.order_number);
-      setOrders((prevOrders) =>
+      setOrders((prevOrders: Order[]) =>
           prevOrders.map((o) =>
               o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
           )
@@ -105,7 +106,7 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
     setIsLoading(true);
     try {
       const updatedOrder = await markOrderAsServed(token, logout, order.order_number);
-      setOrders((prevOrders) =>
+      setOrders((prevOrders: Order[]) =>
           prevOrders.map((o) =>
               o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
           )
@@ -129,23 +130,31 @@ const OrderModal = ({ order, token, logout, onClose, setOrders, orders, setMessa
           {order.rider_name && <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)', backgroundColor: 'var(--success-light)', padding: '2px 8px', borderRadius: '9999px' }}>Rider: {order.rider_name}</p>}
           {order.linked_orders?.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-2">
-                {order.linked_orders.map((linkedOrder, index) => (
+                {order.linked_orders.map((linkedOrder: string, index: number) => (
                     <span key={index} className="text-sm px-2 py-0.5 rounded-full" style={{ backgroundColor: index % 2 === 0 ? 'var(--warning-light)' : 'var(--success-light)', color: 'var(--text-color)' }}>
-                Linked: {linkedOrder}
-              </span>
+        Linked: {linkedOrder}
+      </span>
                 ))}
               </div>
           )}
           <div className="space-y-2 mb-4">
-            {order.items?.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: 'var(--background-secondary)' }}>
-                  <span className="text-sm font-medium" style={{ color: 'var(--text-color)' }}>{item.product_id?.name || 'Unknown'}</span>
-                  <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>x{item.quantity}</span>
-                </div>
-            )) || <div className="text-sm" style={{ color: 'var(--text-tertiary)' }}>No items</div>}
+            {order.items?.length > 0 ? (
+                order.items.map((item: { _id: string; order_id: string; product_id: { _id: string; name: string; price: number; pictureUrl: string }; quantity: number; sub_total: number; created_by: string; createdAt: string; updatedAt: string }, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: 'var(--background-secondary)' }}>
+                      <span className="text-sm font-medium truncate" style={{ color: 'var(--text-color)' }}>{item.product_id?.name || 'Unknown'}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>x{item.quantity}</span>
+                        <span className="text-sm font-medium" style={{ color: 'var(--text-color)' }}>{formatPrice(item.sub_total || 0, currentCurrency)}</span>
+                      </div>
+                    </div>
+                ))
+            ) : (
+                <div className="text-sm text-center py-2" style={{ color: 'var(--text-tertiary)' }}>No items</div>
+            )}
             {(activeTab === 'completed' || activeTab === 'cancelled') && (
-                <div className="text-sm font-bold" style={{ color: 'var(--text-color)' }}>
-                  Total: {formatPrice(order.total_amount || 0, currentCurrency)}
+                <div className="flex justify-between items-center pt-2 border-t" style={{ borderColor: 'var(--border-color)', color: 'var(--text-color)' }}>
+                  <span className="text-sm font-bold">Total:</span>
+                  <span className="text-sm font-bold">{formatPrice(order.total_amount || 0, currentCurrency)}</span>
                 </div>
             )}
           </div>
@@ -354,18 +363,18 @@ const RiderAssignmentModal = ({
                     <select
                         value={selectedRider}
                         onChange={(e) => setSelectedRider(e.target.value)}
-                        className="w-full p-4 pr-10 border-2 rounded-xl transition-all duration-200 focus:ring-4 focus:ring-opacity-20 focus:outline-none appearance-none cursor-pointer"
+                        className="w-full p-2 text-sm rounded-lg border focus:ring-2 transition-all duration-200"
                         style={{
                           backgroundColor: 'var(--background-color)',
                           borderColor: selectedRider ? 'var(--primary-color)' : 'var(--border-color)',
                           color: 'var(--text-color)',
-                          focusRingColor: 'var(--primary-color)',
-                        }}
+                          '--tw-ring-color': 'var(--primary-color)'
+                        } as React.CSSProperties}
                     >
                       <option value="" disabled>Select a rider...</option>
                       {riders.map((rider) => (
                           <option key={rider._id} value={rider._id}>
-                            {rider.name} ({rider.email})
+                            {rider.name}
                           </option>
                       ))}
                     </select>
@@ -453,7 +462,7 @@ export default function OrderList({
                                   }: OrderListProps) {
   const { user_type  } = useAuth();
   const { userPermissions } = useAuth();
-  const [outerActiveTab, setOuterActiveTab] = useState('physical');
+  const [outerActiveTab, setOuterActiveTab] = useState<string | null>('physical');
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
@@ -962,11 +971,10 @@ export default function OrderList({
           {(activeTab === 'completed' || activeTab === 'cancelled') && (
               <div
                   className="flex items-center px-4 py-2 rounded-lg border cursor-pointer transition-all duration-200"
-                  onClick={() => document.getElementById('order-date-picker')?.showPicker()}
+                  onClick={() => (document.getElementById('order-date-picker') as HTMLInputElement)?.showPicker()}
                   style={{
                     backgroundColor: 'var(--background-color)',
                     borderColor: 'var(--border-color)',
-                    color: 'var(--text-color)',
                   }}
               >
             <span className="text-sm mr-2" style={{ color: 'var(--text-secondary)' }}>
@@ -997,7 +1005,7 @@ export default function OrderList({
             <div className="rounded-lg p-3 shadow-sm" style={{ backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)' }}>
               <div className="flex flex-wrap gap-2">
                 {outerTabs.map((tab, index) => {
-                  const getOuterTabColors = (tabKey, tabIndex) => {
+                  const getOuterTabColors = (tabKey: string, tabIndex: number) => {
                     if (tabKey === 'physical' || tabIndex === 0) {
                       return {
                         active: '#4285f4',
@@ -1061,70 +1069,73 @@ export default function OrderList({
                   const ordersCount = groupedOrders[tab.key]?.length || 0;
                   const unreadCount = getTabUnreadCount(tab.key);
                   const tabsArray = outerActiveTab === 'physical' ? physicalTabs : onlineTabs;
+
                   const isSingleTab = tabsArray.length === 1;
 
-                  const getTabColors = (tabKey) => {
-                    const colorMap = {
-                      'pending': {
+                  type TabKey = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'served' | 'out_for_delivery' | 'completed' | 'cancelled' | 'default';
+
+                  const getTabColors = (tabKey: TabKey) => {
+                    const colorMap: Record<TabKey, { active: string; light: string; text: string; gradient: string }> = {
+                      pending: {
                         active: '#ff6b35',
-                        light: '#fff5f2',
-                        text: '#cc4125',
-                        gradient: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)'
+                        light: '#ff6b351a',
+                        text: '#ffffff',
+                        gradient: 'linear-gradient(135deg, #ff6b35, #ff8c61)',
                       },
-                      'confirmed': {
+                      confirmed: {
+                        active: '#34c759',
+                        light: '#34c7591a',
+                        text: '#ffffff',
+                        gradient: 'linear-gradient(135deg, #34c759, #52d174)',
+                      },
+                      preparing: {
                         active: '#4285f4',
-                        light: '#f0f7ff',
-                        text: '#1a73e8',
-                        gradient: 'linear-gradient(135deg, #4285f4 0%, #1976d2 100%)'
+                        light: '#4285f41a',
+                        text: '#ffffff',
+                        gradient: 'linear-gradient(135deg, #4285f4, #69a1ff)',
                       },
-                      'preparing': {
-                        active: '#ff9800',
-                        light: '#fff8f0',
-                        text: '#e65100',
-                        gradient: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)'
+                      ready: {
+                        active: '#f4b400',
+                        light: '#f4b4001a',
+                        text: '#ffffff',
+                        gradient: 'linear-gradient(135deg, #f4b400, #ffcd38)',
                       },
-                      'ready': {
+                      served: {
+                        active: '#00c4b4',
+                        light: '#00c4b41a',
+                        text: '#ffffff',
+                        gradient: 'linear-gradient(135deg, #00c4b4, #1ee0cc)',
+                      },
+                      out_for_delivery: {
                         active: '#9c27b0',
-                        light: '#faf4ff',
-                        text: '#7b1fa2',
-                        gradient: 'linear-gradient(135deg, #9c27b0 0%, #8e24aa 100%)'
+                        light: '#9c27b01a',
+                        text: '#ffffff',
+                        gradient: 'linear-gradient(135deg, #9c27b0, #b44ac0)',
                       },
-                      'completed': {
+                      completed: {
                         active: '#4caf50',
-                        light: '#f1f8e9',
-                        text: '#388e3c',
-                        gradient: 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)'
+                        light: '#4caf501a',
+                        text: '#ffffff',
+                        gradient: 'linear-gradient(135deg, #4caf50, #66bb6a)',
                       },
-                      'cancelled': {
-                        active: '#f44336',
-                        light: '#fff3f2',
-                        text: '#d32f2f',
-                        gradient: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)'
+                      cancelled: {
+                        active: '#d32f2f',
+                        light: '#d32f2f1a',
+                        text: '#ffffff',
+                        gradient: 'linear-gradient(135deg, #d32f2f, #ef5350)',
                       },
-                      'out_for_delivery': {
-                        active: '#00bcd4',
-                        light: '#f0fdff',
-                        text: '#0097a7',
-                        gradient: 'linear-gradient(135deg, #00bcd4 0%, #0097a7 100%)'
+                      default: {
+                        active: '#757575',
+                        light: '#7575751a',
+                        text: '#ffffff',
+                        gradient: 'linear-gradient(135deg, #757575, #9e9e9e)',
                       },
-                      'delivered': {
-                        active: '#8bc34a',
-                        light: '#f7fff0',
-                        text: '#689f38',
-                        gradient: 'linear-gradient(135deg, #8bc34a 0%, #689f38 100%)'
-                      },
-                      'default': {
-                        active: '#607d8b',
-                        light: '#f8f9fa',
-                        text: '#455a64',
-                        gradient: 'linear-gradient(135deg, #607d8b 0%, #455a64 100%)'
-                      }
                     };
 
-                    return colorMap[tabKey] || colorMap['default'];
+                    return colorMap[tabKey] || colorMap.default;
                   };
 
-                  const tabColors = getTabColors(tab.key);
+                  const tabColors = getTabColors(tab.key as TabKey);
 
                   return (
                       <div

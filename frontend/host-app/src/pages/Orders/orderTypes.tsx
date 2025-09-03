@@ -14,24 +14,47 @@ export interface OrderItem {
 
 export interface Order {
   _id: string;
-  user_id: string | null;
+  order_number: string;
+  user_id: string;
+  waiter: { id: string; name: string; email: string } | null;
+  waiter_status: number;
+  rider: { id: string; name: string; email: string } | null;
+  rider_status: number;
   order_date: string;
   created_by: string;
   total_amount: number;
   status: string;
-  delivery_address: string | null;
+  delivery_address?: string;
   order_type: string;
-  payment_method: string | null;
+  payment_method: string;
+  table_id: string | null;
+  table_number?: string;
   payment_status: string;
-  received_amount: number;
-  order_number: string;
+  received_amount?: number;
+  customer_name: string;
+  notification: string;
+  rider_note?: string;
+  notification_status: number;
+  parent_order_id: string | null;
+  service_type: 'dine_in' | 'take_away';
+  waiter_id?: string | null;
   createdAt: string;
   updatedAt: string;
-  service_type: 'dine_in' | 'take_away';
-  items: OrderItemResponse[];
-  customer_name: string;
-  table_number?: string; // Added table_number
-  __v: number;
-  notification?: 'pending' | 'confirmed' | 'ready' | 'picked' | 'payment_pending' | 'completed' | 'cancel';
-  notification_status?: 0 | 1; // 0 = unread, 1 = read
+  items: Array<{
+    _id: string;
+    order_id: string;
+    product_id: {
+      _id: string;
+      name: string;
+      price: number;
+      pictureUrl: string;
+    };
+    quantity: number;
+    sub_total: number;
+    created_by: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  estimated_completion?: string;
+  linked_orders?: string[]; // Add this line
 }

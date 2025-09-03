@@ -36,6 +36,7 @@ export interface AuthContextType {
     profileLoading: boolean;
     profileError: string | null;
     user: User | null;
+    user_type?: string;
     token: string | null;
     userPermissions: string[];
     permissionsLoaded: boolean;

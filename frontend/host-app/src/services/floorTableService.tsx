@@ -10,9 +10,9 @@ interface Floor {
   __v: number;
 }
 
-interface Table {
+export interface Table {
   _id: string;
-  number: number;
+  number: string;
   capacity?: number;
   status?: 'occupied' | 'available' | 'reserved';
   floor_id: { _id: string; name: string; description?: string };

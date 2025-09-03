@@ -9,11 +9,14 @@ import { fetchFreeTables, Table } from '../../services/floorTableService';
 import { fetchFreeWaiters } from '../../services/orderService';
 import { getUserDetails } from '../../services/UserService';
 import FlashMessage from '../FlashMessage';
-import OrderDetails from './OrderDetails';
-import OrderMenu from './OrderMenu';
+import OrderDetails from './orderDetails';
+import OrderMenu from './orderMenu';
 import toast from 'react-hot-toast';
 import { printReceipt } from './printReceipt';
+// At the top of createOrder.tsx, add this import:
+import { Order } from '../../services/orderService';
 
+// Then remove the entire Order interface definition (around lines 58-75)
 interface Product {
   _id: string;
   name: string;
@@ -53,22 +56,6 @@ interface Waiter {
     logoUrl: string;
     store_logo: string;
   };
-}
-
-interface Order {
-  _id: string;
-  items: OrderItem[];
-  order_type: string;
-  customer_name: string;
-  service_type: 'dine_in' | 'take_away';
-  total_amount: number;
-  order_number: string;
-  createdAt: string;
-  status: string;
-  payment_status: string;
-  estimated_completion?: string;
-  table_id?: string;
-  waiter_id?: string;
 }
 
 interface StoreInfo {
@@ -191,12 +178,14 @@ export default function CreateOrder() {
   }, [activeCurrency]);
 
   useEffect(() => {
+    // Replace the fetchStoreData function in createOrder.tsx (around line 207) with this version:
+
     const fetchStoreData = async () => {
       if (!token) {
         setStoreInfo({
           storeName: user?.store_name || user?.name || 'POS Store',
-          phoneNumber: user?.phone_number || null,
-          address: user?.address || null,
+          phoneNumber: (user as any)?.phone_number || null,
+          address: (user as any)?.address || null,
           store_logo: user?.store_logo || user?.logoUrl,
         });
         return;
@@ -206,16 +195,16 @@ export default function CreateOrder() {
         const response = await getUserDetails(token);
         setStoreInfo({
           storeName: response.store_name || response.name || 'POS Store',
-          phoneNumber: response.phone_number || null,
-          address: response.address || null,
-          store_logo: response.store_logo || response.logoUrl,
+          phoneNumber: (response as any).phone_number || null,
+          address: (response as any).address || null,
+          store_logo: (response as any).store_logo || response.logoUrl,
         });
       } catch (err) {
         console.error('Fetch store data error:', err);
         setStoreInfo({
           storeName: user?.store_name || user?.name || 'POS Store',
-          phoneNumber: user?.phone_number || null,
-          address: user?.address || null,
+          phoneNumber: (user as any)?.phone_number || null,
+          address: (user as any)?.address || null,
           store_logo: user?.store_logo || user?.logoUrl,
         });
       }
@@ -268,7 +257,16 @@ export default function CreateOrder() {
       return;
     }
 
+    // In your createOrder.tsx, replace the fetchData function (around line 273) with this:
+
     const fetchData = async () => {
+      // Add null check for token
+      if (!token) {
+        console.error('No authentication token available');
+        setFlashMessage({ message: 'Authentication token not available', type: 'error' });
+        return;
+      }
+
       try {
         const fetchedCategories = await fetchCategories(token, logout);
         setCategories(fetchedCategories);
@@ -331,6 +329,8 @@ export default function CreateOrder() {
     return id ? /^[0-9a-fA-F]{24}$/.test(id) : false;
   };
 
+  // In your createOrder.tsx, replace the handleCreateOrder function (around line 340) with this:
+
   const handleCreateOrder = async (orderData: {
     customer_name: string;
     service_type: 'dine_in' | 'take_away';
@@ -343,6 +343,12 @@ export default function CreateOrder() {
   }) => {
     if (!isAuthenticated) {
       setFlashMessage({ message: 'Authentication failed, please log in again', type: 'error' });
+      return;
+    }
+
+    // Add null check for token
+    if (!token) {
+      setFlashMessage({ message: 'Authentication token not available', type: 'error' });
       return;
     }
 
@@ -371,25 +377,29 @@ export default function CreateOrder() {
       const change = orderData.service_type === 'take_away' && orderData.received_amount ? orderData.received_amount - totalAmount : 0;
       setChangeAmount(change > 0 ? change : 0);
 
+      // In your createOrder.tsx, replace the updatedOrder object creation (around line 393) with this:
+
+      // In your createOrder.tsx, replace the updatedOrder object creation in handleCreateOrder with this:
+
       const updatedOrder: Order = {
-        _id: paymentResponse._id,
+        ...paymentResponse,
         items: orderData.order_items.map((item) => ({
-          product_id: item.product_id,
-          product: item.product || { name: `Product ${item.product_id}`, price: 0 },
+          _id: '',
+          order_id: paymentResponse._id,
+          product_id: {
+            _id: item.product?._id || item.product_id,
+            name: item.product?.name || 'Unknown Item',
+            price: item.product?.price || 0,
+            pictureUrl: item.product?.pictureUrl || ''
+          },
           quantity: item.quantity,
           sub_total: item.sub_total || 0,
+          created_by: paymentResponse.created_by || '',
+          createdAt: paymentResponse.createdAt,
+          updatedAt: paymentResponse.updatedAt || paymentResponse.createdAt
         })),
-        order_type: paymentResponse.order_type,
-        customer_name: paymentResponse.customer_name,
-        service_type: paymentResponse.service_type,
-        total_amount: paymentResponse.total_amount,
-        order_number: paymentResponse.order_number,
-        createdAt: paymentResponse.createdAt,
-        status: paymentResponse.status,
-        payment_status: paymentResponse.payment_status,
-        estimated_completion: paymentResponse.estimated_completion,
-        table_id: paymentResponse.table_id,
-        waiter_id: paymentResponse.waiter_id,
+        table_id: paymentResponse.table_id || null,    // Changed from undefined to null
+        waiter_id: paymentResponse.waiter_id || null,  // Changed from undefined to null
       };
 
       const selectedTableData = orderData.table_id ? freeTables.find((t) => t._id === orderData.table_id) || null : null;
@@ -423,6 +433,13 @@ export default function CreateOrder() {
       setFlashMessage({ message: 'Authentication failed, please log in again', type: 'error' });
       return;
     }
+
+    // Add null check for token
+    if (!token) {
+      setFlashMessage({ message: 'Authentication token not available', type: 'error' });
+      return;
+    }
+
     if (!orderData.parent_order_number) {
       setFlashMessage({ message: 'Parent order number is required to add to an existing order', type: 'error' });
       return;
@@ -455,17 +472,23 @@ export default function CreateOrder() {
       const updatedOrder: Order = {
         ...paymentResponse,
         items: orderData.order_items.map((item) => ({
-          product_id: item.product_id,
-          product: item.product || { name: `Product ${item.product_id}`, price: 0 },
+          _id: '',
+          order_id: paymentResponse._id,
+          product_id: {
+            _id: item.product?._id || item.product_id,
+            name: item.product?.name || 'Unknown Item',
+            price: item.product?.price || 0,
+            pictureUrl: item.product?.pictureUrl || ''
+          },
           quantity: item.quantity,
           sub_total: item.sub_total || 0,
+          created_by: paymentResponse.created_by || '',
+          createdAt: paymentResponse.createdAt,
+          updatedAt: paymentResponse.updatedAt || paymentResponse.createdAt
         })),
-        estimated_completion: response.estimated_completion,
-        status: orderData.service_type === 'take_away' ? 'confirmed' : 'pending',
-        table_id: response.table_id,
-        waiter_id: response.waiter_id,
+        table_id: paymentResponse.table_id || null,    // Changed from undefined to null
+        waiter_id: paymentResponse.waiter_id || null,  // Changed from undefined to null
       };
-
       const selectedTableData = orderData.table_id ? freeTables.find((t) => t._id === orderData.table_id) || null : null;
       const selectedWaiterData = orderData.waiter_id ? freeWaiters.find((w) => w._id === orderData.waiter_id) || null : null;
       setSelectedTable(selectedTableData);

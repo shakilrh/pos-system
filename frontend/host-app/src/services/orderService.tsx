@@ -32,12 +32,11 @@ interface OrderItemResponse {
   quantity: number;
   sub_total: number;
 }
-
 interface Order {
   _id: string;
   order_number: string;
   user_id: string;
-  waiter: string | null;
+  waiter: { id: string; name: string; email: string } | null;
   waiter_status: number;
   rider: { id: string; name: string; email: string } | null;
   rider_status: number;
@@ -49,6 +48,8 @@ interface Order {
   order_type: string;
   payment_method: string;
   table_id: string | null;
+  waiter_id?: string | null;
+  table_number?: string; // Add this if it's used
   payment_status: string;
   received_amount?: number;
   customer_name: string;
@@ -56,6 +57,8 @@ interface Order {
   rider_note?: string;
   notification_status: number;
   parent_order_id: string | null;
+  service_type: 'dine_in' | 'take_away'; // Add this line
+  waiter_id?: string; // Add this if it's used
   createdAt: string;
   updatedAt: string;
   items: Array<{

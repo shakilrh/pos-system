@@ -2,7 +2,21 @@ import toast from 'react-hot-toast';
 import { Order } from '../../services/orderService';
 import { Waiter, Table } from './orderDetails';
 import { getUserDetails } from '../../services/UserService';
+import { Order } from '../../services/orderService';
 
+interface Table {
+    _id: string;
+    number: string;
+    table_number?: string;
+}
+
+interface Waiter {
+    _id: string;
+    name: string;
+    email: string;
+    user_type: 'waiter';
+    role: string | null;
+}
 interface StoreInfo {
     storeName: string;
     phoneNumber: string | null;

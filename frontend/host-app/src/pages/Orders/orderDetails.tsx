@@ -20,7 +20,7 @@ interface Product {
   time_required?: number;
 }
 
-interface OrderItem {
+export interface OrderItem {
   product_id: string;
   quantity: number;
   product?: Product;
@@ -43,14 +43,13 @@ interface Waiter {
   };
 }
 
-interface ThemeColors {
+export interface ThemeColors {
   cardBackground: string;
   cardBorder: string;
   cardText: string;
   headingText: string;
 }
-
-interface OrderDetailsProps {
+export interface OrderDetailsProps {
   customerName: string;
   setCustomerName: (name: string) => void;
   serviceType: 'dine_in' | 'take_away';
@@ -76,12 +75,10 @@ interface OrderDetailsProps {
   currentTheme?: string;
   currentCurrency?: string;
   createdOrder?: Order | null;
-  selectedTable?: any;
+  selectedTable?: Table | null | undefined; // Updated to use Table type
   selectedWaiter?: Waiter | null;
   changeAmount?: number;
-
 }
-
 interface StoreInfo {
   storeName: string;
   phoneNumber: string | null;
@@ -214,8 +211,8 @@ const CreateOrderForm = ({
       if (!token) {
         setStoreInfo({
           storeName: user?.store_name || user?.name || 'POS Store',
-          phoneNumber: user?.phone_number || null,
-          address: user?.address || null,
+          phoneNumber: (user as any)?.phone_number || null,
+          address: (user as any)?.address || null,
           store_logo: user?.store_logo || user?.logoUrl,
         });
         return;
@@ -225,16 +222,16 @@ const CreateOrderForm = ({
         const response = await UserService.getUserDetails(token);
         setStoreInfo({
           storeName: response.store_name || response.name || 'POS Store',
-          phoneNumber: response.phone_number || null,
-          address: response.address || null,
+          phoneNumber: (response as any).phone_number || null,
+          address: (response as any).address || null,
           store_logo: response.store_logo || response.logoUrl,
         });
       } catch (err) {
         console.error('Fetch store data error:', err);
         setStoreInfo({
           storeName: user?.store_name || user?.name || 'POS Store',
-          phoneNumber: user?.phone_number || null,
-          address: user?.address || null,
+          phoneNumber: (user as any)?.phone_number || null,
+          address: (user as any)?.address || null,
           store_logo: user?.store_logo || user?.logoUrl,
         });
       }
