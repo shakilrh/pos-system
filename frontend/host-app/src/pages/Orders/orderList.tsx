@@ -1279,7 +1279,7 @@ export default function OrderList({
                 orders={orders}
                 groupedOrders={groupedOrders}
                 activeTab={selectedNotificationTab}
-                outerActiveTab={outerActiveTab}
+                outerActiveTab={outerActiveTab ?? 'physical'}
                 tabs={outerActiveTab === 'physical' ? physicalTabs : onlineTabs}
                 setActiveTab={setActiveTab}
                 setPage={setPage}
@@ -1294,10 +1294,13 @@ export default function OrderList({
                 logout={logout}
                 setOrders={setOrders}
                 setMessage={setMessage}
+                preparationTime={preparationTime}           // ✅ add this
+                setPreparationTime={setPreparationTime}     // ✅ add this
             />
+
         )}
 
-        {showRiderModal && selectedRiderOrder && (
+        {showRiderModal && selectedRiderOrder && token && (
             <RiderAssignmentModal
                 order={selectedRiderOrder}
                 token={token}
@@ -1342,35 +1345,44 @@ export default function OrderList({
                                       {order.service_type === 'dine_in' ? 'Dine-In' : 'Takeaway'}
                       </span>
                                 )}
-                                {order.table_id && (
+                                {order.table_number && (
                                     <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--info-light)', color: 'var(--text-color)' }}>
-                        Table: {order.table_id}
+                        Table: {order.table_number}
                       </span>
                                 )}
                                 {order.waiter && (
-                                    <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--text-color)' }}>
-                        Waiter: {order.waiter}
-                      </span>
+                                    <span
+                                        className="px-2 py-0.5 rounded-full text-xs"
+                                        style={{ backgroundColor: 'var(--primary-light)', color: 'var(--text-color)' }}
+                                    >
+    Waiter: {typeof order.waiter === 'string' ? order.waiter : order.waiter.name}
+  </span>
                                 )}
+
                                 {order.rider?.name && (
                                     <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--success-light)', color: 'var(--text-color)' }}>
                         Rider: {order.rider.name}
                       </span>
                                 )}
-                                {order.linked_orders?.length > 0 && (
+                                {Array.isArray(order.linked_orders) && order.linked_orders.length > 0 && (
                                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                          Linked Orders:
-                        </span>
+    <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+      Linked Orders:
+    </span>
                                       <div className="flex gap-1">
                                         {order.linked_orders.map((linkedOrder, index) => (
                                             <div key={index} className="flex items-center space-x-1">
                                               <div
                                                   className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
                                                   style={{
-                                                    backgroundColor: index % 4 === 0 ? 'var(--primary-color)' :
-                                                        index % 4 === 1 ? 'var(--success-color)' :
-                                                            index % 4 === 2 ? 'var(--warning-color)' : 'var(--info-color)'
+                                                    backgroundColor:
+                                                        index % 4 === 0
+                                                            ? 'var(--primary-color)'
+                                                            : index % 4 === 1
+                                                                ? 'var(--success-color)'
+                                                                : index % 4 === 2
+                                                                    ? 'var(--warning-color)'
+                                                                    : 'var(--info-color)',
                                                   }}
                                               >
                                                 <FontAwesomeIcon icon={faHashtag} className="text-xs" />
@@ -1378,14 +1390,19 @@ export default function OrderList({
                                               <span
                                                   className="px-1 py-0.5 rounded text-xs font-medium"
                                                   style={{
-                                                    backgroundColor: index % 4 === 0 ? 'var(--primary-light)' :
-                                                        index % 4 === 1 ? 'var(--success-light)' :
-                                                            index % 4 === 2 ? 'var(--warning-light)' : 'var(--info-light)',
-                                                    color: 'var(--text-color)'
+                                                    backgroundColor:
+                                                        index % 4 === 0
+                                                            ? 'var(--primary-light)'
+                                                            : index % 4 === 1
+                                                                ? 'var(--success-light)'
+                                                                : index % 4 === 2
+                                                                    ? 'var(--warning-light)'
+                                                                    : 'var(--info-light)',
+                                                    color: 'var(--text-color)',
                                                   }}
                                               >
-                                #{linkedOrder}
-                              </span>
+            #{linkedOrder}
+          </span>
                                             </div>
                                         ))}
                                       </div>
@@ -1482,7 +1499,8 @@ export default function OrderList({
                                           }
                                           setIsLoading(true);
                                           try {
-                                            const updatedOrder = await confirmOrder(token, logout, order.order_number);
+                                            const updatedOrder = await confirmOrder(token, logout, order.order_number, preparationTime);
+
                                             setOrders((prevOrders) =>
                                                 prevOrders.map((o) =>
                                                     o.order_number === updatedOrder.order_number ? { ...updatedOrder, items: o.items } : o
@@ -1622,11 +1640,14 @@ export default function OrderList({
                                               }
                                             }}
                                             className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md ${isLoading ? 'bg-[var(--disabled-bg)] text-[var(--disabled-text)] cursor-not-allowed' : ''}`}
-                                            style={{
-                                              backgroundColor: isLoading ? undefined : 'var(--primary-color)',
-                                              color: isLoading ? 'var(--disabled-text)' : 'var(--text-on-primary)',
-                                              '--tw-ring-color': 'var(--focus-ring)',
-                                            }}
+                                            style={
+                                              {
+                                                backgroundColor: isLoading ? undefined : 'var(--primary-color)',
+                                                color: isLoading ? 'var(--disabled-text)' : 'var(--text-on-primary)',
+                                                '--tw-ring-color': 'var(--focus-ring)',
+                                              } as React.CSSProperties & Record<string, string>
+                                            }
+
                                             disabled={isLoading}
                                         >
                                           Mark as Completed
@@ -1701,12 +1722,15 @@ export default function OrderList({
                         onClick={() => setPage(Math.max(1, page - 1))}
                         disabled={page === 1}
                         className="px-3 py-2 text-sm rounded-lg border disabled:opacity-50 transition-all duration-200 hover:shadow-md"
-                        style={{
-                          backgroundColor: page === 1 ? 'var(--background-secondary)' : 'var(--primary-color)',
-                          color: page === 1 ? 'var(--text-secondary)' : 'var(--text-on-primary)',
-                          borderColor: 'var(--border-color)',
-                          '--tw-ring-color': 'var(--focus-ring)',
-                        }}
+                        style={
+                          {
+                            backgroundColor: page === 1 ? 'var(--background-secondary)' : 'var(--primary-color)',
+                            color: page === 1 ? 'var(--text-secondary)' : 'var(--text-on-primary)',
+                            borderColor: 'var(--border-color)',
+                            '--tw-ring-color': 'var(--focus-ring)',
+                          } as React.CSSProperties & Record<string, string>
+                        }
+
                     >
                       Previous
                     </button>
@@ -1733,12 +1757,21 @@ export default function OrderList({
                         onClick={() => setPage(Math.min(Math.ceil(filteredOrders.length / itemsPerPage), page + 1))}
                         disabled={page === Math.ceil(filteredOrders.length / itemsPerPage)}
                         className="px-3 py-2 text-sm rounded-lg border disabled:opacity-50 transition-all duration-200 hover:shadow-md"
-                        style={{
-                          backgroundColor: page === Math.ceil(filteredOrders.length / itemsPerPage) ? 'var(--background-secondary)' : 'var(--primary-color)',
-                          color: page === Math.ceil(filteredOrders.length / itemsPerPage) ? 'var(--text-secondary)' : 'var(--text-on-primary)',
-                          borderColor: 'var(--border-color)',
-                          '--tw-ring-color': 'var(--focus-ring)',
-                        }}
+                        style={
+                          {
+                            backgroundColor:
+                                page === Math.ceil(filteredOrders.length / itemsPerPage)
+                                    ? 'var(--background-secondary)'
+                                    : 'var(--primary-color)',
+                            color:
+                                page === Math.ceil(filteredOrders.length / itemsPerPage)
+                                    ? 'var(--text-secondary)'
+                                    : 'var(--text-on-primary)',
+                            borderColor: 'var(--border-color)',
+                            '--tw-ring-color': 'var(--focus-ring)',
+                          } as React.CSSProperties & Record<string, string>
+                        }
+
                     >
                       Next
                     </button>
@@ -1751,4 +1784,4 @@ export default function OrderList({
   );
 }
 
-export { OrderListProps, QueueOrder };
+export type { OrderListProps, QueueOrder };
